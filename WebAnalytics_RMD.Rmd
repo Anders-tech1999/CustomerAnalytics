@@ -665,23 +665,3 @@ cbc.df$chid <- rep(1:(nrow(cbc.df)/3 ), each=3) #creates a new column in the dat
 # shape the data for mlogit
 cbc.mlogit <- dfidx(cbc.df, choice="choice", idx=list(c("chid", "resp.id"), "alt" )) #reshaping the cbc.df data frame into an indexed data frame that is suitable for mlogit analysis.
 ```
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
