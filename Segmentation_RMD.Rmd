@@ -4,6 +4,12 @@ output: html_document
 date: "2024-04-11"
 ---
 
+# HBAT dataset
+HBAT is a manufacturer of paper products who sells products to two market segments: the newsprint industry and the magazine industry. The data used in this example is based on a survey of HBAT customers who completed a questionnaire on a website. 100 customers (purchasing managers from firms) buying from HBAT completed the questionnaire.
+-	The first type of information is available from HBAT’s data warehouse and includes information, such as, size of the customer and length of purchase relationship
+-	The second type of information was consumers perceptions of HBAT’s performance on 13 attributes using a 0-10 scale with 10 being “Excellent” and 0 being “Poor”
+-	The third type of information relates to purchase outcomes and business relationships (e.g. satisfaction with HBAT, and whether the firm would consider a strategic alliance/partnership with HBAT)
+
 ```{r dataload}
 # R script for the analysis of the HBAT example in the cluster analysis lecture
 #install.packages("readstata13")
@@ -17,90 +23,200 @@ HBAT <- read.dta13("Datasets/hbat.dta")
 #HBAT <- read.dta13("C:/Users/Bruger/OneDrive - Aarhus universitet/8. semester - BI/CA - Customer Analytics/Segmentation/hbat.dta") #This also works
 ```
 
-
-```{r}
-## Preparation
-
-```
-
-
-```{r}
+```{r Variable selection}
 # first we make our own id variable based on the original order
-nobs <- nrow(HBAT)
-HBAT$id <- seq(1,nobs)
+nobs <- nrow(HBAT) #calculates the number of observations (rows) in the dataset HBAT and assigns it to the variable nobs.
+HBAT$id <- seq(1,nobs) #a new column id is added to the HBAT data frame. It is filled with a sequence of numbers from 1 to nobs, effectively creating a unique identifier for each row based on its original order in the data frame
+
 # pick the variables for cluster analysis and summarize them
-hbat <- c("x6","x8","x12","x15","x18")
+hbat <- c("x6","x8","x12","x15","x18") # a vector
 summary(HBAT[,hbat])
+```
+X6: Product Quality
+X8: Technical Support 
+X12: Salesforce Image 
+X15: New Products
+X18: Delivery Speed
+In "dataload" the summary stats for selection variables are shown.
+
+```{r SD and Multicollinearity}
 apply(HBAT[,hbat],2,sd)
+
 # multicollinearity should not be a problem
 cor(HBAT[,hbat])
 # which is confirmed
+```
+What is the feasible value for ST in this example???
+- 
+What is the threshold value before having problems with multicollinearity?
+- From chat: Values above 0.7 or 0.8 (or below -0.7 or -0.8) are often considered high, indicating potential multicollinearity problems.
+Values between 0.5 and 0.7 (or -0.5 and -0.7) suggest moderate correlation, but they might still be acceptable depending on the analysis.
+
+```{r Outlier detection}
 # look for outliers
 dev <- t(t(HBAT[,hbat])-apply(HBAT[,hbat],2,mean))
 dev2 <- dev^2
 sumdev2 <- rowSums(dev2)
 sort(sqrt(sumdev2))
 # observations 6 and 87 are candidates for deletion
-HBAT <- subset(HBAT,id!="6"&id!="87")
-nobs <- nrow(HBAT)
-HBAT$id <- seq(1,nobs)
+```
+The outliers are assessed in the relationship of the outliers being next to or before in the sequence.
+the distance between obs 90 and 6 is 0.7, which is a value giving the analyst the possibility to extract obs 6 from the dataset.
+
+## Ward's method - Hierarchical clustering
+Ward’s method calculates the within-cluster sums of squares for all possible five-cluster solutions:
+(I think we get 5 possible cluster solutions having 6 variables, remember for different exercises)
+```{r Ward's method - Dendrogram}
+HBAT <- subset(HBAT,id!="6"&id!="87") #extracting variable 6 and 87
+nobs <- nrow(HBAT) 
+HBAT$id <- seq(1,nobs) #number of observations (nobs) is recalculated, and the id column is reinitialized to have a sequential order starting from 1 up to the number of observations.
 
 ## Hierarchical clustering
 # first create distance matrix
-dist <- dist(HBAT[,hbat],method="euclidean")
-dist2 <- dist^2
+dist <- dist(HBAT[,hbat],method="euclidean") #dist function calculates the Euclidean distance between observations using the selected variables (hbat). This creates a distance matrix that hierarchical clustering algorithms use to determine how observations group together.
+dist2 <- dist^2 #Ward's method is sensitive to the scale of the distances, and squaring the distances emphasizes larger distances.
+
 # Wards method
-H.fit <- hclust(dist2,method="ward.D")
+H.fit <- hclust(dist2,method="ward.D") #Ward's method minimizes the total within-cluster variance.
+
 # draw a dendogram
 plot(H.fit) #Assess the number of clusters from this plot
+```
+I need an assessment-method on determining the number of cluster detected by the plot??
+
+```{r Wards - pct increase}
 # assess pct. increase
-denominator <- cumsum(H.fit[[2]])
-length(denominator) <- nobs-2
-denominator <- c(1,denominator)
-pct <- H.fit[[2]]/denominator
-tail(pct,n=10)
+denominator <- cumsum(H.fit[[2]]) #calculates the cumulative sum of the heights (or distances) at which each clustering step takes place. In Ward's method, these heights represent the increase in the total within-cluster variance when two clusters are merged. H.fit[[2]] contains the heights of the merges at each step.
+
+length(denominator) <- nobs-2 #length of the denominator vector is set to be one less than the number of observations in the data because the hierarchical clustering process involves n-1 merge steps.
+
+denominator <- c(1,denominator) #A '1' is prepended to the denominator vector. This ensures that when calculating percentage increases, the first step (where no previous clustering has occurred) is properly handled by having a base of '1' to compare against.
+
+pct <- H.fit[[2]]/denominator #calculates the percentage increase in the height at each step of the clustering process by dividing the height of each merge by the cumulative sum up to the previous step. This percentage increase can be interpreted as how much 'worse' the clustering gets at each step, as measured by Ward's distance metric.
+
+tail(pct,n=10) #displays the last 10 values of the pct vector. These values are the percentage increases for the final 10 steps in the hierarchical clustering process.
+```
+NOT understand how we assess that 4 clusters is optimal from this percentage vector???
+
+```{r wards - create cluster groups}
 # apart from going from 2-1 the largest jump is from 4-3, we stop just before
 grp <- as.factor(cutree(H.fit,k=4))
 table(grp) #majority is in first cluster having 49 obs
+```
+
+```{r Wards - Dendrogram red borders}
 # illustrate a 4 cluster solution
+plot(H.fit)
 rect.hclust(H.fit,k=4,border="red") #smart plot
+```
+
+
+```{r Wards - Assess cluster groups}
 # assess outcome
 aggregate(HBAT[,hbat],list(grp),mean)
---
+```
+Here it is seen that x6 Product quality is
+- scoring highest in Cluster 2
+- scoring lowest in Cluster 3 (etc.)
+Here it is seen that x8 Technical Support is
+- scoring highest in Cluster 2
+- scoring lowest in Cluster 4 (etc.)
+
+Group 1 has observations yielding high impact from x6 Product Quality and low impact from x8 Technical Support
+Group 2 has observations yielding high impact from x6 Product Quality and high impact from x8 Technical Support (etc.)
+
+```{r Wards - ANOVA on variables}
 summary(aov(x6~grp,data=HBAT))
 summary(aov(x8~grp,data=HBAT))
 summary(aov(x12~grp,data=HBAT))
 summary(aov(x15~grp,data=HBAT))
 summary(aov(x18~grp,data=HBAT))
+```
+The ANOVA shows, that all variables except x18 Delivery speed have significant difference within the mean of the groups.
+eg. x6 has means which differs in the group, as this group may be more volatile due to the scores given in each observation in the group
+eg. x18 has means which is quite close to each other, yeilding a score where the observations are quite similar
+
+## Complete-linkage method - Hierarchical clustering
+-	Complete-linkage/farthest-neighbor measures the distance between clusters as the maximum of the distance between all possible pairs of objects in the two clusters – tends to find compact clusters with equal diameters
+-	These methods only depend on the ordinal properties of the distances
+```{r Complete-linkage method - Dendrogram }
 # Complete linkage
 H.fit <- hclust(dist,method="complete")
 # draw a dendogram
 plot(H.fit)
+```
+
+
+```{r Complete - pct increase }
 # assess pct. increase
-denominator <- cumsum(H.fit[[2]])
-length(denominator) <- nobs-2
-denominator <- c(1,denominator)
-pct <- H.fit[[2]]/denominator
-tail(pct,n=10)
+denominator <- cumsum(H.fit[[2]]) #calculates the cumulative sum of the heights (or distances) at which each clustering step takes place. In Ward's method, these heights represent the increase in the total within-cluster variance when two clusters are merged. H.fit[[2]] contains the heights of the merges at each step.
+
+length(denominator) <- nobs-2 #length of the denominator vector is set to be one less than the number of observations in the data because the hierarchical clustering process involves n-1 merge steps.
+
+denominator <- c(1,denominator) #A '1' is prepended to the denominator vector. This ensures that when calculating percentage increases, the first step (where no previous clustering has occurred) is properly handled by having a base of '1' to compare against.
+
+pct <- H.fit[[2]]/denominator #calculates the percentage increase in the height at each step of the clustering process by dividing the height of each merge by the cumulative sum up to the previous step. This percentage increase can be interpreted as how much 'worse' the clustering gets at each step, as measured by Ward's distance metric.
+
+tail(pct,n=10) ##displays the last 10 values of the pct vector. These values are the percentage increases for the final 10 steps in the hierarchical clustering process.
+```
+NOT understand how we assess that 4 clusters is optimal from this percentage vector???
+
+
+```{r Complete - create cluster groups }
 # results from Ward's method are supported -
 grp <- as.factor(cutree(H.fit,k=4))
-table(grp)
+table(grp) #majority is in second cluster having 33 obs
+```
+
+```{r Complete - Dendrogram red borders }
 # but size of the clusters differ
+plot(H.fit)
 rect.hclust(H.fit,k=4,border="red")
+```
+
+
+```{r Complete - Assess cluster groups }
 # assess outcome
 aggregate(HBAT[,hbat],list(grp),mean)
+```
+Here it is seen that x6 Product quality is
+- scoring highest in Cluster 2
+- scoring lowest in Cluster 4 (etc.)
+Here it is seen that x8 Technical Support is
+- scoring highest in Cluster 2
+- scoring lowest in Cluster 1 (etc.)
+
+Group 1 has observations yielding high impact from x6 Product Quality and low impact from x8 Technical Support
+Group 2 has observations yielding high impact from x6 Product Quality and medium impact from x8 Technical Support (etc.)
+
+```{r Complete - Dendrogram red borders }
 summary(aov(x6~grp,data=HBAT))
 summary(aov(x8~grp,data=HBAT))
 summary(aov(x12~grp,data=HBAT))
 summary(aov(x15~grp,data=HBAT))
 summary(aov(x18~grp,data=HBAT))
+```
+The ANOVA shows, that all variables except x18 Delivery speed have significant difference within the mean of the groups.
+eg. x6 has means which differs in the group, as this group may be more volatile due to the scores given in each observation in the group
+eg. x18 has means which is quite close to each other, yeilding a score where the observations are quite similar
+
+- IT IS RECOOMENDED THAT A COMBINATION OF THE HIERARCHICAL AND NONHIERARCHICAL METHODS IS USED
+o	Use the hierarchical methods to get a qualified estimate on the number of clusters
+o	Use the nonhierarchical methods to determine the cluster affiliation (tilknytning) for each object
+
+BOOKMARK 15/4-24
+
+```{r Complete - Dendrogram red borders }
 # use NbClust
 res<-NbClust(HBAT[,hbat], distance = "euclidean", min.nc=2, max.nc=8, 
              method = "ward.D", index = "all") #go with the printed number of clusters
 res$All.index
 res$Best.nc
+```
 
+#Non-hierarchical clusters
 
+```{r Complete - Dendrogram red borders }
 ## Nonhierarchical clustering
 set.seed(4118)
 NH.fit<-kmeans(HBAT[,hbat],4,nstart=25)
