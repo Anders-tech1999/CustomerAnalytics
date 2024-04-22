@@ -205,7 +205,7 @@ o	Use the hierarchical methods to get a qualified estimate on the number of clus
 o	Use the nonhierarchical methods to determine the cluster affiliation (tilknytning) for each object
 
 BOOKMARK 15/4-24
-
+--NOT FINISH--
 ```{r Complete - Dendrogram red borders }
 # use NbClust
 res<-NbClust(HBAT[,hbat], distance = "euclidean", min.nc=2, max.nc=8, 
@@ -287,6 +287,8 @@ cor(scores)
 
 ```
 
+#II Segmentation
+## McD Example
 
 ```{r 20.segmentation}
 # R script for the analysis of the HBAT example in the model-based clustering
@@ -330,12 +332,203 @@ mc4 <- Mclust(HBAT[,hbat],G=4)
 summary(mc4)
 
 ```
+--NOT FINISH--
+
+#III Segmentation
+## McD Example
+
+```{r dataload McD}
+# R script for the analysis of the McDonald's example in the segmentation lecture
+#install.packages("flexclust")
+#install.packages("partykit")
+#install.packages("clue") #- should be installed as part of the flexclust but isn't
+library("flexclust")
+library("partykit")
+library("clue")
+rm(list=ls())
+
+## Preparation - Read in data
+library(readr)
+mcdonalds <- read_csv("Datasets/mcdonalds.csv")
+```
+
+
+```{r data insights}
+# Look into content
+names(mcdonalds)
+dim(mcdonalds)
+head(mcdonalds, 3) #showing the first 3 rows in dataset mcdonalds
+```
+
+
+```{r Discretize Yes:1 + Column means }
+# Change Yes/No to 1/0
+MD.x <- as.matrix(mcdonalds[, 1:11]) #function converts this selected subset of the data frame into a matrix called MD.x. mcdonalds[, 1:11] selects all rows and the first 11 columns of the mcdonalds data frame.
+MD.x <- (MD.x == "Yes") + 0 # TRUE can be coerced to 1 and FALSE to 0. Therefore, adding 0 (+ 0) to the logical matrix effectively converts all TRUE values to 1s and all FALSE values to 0s.
+
+## Exploring data
+# What fraction sees McDonald's possessing each of the attributes
+round(colMeans(MD.x), 2) #rounding the column means to two decimals
+```
+
+
+```{r PCA}
+# PCA and perceptual map
+MD.pca <- prcomp(MD.x)
+summary(MD.pca)
+```
+PCA Principal Component analysis:
+- The idea behind PCA is to reduce the dimensionality of the dataset by transforming the original variables into a new set of variables (the principal components) which are uncorrelated, and which are ordered so that the first few retain most of the variation present in all of the original variables.
+- The greatest variance by any projection of the data comes to lie on the first coordinate (called the first principal component), the second greatest variance on the second coordinate, and so on.
+Standard Deviation:
+- This indicates how much variance is captured by each principal component. A higher standard deviation means that component accounts for a larger variance within the dataset.
+Proportion of Variance:
+- squared standard deviation for each component divided by the sum of squared standard deviations of all components. It tells us the proportion of the dataset’s total variance that is captured by each principal component.
+
+```{r Rotation/Loadings PCA}
+print(MD.pca, digits = 2)
+```
+Rotation matrix:
+- Each row corresponds to one of the original variables (attributes like "yummy", "convenient", "spicy", etc.), and each column corresponds to a principal component (PC1 to PC11). The values in the matrix show how each attribute contributes to each principal component.
+Example (original variable yummy on PC1):
+- The attribute "yummy" has a strong positive loading on PC1 (0.4769) and a strong negative loading on PC9 (-0.5724), which means "yummy" is an important attribute that defines the direction of PC1 and PC9.
 
 ```{r 21 segmentation}
-# R script for the analysis of the McDonald's example in the segmentation lecture
+plot(predict(MD.pca), col = "grey")
+projAxes(MD.pca)
+```
+- dots represent the data points projected onto the first two principal components, PC1 and PC2. This provides a two-dimensional summary of the data, where similar data points are clustered together, and different ones are farther apart.
+- arrows (or vectors) represent the loadings of each attribute (like "yummy", "cheap", "expensive", etc.), which point in the direction of the maximum variance for that attribute. The length of an arrow indicates the strength of the attribute's contribution to the two principal components displayed.
+- Attributes that are close together are positively correlated, while those that are on opposite ends of the plot are negatively correlated.
+- Attributes that are close to the origin (center of the plot) have smaller effects on the variation explained by the first two principal components, while those further out are more influential.
+
+It is seen that "tasty" and "yummy" point in a similar direction, suggesting they contribute similarly to the dataset's variance and are likely correlated. Conversely, "expensive" points in a roughly opposite direction to "cheap", indicating they are negatively correlated. The plot also suggests that attributes like "disgusting" and "fattening" may not be strongly related to the primary variance within the data, as their vectors are shorter and closer to the center of the plot.
+
+BOOKMARK 18/4-24
+
+```{r 21 segmentation}
+## Extracting segments
+# k-means
+set.seed(28)
+MD.km28 <- stepFlexclust(MD.x, 2:8, nrep = 10,verbose = FALSE)
+plot(MD.km28, xlab = "number of segments")
+```
+
+
+```{r 21 segmentation}
+# Segment stability within the same number of segments
+set.seed(1234)
+MD.b28 <- bootFlexclust(MD.x, 2:8, nrep = 10,nboot = 100)
+plot(MD.b28, xlab = "number of segments",ylab = "adjusted Rand index")
+```
+
+
+```{r 21 segmentation}
+# Gorge plot
+MD.km28 <- relabel(MD.km28)
+histogram(MD.km28[["4"]], data = MD.x, xlim = 0:1)
+#the plots should look like a gorge
+```
+
+
+```{r 21 segmentation}
+# Segment level stability across solutions
+slsaplot(MD.km28)
+```
+
+
+```{r 21 segmentation}
+# Save the four-segment solution
+MD.k4 <- MD.km28[["4"]]
+MD.r4 <- slswFlexclust(MD.x, MD.k4)
+plot(MD.r4, ylim = 0:1, xlab = "segment number",ylab = "segment stability")
+```
+
+
+```{r 21 segmentation}
+## Profiling segments
+# Segment profile plot
+MD.vclust <- hclust(dist(t(MD.x)))
+barchart(MD.k4, shade = TRUE,which = rev(MD.vclust$order))
+```
+
+
+```{r 21 segmentation}
+# Segment separation plot
+plot(MD.k4, project = MD.pca, data = MD.x,hull = FALSE, simlines = FALSE,
+     xlab = "principal component 1",ylab = "principal component 2")
+projAxes(MD.pca)
+```
+
+
+```{r 21 segmentation}
+## Describing segments
+# Extract the segment membership for each consumer
+mcdonalds$k4 <- clusters(MD.k4)
+# Prepare the like/hate variable
+mcdonalds$like <- factor(mcdonalds$Like,levels=c("I love it!+5","+4","+3","+2","+1","0","-1","-2","-3","-4","I hate it!-5"))
+# Make mosaic plot of like/hate
+mosaicplot(table(mcdonalds$k4, mcdonalds$like), shade = TRUE,main = "", 
+           xlab = "segment number")
+```
+
+
+```{r 21 segmentation}
+# Make mosaic plot of gender
+mosaicplot(table(mcdonalds$k4, mcdonalds$Gender), shade = TRUE)
+boxplot(mcdonalds$Age ~ mcdonalds$k4,varwidth = TRUE, notch = TRUE)
+```
+
+
+```{r 21 segmentation}
+## Predict segment 3 membership using a classification tree
+# Prepare visit frequency variable
+mcdonalds$visitfrequency <- factor(mcdonalds$VisitFrequency,
+                                   levels=c("Never","Once a year","Every three months","Once a month","Once a week","More than once a week"))
+tree <- ctree(factor(k4==3) ~ like+Age+visitfrequency+factor(Gender),
+              data=mcdonalds)
+plot(tree)
+```
+
+
+```{r 21 segmentation}
+## Selecting (the) target segment(s)
+# Visit frequency is scored as 1=Never,...,6=More than once a week, 
+# not strictly aligned with the ratio properties hidden in the scale
+visit <- tapply(as.numeric(mcdonalds$visitfrequency),mcdonalds$k4,mean)
+visit
+```
+
+
+```{r 21 segmentation}
+# Turn the current like scale upside down and recenter 
+# (1=I love it,...,11=I hate it -> 5=I love it,...,-5=I hate it)
+like <- tapply(-as.numeric(mcdonalds$like)+6,mcdonalds$k4,mean)
+like
+```
+
+
+```{r 21 segmentation}
+# Create the gender variable
+female <- tapply((mcdonalds$Gender=="Female")+0,mcdonalds$k4,mean)
+female
+```
+
+
+```{r 21 segmentation}
+# Make segment evaluation plot
+plot(visit, like, cex = 10 * female,xlim = c(2, 4.5), ylim = c(-3, 3))
+text(visit, like, 1:4)
+
+```
+
+#IV Segmentation
+## McD Example
+
+```{r}
+# R script for the analysis of the McDonald's example in LCA I lecture
 library("flexclust")
-# install.package(clue) - should be installed as part of the flexclust but isn't
-library("partykit")
+library("flexmix")
 rm(list=ls())
 
 ## Preparation
@@ -355,17 +548,15 @@ round(colMeans(MD.x), 2)
 # PCA and perceptual map
 MD.pca <- prcomp(MD.x)
 summary(MD.pca)
---
 print(MD.pca, digits = 1)
 plot(predict(MD.pca), col = "grey")
 projAxes(MD.pca)
 
 ## Extracting segments
-# k-means
+# k-Means
 set.seed(28)
 MD.km28 <- stepFlexclust(MD.x, 2:8, nrep = 10,verbose = FALSE)
 plot(MD.km28, xlab = "number of segments")
---
 # Segment stability within the same number of segments
 set.seed(1234)
 MD.b28 <- bootFlexclust(MD.x, 2:8, nrep = 10,nboot = 100)
@@ -379,52 +570,22 @@ slsaplot(MD.km28)
 MD.k4 <- MD.km28[["4"]]
 MD.r4 <- slswFlexclust(MD.x, MD.k4)
 plot(MD.r4, ylim = 0:1, xlab = "segment number",ylab = "segment stability")
-
-## Profiling segments
-# Segment profile plot
-MD.vclust <- hclust(dist(t(MD.x)))
-barchart(MD.k4, shade = TRUE,which = rev(MD.vclust$order))
-# Segment separation plot
-plot(MD.k4, project = MD.pca, data = MD.x,hull = FALSE, simlines = FALSE,
-     xlab = "principal component 1",ylab = "principal component 2")
-projAxes(MD.pca)
-
-## Describing segments
-# Extract the segment membership for each consumer
-mcdonalds$k4 <- clusters(MD.k4)
-# Prepare the like/hate variable
-mcdonalds$like <- factor(mcdonalds$Like,levels=c("I love it!+5","+4","+3","+2","+1","0","-1","-2","-3","-4","I hate it!-5"))
-# Make mosaic plot of like/hate
-mosaicplot(table(mcdonalds$k4, mcdonalds$like), shade = TRUE,main = "", 
-           xlab = "segment number")
-# Make mosaic plot of gender
-mosaicplot(table(mcdonalds$k4, mcdonalds$Gender), shade = TRUE)
-boxplot(mcdonalds$Age ~ mcdonalds$k4,varwidth = TRUE, notch = TRUE)
-
-## Predict segment 3 membership using a classification tree
-# Prepare visit frequency variable
-mcdonalds$visitfrequency <- factor(mcdonalds$VisitFrequency,
-                                   levels=c("Never","Once a year","Every three months","Once a month","Once a week","More than once a week"))
-tree <- ctree(factor(k4==3) ~ like+Age+visitfrequency+factor(Gender),
-              data=mcdonalds)
-plot(tree)
-
-## Selecting (the) target segment(s)
-# Visit frequency is scored as 1=Never,...,6=More than once a week, 
-# not strictly aligned with the ratio properties hidden in the scale
-visit <- tapply(as.numeric(mcdonalds$visitfrequency),mcdonalds$k4,mean)
-visit
-# Turn the current like scale upside down and recenter 
-# (1=I love it,...,11=I hate it -> 5=I love it,...,-5=I hate it)
-like <- tapply(-as.numeric(mcdonalds$like)+6,mcdonalds$k4,mean)
-like
-# Create the gender variable
-female <- tapply((mcdonalds$Gender=="Female")+0,mcdonalds$k4,mean)
-female
-# Make segment evaluation plot
-plot(visit, like, cex = 10 * female,xlim = c(2, 4.5), ylim = c(-3, 3))
-text(visit, like, 1:4)
-
+# mixture distribution
+set.seed(1234)
+MD.m28 <- stepFlexmix(MD.x ~ 1, k = 2:8, nrep = 10, model = FLXMCmvbinary(), 
+                      verbose = FALSE)
+MD.m28
+plot(MD.m28,ylab = "value of information criteria (AIC, BIC, ICL)")
+MD.m4 <- getModel(MD.m28, which = "4")
+table(kmeans = clusters(MD.k4),mixture = clusters(MD.m4))
+MD.m4a <- flexmix(MD.x ~1, cluster = clusters(MD.k4),model = FLXMCmvbinary())
+table(kmeans = clusters(MD.k4),mixture = clusters(MD.m4a))
+logLik(MD.m4a)
+logLik(MD.m4)
 ```
+
+
+
+
 
 
