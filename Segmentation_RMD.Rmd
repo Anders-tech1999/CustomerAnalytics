@@ -393,7 +393,7 @@ Rotation matrix:
 Example (original variable yummy on PC1):
 - The attribute "yummy" has a strong positive loading on PC1 (0.4769) and a strong negative loading on PC9 (-0.5724), which means "yummy" is an important attribute that defines the direction of PC1 and PC9.
 
-```{r 21 segmentation}
+```{r PCA loading-plot}
 plot(predict(MD.pca), col = "grey")
 projAxes(MD.pca)
 ```
@@ -404,80 +404,139 @@ projAxes(MD.pca)
 
 It is seen that "tasty" and "yummy" point in a similar direction, suggesting they contribute similarly to the dataset's variance and are likely correlated. Conversely, "expensive" points in a roughly opposite direction to "cheap", indicating they are negatively correlated. The plot also suggests that attributes like "disgusting" and "fattening" may not be strongly related to the primary variance within the data, as their vectors are shorter and closer to the center of the plot.
 
-BOOKMARK 18/4-24
 
-```{r 21 segmentation}
+```{r k-means Within-cluster distances Plot }
 ## Extracting segments
 # k-means
 set.seed(28)
-MD.km28 <- stepFlexclust(MD.x, 2:8, nrep = 10,verbose = FALSE)
+MD.km28 <- stepFlexclust(MD.x, 2:8, nrep = 10,verbose = FALSE) #compute k-means clustering on the matrix MD.x. The function is likely a stepwise routine that evaluates the optimal number of clusters ranging from 2 to 8.
+#nrep = 10 indicates that each k-means operation is repeated 10 times to avoid local minima. 
+#verbose = FALSE suppresses the printing of additional output during the computations
+
 plot(MD.km28, xlab = "number of segments")
 ```
+Plot: 
+- bar chart that displays the sum of within-cluster distances for each number of clusters tested (from 2 to 8). Ideally, one looks for a "elbow" in the plot where the rate of decrease sharply changes, suggesting a natural grouping in the data. This "elbow" is often considered as an indicator of the optimal number of clusters to use.
 
-
-```{r 21 segmentation}
+Bootstrapping method for evaluating k-means clustering along with a boxplot visualizing the results
+```{r Adj Rand index - bootstrap evaluating k-means}
 # Segment stability within the same number of segments
+#long compuation time!
 set.seed(1234)
-MD.b28 <- bootFlexclust(MD.x, 2:8, nrep = 10,nboot = 100)
+MD.b28 <- bootFlexclust(MD.x, 2:8, nrep = 10,nboot = 100) #a bootstrapping method for k-means clustering on the dataset MD.x
+#nrep = 10 parameter indicates that the clustering should be repeated 10 times for stability, '
+#nboot = 100 indicates that 100 bootstrap resamples should be used to assess the stability of the clustering solution.
+
 plot(MD.b28, xlab = "number of segments",ylab = "adjusted Rand index")
 ```
+Boxplot 
+- visualizes the distribution of the adjusted Rand index for each number of segments (2 through 8). This plot can help determine the number of clusters that yield the most stable and consistent partitioning of the data by looking for the number of segments that consistently show high adjusted Rand index values
+- observe the median, spread, and outliers of the adjusted Rand index across the different cluster solutions. The choice of the optimal number of segments might be influenced by looking for the highest median adjusted Rand index with the smallest interquartile range, indicating a stable and reliable clustering solution.
+From this boxplot, a 4-cluster solution is evaluated as the most optimal amount of clusters: adjusted rand index= approx 0.75, no outliers etc?
 
+Gorge plots -	For well-separated segments there should mainly be many low and many high similarity measures – hence the name (gorge/kløft)
+```{r Gorge plot}
+MD.km28 <- relabel(MD.km28) #apply the reLabel function to the clustering object MD.km28. This function is typically used to reorder the labels of the clusters for clarity or based on some criteria, although the specific behavior depends on the implementation within the package being used
 
-```{r 21 segmentation}
-# Gorge plot
-MD.km28 <- relabel(MD.km28)
-histogram(MD.km28[["4"]], data = MD.x, xlim = 0:1)
-#the plots should look like a gorge
+histogram(MD.km28[["4"]], data = MD.x, xlim = 0:1) #using 4 clusters in this specific example
+#xlim = 0:1 sets the limits for the x-axis from 0 to 1, assuming the similarity scores are normalized to this range.
 ```
+Gorge plots (histograms):
+- These histograms can help in interpreting the structure of the clusters. For example, a cluster with many high similarity scores (bars towards the right of the histogram) contains data points that are very similar to each other, indicating a tight and well-defined cluster. Conversely, a cluster with scores spread across the range might be less well-defined or could contain subgroups.
+- the y-axis is labeled "Percent of Total", indicating that the histograms show the distribution of the similarity scores as a percentage of the total number of scores within each cluster. 
+- the x-axis is labeled "similarity", denoting the range of similarity scores from 0 to 1.
 
-
-```{r 21 segmentation}
+SLS_A plot - Segment Level Stability Across solutions - plot
+```{r SLS_A plot - Segment Level Stability Across solutions}
 # Segment level stability across solutions
 slsaplot(MD.km28)
+
 ```
+SLS_A plot:
+- The links (or bands) between the nodes show how many data points from each cluster in one solution correspond to clusters in another solution. In this case, it likely shows how segments in a lower number of clusters (on the left) are combined or split as the number of clusters increases (moving to the right).
+- thickness of the bands is proportional to the number of data points that follow that path, illustrating the size of the clusters and the movement of data points between them. A stable clustering will have stronger, more direct paths, while a less stable one will show a more complex network of paths, indicating that the data points are being reassigned to different clusters across solutions.
+- This visualization is valuable for assessing the robustness of clustering. If many data points maintain their cluster membership across different solutions, it indicates that the clustering is stable and likely meaningful. If there is a lot of reassignment across solutions, it suggests that the cluster structure is not as clear-cut.
 
 
-```{r 21 segmentation}
+```{r Specific X-cluster(4) - }
 # Save the four-segment solution
-MD.k4 <- MD.km28[["4"]]
-MD.r4 <- slswFlexclust(MD.x, MD.k4)
+MD.k4 <- MD.km28[["4"]] #defining the amount of clusters
+MD.r4 <- slswFlexclust(MD.x, MD.k4) #function slsWFlexclust is applied to the dataset MD.x and the four-cluster solution MD.k4.
+
 plot(MD.r4, ylim = 0:1, xlab = "segment number",ylab = "segment stability")
 ```
+Specific X-cluster boxplot:
+- boxplot shows the distribution of stability values for each of the four segments. In a boxplot, the box represents the interquartile range (IQR), which contains the middle 50% of the data. The line inside the box represents the median value. The whiskers represent the range of the data within 1.5 times the IQR above and below the box. Points outside this range are considered outliers and are plotted as individual points.
+e.g.:
+- Segment 1 seems to have higher median stability and less variability than the other segments, as shown by the narrow box.
+- Segment 4 shows a lower median stability and more variability in stability, as indicated by the wider box and the presence of outliers.
+- Segments 2 and 3 have moderate stability with some variability, as indicated by their median and the spread of the IQR.
 
 
-```{r 21 segmentation}
-## Profiling segments
-# Segment profile plot
-MD.vclust <- hclust(dist(t(MD.x)))
-barchart(MD.k4, shade = TRUE,which = rev(MD.vclust$order))
+```{r Segment Profile Plot - Profiling segments}
+MD.vclust <- hclust(dist(t(MD.x))) #performs hierarchical clustering on the transpose of the matrix MD.x. Hierarchical clustering is a method of cluster analysis which seeks to build a hierarchy of clusters. The dist function calculates the distance matrix between the rows of MD.x (which become columns after the transpose operation), and hclust is then used to create a hierarchical clustering from that distance matrix. The result is stored in MD.vclust.
+
+barchart(MD.k4, shade = TRUE,which = rev(MD.vclust$order)) #generates a barchart using the object MD.k4, which likely contains the clustering output from a previous k-means analysis. 
+#shade = TRUE argument adds shading to the bars to give a visual indication of significance or magnitude. 
+#which = rev(MD.vclust$order) argument reorders the barchart to match the order of clusters determined by the hierarchical clustering object MD.vclust. This reordering is done in reverse (rev) to perhaps match a specific ordering convention or for better visual clarity.
 ```
+Segment profile plot:
+- a set of barcharts that profile attributes across four different clusters. For each cluster, the attributes are listed along the y-axis, and the x-axis represents some measure related to the attribute, typically its frequency or importance within the cluster. 
+- each bar might represent the mean value of the attribute within the cluster, and the red dot could indicate the median value or a special data point like an outlier.
+- the numbers at the top of each barchart (e.g., Cluster 1: 499 (34%)) likely indicate the number of observations within each cluster and the percentage of the total dataset that each cluster represents.
 
-
-```{r 21 segmentation}
-# Segment separation plot
+Segmentation separation plot: 
+- scatterplot for visualizing the separation of segments (or clusters) that were identified in a dataset, overlaid with the loadings of the attributes on the first two principal components from a PCA analysis.
+```{r # Segment separation plot }
 plot(MD.k4, project = MD.pca, data = MD.x,hull = FALSE, simlines = FALSE,
-     xlab = "principal component 1",ylab = "principal component 2")
-projAxes(MD.pca)
+     xlab = "principal component 1",ylab = "principal component 2") #generates a scatter plot of the clusters defined in MD.k4, projecting the data points onto the first two principal components from MD.pca. 
+#data = MD.x argument indicates the dataset used for the PCA. 
+#hull = FALSE parameter suggests that convex hulls are not drawn around the clusters
+#simlines = FALSE means that similarity lines (often used to connect similar items) are not drawn.
+
+projAxes(MD.pca) # function, projAxes, is typically used to overlay the principal component loadings onto the plot. In this context, it probably adds the vectors that represent the directions and magnitudes of the original variables (attributes like "tasty", "cheap", "expensive", etc.) in the space defined by the first two principal components.
 ```
+Segmentation separation plot:
+- shows the data points from the dataset, with each point representing a single observation and the shape/color likely corresponding to the cluster to which the observation has been assigned.
+- includes vectors that represent how each attribute aligns with the principal components. For instance, an attribute pointing towards the right on the x-axis (principal component 1) has a strong positive loading on that component, whereas an attribute pointing upwards on the y-axis (principal component 2) has a strong positive loading on the second component.
+- helps to interpret the PCA by showing which attributes are most characteristic of each principal component, and also demonstrates the relationships between the clusters and the attributes.
 
-
-```{r 21 segmentation}
-## Describing segments
+Mosaic plot - Describing segments:
+- extracting membership of segments for each consumer and creating a mosaic plot to describe the segments in terms of consumer opinions
+```{r Mosaic plot - Describing segments }
 # Extract the segment membership for each consumer
-mcdonalds$k4 <- clusters(MD.k4)
+mcdonalds$k4 <- clusters(MD.k4) # extracts the cluster membership for each data point from the MD.k4 object, which presumably contains a k-means clustering result. The cluster membership for each data point (each consumer) is then stored in a new column $k4 of the mcdonalds data frame.
+
 # Prepare the like/hate variable
-mcdonalds$like <- factor(mcdonalds$Like,levels=c("I love it!+5","+4","+3","+2","+1","0","-1","-2","-3","-4","I hate it!-5"))
+mcdonalds$like <- factor(mcdonalds$Like,levels=c("I love it!+5","+4","+3","+2","+1","0","-1","-2","-3","-4","I hate it!-5")) #converts the like column of the mcdonalds data frame into a factor with ordered levels. These levels represent a scale of preference, from "I love it!+5" to "I hate it!-5", suggesting that there is an original numerical scale of -5 to +5, where +5 signifies strong liking and -5 signifies strong disliking.
+
 # Make mosaic plot of like/hate
 mosaicplot(table(mcdonalds$k4, mcdonalds$like), shade = TRUE,main = "", 
-           xlab = "segment number")
+           xlab = "segment number") #mosaic plot is created from the cross-tabulation of mcdonalds$k4 and mcdonalds$like. The shade = TRUE argument indicates that the cells of the mosaic plot will be shaded according to the standardized residuals, which highlight the cells that have higher or lower counts than expected under independence.
 ```
+Mosaic plot - Describing segments:
+- each column represents a segment, and each color-coded row represents a level of the "like" variable. 
+- the size of each colored block within the columns is proportional to the count of respondents in each like/dislike level for each segment. 
+- this plot is a visual representation of the distribution of the like/dislike levels across different segments.
 
 
-```{r 21 segmentation}
-# Make mosaic plot of gender
+```{r Gender - Boxplot + Mosaic plot}
 mosaicplot(table(mcdonalds$k4, mcdonalds$Gender), shade = TRUE)
-boxplot(mcdonalds$Age ~ mcdonalds$k4,varwidth = TRUE, notch = TRUE)
+
+boxplot(mcdonalds$Age ~ mcdonalds$k4,varwidth = TRUE, notch = TRUE) # formula indicates that the boxplot should compare the age variable (likely the age of the customers) across the different clusters specified in mcdonalds$k4.
+#varwidth = TRUE: This argument specifies that the width of the boxplots should be proportional to the square root of the number of observations in the cluster. This helps visualize the relative sizes of the clusters.
+#notch = TRUE: This argument adds notches to the boxplots. Notches are useful for assessing the significance of the difference between medians; if the notches of two boxes do not overlap, this suggests that the medians are significantly different.
 ```
+Gender mosaic plot:
+- same structure as "describing segments - mosaic plot"
+- Distribution of gender in each of the segments/clusters
+
+Gender Box-plot
+- y-axis represents the ages of the respondents. 
+- the variation in box widths suggests that the number of respondents varies across the clusters. 
+- the presence of notches around the medians indicates where the medians lie and whether they might be significantly different from one another.
+
+BOOKMARK 22/4-24 
 
 
 ```{r 21 segmentation}
