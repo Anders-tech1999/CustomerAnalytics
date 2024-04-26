@@ -1,0 +1,296 @@
+---
+title: "II_ProductRecommendationCustTarget"
+output: html_document
+date: "2024-04-26"
+---
+
+#Association rules mining
+## a
+```{r}
+#install.packages("arules")
+```
+
+```{r a }
+library(arules)
+rm(list=ls())
+
+# Load the grocery data
+data(Groceries)
+# Have a look at the data set/container
+summary(Groceries)
+# Have a look at the transactions
+inspect(head(Groceries,3))
+# Look at the more frequent items
+tail(sort(itemFrequency(Groceries)),30)
+itemFrequencyPlot(Groceries,support=0.01,cex.names=1.0)
+# Extract association rules
+groc.rules <- apriori(Groceries, parameter=list(supp=0.01, conf=0.3,
+                                                target="rules"))
+# Filter the rules such that they have a lift above 3
+inspect(subset(groc.rules, lift > 3))
+```
+
+
+## b
+```{r}
+#install.packages("car")
+#install.packages("arulesViz")
+```
+
+```{r b }
+library(arules)
+rm(list=ls())
+
+## Load, inspect, and prepare data for mining
+# Load the supermarket data
+retail.raw <- readLines("http://goo.gl/FfjDAO")
+
+# Have a look at the data set/container
+head(retail.raw);tail(retail.raw)
+summary(retail.raw)
+# Prepare for mining
+retail.list <- strsplit(retail.raw, " ")
+# And check the result
+str(retail.list)
+# Assign a name to each row/transaction
+names(retail.list) <- paste("Trans", 1:length(retail.list), sep="")
+# Look at a randomly chosen element
+library(car)
+set.seed(1234)
+some(retail.list)
+# Remove original data
+rm(retail.raw)
+# Transform the data to a transactions object
+retail.trans <- as(retail.list, "transactions") # takes a few seconds
+summary(retail.trans)
+# Remove data in list format
+rm(retail.list)
+
+## Find and visualize association rules
+# Extract association rules
+retail.rules <- apriori(retail.trans, parameter=list(supp=0.001, conf=0.4))
+library(arulesViz)
+# Plot the resulting rules
+plot(retail.rules)
+# Interactive plot - select area by marking two opposite corners of a rectangle
+#plot(retail.rules, engine="interactive")
+# Find the subset of rules with highest lift
+retail.hi <- head(sort(retail.rules, by="lift"), 50)
+inspect(retail.hi)
+# Plot this subset
+plot(retail.hi, method="graph",engine = "htmlwidget")
+
+## Prepare the introduction of item profitability (margin)
+# First get item names
+retail.itemnames <- sort(unique(unlist(as(retail.trans, "list"))))
+head(retail.itemnames); tail(retail.itemnames)
+# Simulate per-item margin data
+set.seed(03870)
+retail.margin <- data.frame(margin=rnorm(length(retail.itemnames),
+                                         mean=0.30, sd=0.30))
+# Inspect margin data
+quantile(retail.margin$margin)
+# Adjust rownames
+rownames(retail.margin) <- retail.itemnames
+head(retail.margin); tail(retail.margin)
+some(retail.margin)
+# Find the margin for the items in basket {39,48} and their sum
+retail.margin[c("39", "48"), ]
+sum(retail.margin[c("39", "48"), ])
+# Get items in third transaction and calculate sum of their margins
+(basket.items <- as(retail.trans[3], "list")[[1]])
+retail.margin[basket.items, ]
+sum(retail.margin[basket.items, ])
+# Make a more generic function to do the calculations
+retail.margsum <- function(items, itemMargins) {
+  # Input: 
+  #     "items" == item names, rules or transactions in arules format
+  #     "itemMargins" == a data frame of profit margin indexed by name
+  # Output: 
+  #     look up the item margins, and return the sum
+  library(arules)
+  # check the class of "items" and coerce appropriately to an item list
+  if (class(items) == "rules") {
+    tmp.items <- as(items(items), "list") # rules ==> item list
+  } else if (class(items) == "transactions") {
+    tmp.items <- as(items, "list") # transactions ==> item list
+  } else if (class(items) == "list") {
+    tmp.items <- items # it’s already an item list!
+  } else if (class(items) == "character") {
+    tmp.items <- list(items) # characters ==> item list
+  } else {
+    stop("Don’t know how to handle margin for class ", class(items))
+  }
+  # make sure the items we found are all present in itemMargins
+  good.items <- unlist(lapply(tmp.items, function (x)
+    all(unlist(x) %in% rownames(itemMargins))))
+  if (!all(good.items)) {
+    warning("Some items not found in rownames of itemMargins. ",
+            "Lookup failed for element(s):\n",
+            which(!good.items), "\nReturning only good values.")
+    tmp.items <- tmp.items[good.items]
+  }
+  # and add them up
+  return(unlist(lapply(tmp.items, function(x) sum(itemMargins[x, ]))))
+}
+# Test the new function supplying the items in various formats
+retail.margsum(c("39", "48"), retail.margin)
+retail.margsum(list(t1=c("39", "45"), t2=c("31", "32")), retail.margin)
+retail.margsum(retail.trans[101:103], retail.margin)
+retail.margsum(retail.hi, retail.margin)
+retail.margsum(c("hello", "world"), retail.margin) # error!
+retail.margsum(list(a=c("39", "45"), b=c("hello", "world"), c=c("31", "32")),
+               retail.margin) # only the first and third are OK
+```
+
+## c
+```{r}
+#install.packages("readxl")
+#install.packages("plyr")
+#install.packages("tidyverse")
+#install.packages("RColorBrewer")
+```
+
+```{r c }
+# https://www.datacamp.com/community/tutorials/market-basket-analysis-r
+library(readxl)
+library(plyr)
+library(tidyverse)
+library(arules)
+library(arulesViz)
+library(RColorBrewer)
+rm(list=ls())
+
+#### READ IN THE DATA AND PREPARE IT ######
+# Read excel into R dataframe.
+#retail <- read_excel('Online_Retail.xlsx') first not working dataload
+library(readxl)
+retail <- read_excel("C:/Users/Bruger/OneDrive - Aarhus universitet/8. semester - BI/CA - Customer Analytics/II Product Recommendation + Customer Targeting/Online_Retail.xlsx")
+# Complete.cases(data) will return a logical vector indicating which rows have
+
+# no missing values. Then use the vector to get only rows that are complete 
+# using retail[,].
+retail <- retail[complete.cases(retail), ]
+# Mutate function is from dplyr package. It is used to edit or add new columns 
+# to dataframe. Here Description column is being converted to factor column. 
+# as.factor converts column to factor column. %>% is an operator with which you 
+# may pipe values to another function or expression.
+retail <- retail %>% 
+  mutate(Description = as.factor(Description)) %>%
+  mutate(Country = as.factor(Country)) %>%
+  mutate(Date=as.Date(InvoiceDate)) %>%
+  mutate(TransTime = format(InvoiceDate,"%H:%M:%S")) #%>% 
+#  mutate(InvoiceNo = as.numeric(as.character(InvoiceNo))) 
+# Get a glimpse of your data.
+glimpse(retail) 
+
+# What you need to do is group data in the retail dataframe either by 
+# CustomerID, CustomerID, and Date or you can also group data using InvoiceNo 
+# and Date. We need this grouping and apply a function on it and store the 
+# output in another dataframe.
+# This can be done by ddply.
+# The following lines of code will combine all products from one InvoiceNo and 
+# date and combine all products from that InvoiceNo and date as one row, with 
+# each item, separated by ','.
+# ddply(dataframe, variables_to_be_used_to_split_data_frame, function_to_be_applied)
+# The R function paste() concatenates vectors to character and separated 
+# results using collapse=[any optional character string ]. Here ',' is used.
+transactionData <- plyr::ddply(retail,c("InvoiceNo","Date"),
+                         function(df1)paste(df1$Description,collapse = ","))
+head(transactionData)
+# Set column InvoiceNo of dataframe transactionData.
+transactionData$InvoiceNo <- NULL 
+# Set column Date of dataframe transactionData.
+transactionData$Date <- NULL 
+# Rename column to items.
+colnames(transactionData) <- c("items") 
+head(transactionData)
+# TransactionData: Data to be written
+# "market_basket.csv": location of file with file name to be written to.
+# quote: If TRUE it will surround character or factor column with double 
+# quotes. If FALSE nothing will be quoted.
+# row.names: either a logical value indicating whether the row names of x are 
+# to be written along with x, or a character vector of row names to be written.
+write.csv(transactionData,"market_basket_transactions.csv", quote = FALSE, 
+          row.names = FALSE)
+
+
+#### READ IN THE DATA TO ARULES ######
+# sep tell how items are separated. In this case you have separated using ','
+# tr #is the result of reading the data into Arules)
+tr <- read.transactions('market_basket_transactions.csv', format = 'basket', 
+                        sep=',')
+
+
+##### SUMMARY ######
+summary(tr)
+
+
+##### ITEM FREQUENCY ######
+# Create an item frequency plot for the top 20 items
+if (!require("RColorBrewer")) {
+  # install color package of R
+  #install.packages("RColorBrewer")
+  #include library RColorBrewer
+#  library(RColorBrewer)
+}
+itemFrequencyPlot(tr,topN=20,type="absolute",col=brewer.pal(8,'Pastel2'), 
+                  main="Absolute Item Frequency Plot")
+itemFrequencyPlot(tr,topN=20,type="relative",col=brewer.pal(8,'Pastel2'),
+                  main="Relative Item Frequency Plot")
+
+
+##### LOOK FOR ASSOCIATION RULES ######
+# Min Support as 0.001, confidence as 0.8.
+# We will maximum look at 10 items, so maximum length of a set is 10.
+association.rules <- apriori(tr, 
+                             parameter = list(supp=0.001, conf=0.8,maxlen=10))
+summary(association.rules)
+#inspect the 10 first association rules
+inspect(association.rules[1:10]) 
+# Limiting the number and size of rules
+shorter.association.rules <- apriori(tr, 
+                                     parameter = list(supp=0.001, conf=0.8,maxlen=3))
+# Removing redundant rules - get subset rules in vector
+subset.rules <- which(colSums(is.subset(association.rules,association.rules))>1) 
+length(subset.rules)  #> 3913
+# Remove subset rules.
+subset.association.rules. <- association.rules[-subset.rules] 
+# We can sort the rules by lift.
+sortedRules <- sort(association.rules,by="lift",decreasing=TRUE)
+inspect(sortedRules[1:10]) 
+
+
+##### MORE SPECIFIC SEARCH OF RULES ######
+# For example, to find what customers buy before buying 'METAL' run the 
+# following line of code
+# lhs = antecedents of metal the left hand side is the unknown
+metal.association.rules <- apriori(tr, parameter = list(supp=0.001, conf=0.8),
+                                   appearance = list(default="lhs",rhs="METAL"))
+# We get five association rules telling us what customers buy, that might lead 
+# to buying metal as well.
+inspect(metal.association.rules)
+# Similarly, to find the answer to the question Customers who bought METAL 
+# also bought.... you will keep METAL on lhs:
+# rhs = consequence (decendent)
+metal.association.rules <- apriori(tr, parameter = list(supp=0.001, conf=0.8),
+                                   appearance = list(lhs="METAL",default="rhs"))
+# Decoration -> Metal and Metal -> Decoration have the same support, lift, 
+# and confidence. 
+inspect(head(metal.association.rules))
+
+
+##### VISUALIZING ASSOCIATION RULES #####
+# Filter rules with confidence greater than 0.4 or 40%.
+# The plot shows that rules with high lift have low support. You can use the 
+# following options for the plot.
+subRules<-association.rules[quality(association.rules)$confidence>0.4]
+#Plot SubRules the more red color, the higher is the lift.
+plot(subRules)
+# Interactive plots. The order is the number of items in the rule
+plot(subRules,method="two-key plot")
+# Plot the top 10 (n=10)
+top10subRules <- head(subRules, n = 10, by = "confidence")
+plot(top10subRules, method = "graph",  engine = "htmlwidget")
+```
+
