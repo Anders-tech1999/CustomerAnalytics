@@ -1,0 +1,895 @@
+---
+title: "Explain Customer Behavior"
+output: html_document
+date: "2024-05-07"
+---
+
+#FACTOR ANALYSIS + SEM (Alina)
+
+## chapter_13-FactorAnalysis (1).R
+
+This file contains all code examples from chapter 13 in Mehmetoglu & Mittner (2021). Applied Statistics Using R. SAGE.
+
+```{r}
+install.packages("psych")
+```
+
+
+```{r}
+## setup
+library(tidyverse)
+#library(astatur) - NOT AVAILABLE
+#theme_set(theme_astatur()) - NOT AVAILABLE
+library(readr)
+#workout3_1_ <- read_csv("C:/Users/Bruger/OneDrive - Aarhus universitet/8. semester - BI/CA - Customer Analytics/Explain Customer Behavior/workout3 (1).rda")
+
+library(readr)
+workout2_imputed <- read_csv("C:/Users/Bruger/OneDrive - Aarhus universitet/8. semester - BI/CA - Customer Analytics/Explain Customer Behavior/workout2_imputed.csv")
+```
+
+
+```{r}
+#data
+load("C:/Users/Bruger/OneDrive - Aarhus universitet/8. semester - BI/CA - Customer Analytics/Explain Customer Behavior/workout3 (1).rda")
+library(dplyr)
+workout3_comp <- filter(workout3,
+                        complete.cases(workout3))
+```
+
+
+```{r i) parallel analysis }
+#determine the number of factors (see other criteria in the course)
+library(psych)
+paranalysis <- fa.parallel(workout3_comp, 
+      fm="pa", fa="fa", SMC="TRUE")
+print(paranalysis)
+```
+
+
+```{r ii) squared multiple correlations }
+#(SMC are commonalities at the first iteration)
+squaredmc <- smc(workout3_comp)
+squaredmc
+mean(squaredmc)
+```
+
+```{r Extract factors }
+library(psych) 
+fmodel1 <- fa(workout3_comp,
+              nfactors = 2, 
+              fm="pa",
+              rotate = "varimax")
+
+print(fmodel1$n.obs)
+print(fmodel1$loadings, digits=4, cutoff=0) 
+# for better interpretation play with cutoff
+```
+
+```{r Factor and variable relationship }
+#relationship between factors and variables geometrically
+fa.plot(fmodel1)
+```
+
+
+```{r Commonalities after estimation }
+#commonalities after estimation
+comm <- fmodel1$communality
+comm
+#total variance explained
+sum(comm)
+# [1] 4.772239; in PCA it would be 6 (6X1)
+```
+
+
+```{r Eigenvalues Communalities Uniqueness }
+#diving the eigenvalues by the total variance explained
+shareFactor1 = 2.42/4.77
+shareFactor2 = 2.36/4.77
+
+#communilities and uniquenesses
+cbind(h2=fmodel1$communality, u2=fmodel1$uniquenesses)
+```
+
+
+```{r Estimated factor scores }
+#estimated factor scores
+fmodel1$scores
+```
+
+
+```{r Generated factor scores }
+#generated factors scores (average of the var expressing each factor)
+itemlist <- list(relaxation=c("Var1","Var2","Var3"),
+                 appearance=c("Var4","Var5","Var6"))
+summateds <- scoreItems(itemlist, workout3_comp, 
+                         min=1, max=6, totals = FALSE)
+factordata <- as.data.frame(summateds$scores)
+summateds
+factordata
+```
+
+
+```{r adding new variables }
+# add new var to the dataset
+workout3_comp <- cbind(workout3_comp, factordata)
+names(workout3_comp)
+```
+
+```{r Cronbach alpha }
+#Cronbach´s alpha coef
+relaxation <- data.frame(workout3_comp[,1:3])
+psych::alpha(relaxation)$total$std.alpha
+
+appearance <- data.frame(workout3_comp[,4:6])
+psych::alpha(appearance)$total$std.alpha
+```
+
+## Chapter_14-StructuralEq.R
+
+This file contains main code from chapter 14 in Mehmetoglu & Mittner (2021). Applied Statistics Using R. SAGE.
++ more discussion 
++ moderation effects (multigroup analysis)
+
+```{r huge package load}
+# to extract data
+#install.packages("devtools")
+#devtools::install_github("ihrke/astatur")
+```
+
+```{r}
+## setup
+library(tidyverse)
+library(astatur) 
+library(lavaan)
+
+# data
+workout2<- astatur::workout2
+glimpse(workout2)
+
+library(readr)
+workout2_imputed <- read_csv("C:/Users/Bruger/OneDrive - Aarhus universitet/8. semester - BI/CA - Customer Analytics/Explain Customer Behavior/workout2_imputed.csv")
+```
+
+
+```{r}
+# read hypotheses (p. 395) and poposed model (p. 396)
+
+## cfa
+meas.lpa.mod <- '
+                Attractive =~ face + sexy
+                Appearance =~ body + appear + attract
+                Muscle =~ muscle + strength + endur
+                Weight =~ lweight + calories + cweight
+                '
+est.meas.lpa.mod <- cfa(meas.lpa.mod, data=workout2)
+summary(est.meas.lpa.mod, fit.measures=TRUE, standardized=TRUE)
+```
+
+
+```{r}
+# fit not acceptable
+modindices(est.meas.lpa.mod, minimum.value = 3.84)
+# 107     muscle ~~    endur 20.263 -0.553  -0.553   -0.585   -0.585
+# 90        body ~~  lweight 16.845 -0.285  -0.285   -0.354   -0.354
+# 111   strength ~~    endur 27.772  0.577   0.577    1.042    1.042. 
+# high MI but not mentioned in the textbook
+```
+
+
+```{r}
+## modified cfa (allowing correlations between the error variances - this is not
+## considered good practice and it reveals the data is not good quality - but we
+# keep to the case study for this demo)
+meas.lpa.mod2 <- '
+                Attractive =~ face + sexy
+                Appearance =~ body + appear + attract
+                Muscle =~ muscle + strength + endur
+                Weight =~ lweight + calories + cweight
+                muscle ~~ endur 
+                lweight ~~ body'
+# strength ~~ endur is not incl. to avoid negative variance
+
+est.meas.lpa.mod2 <- cfa(meas.lpa.mod2, data=workout2)
+summary(est.meas.lpa.mod2, fit.measures=TRUE, standardized=TRUE)
+# acceptable fit
+```
+
+
+```{r}
+# convergent and discriminnat analysis, and scale reliability
+# loadings all high and sig.
+condisc(est.meas.lpa.mod2)
+relicoef(est.meas.lpa.mod2)
+# all tests are in line with recommendations
+```
+
+
+```{r}
+# structural part
+full.lpa.mod <- '
+              #Measurement model 
+                Attractive =~ face + sexy
+                Appearance =~ body + appear + attract
+                Muscle =~ muscle + strength + endur
+                Weight =~ lweight + calories + cweight
+                muscle ~~ endur 
+                lweight ~~ body
+                Muscle ~~ 0*Weight #set covariance to 0          # note extra assumption
+              #Structural model 
+                Appearance ~ Attractive
+                Muscle ~ Appearance
+                Weight ~ Appearance
+                '
+est.full.lpa.mod <- sem(full.lpa.mod, data=workout2)
+summary(est.full.lpa.mod, fit.measures=TRUE, standardized=TRUE)
+# check fit
+
+# Go to output Regressions: and interpret sign, significance and size of the path coefficients
+# here basically we assess our theoretical hypotheses
+# guidelines: 
+  # 0.09 small effects
+  # 0.1-0.2 medium effects
+  # 0.2 and above large effects
+```
+
+
+```{r}
+#get R-squares
+inspect(est.full.lpa.mod, what="rsquare")
+```
+
+```{r}
+install.packages("lavaanPlot")
+```
+
+
+```{r}
+# plot
+library(lavaanPlot)
+lavaanPlot(model = est.full.lpa.mod, 
+           node_options = list(shape = "box", 
+                               fontname = "Helvetica"), 
+           edge_options = list(color = "grey"), 
+           coefs = TRUE, covs=TRUE, 
+           stand=TRUE, sig=.05, stars="regress")
+# - summarize the findings
+```
+
+
+```{r}
+# assess indirect effects and mediation 
+full.lpa.mod2 <- '
+              #Measurement model (latent variables)
+                Attractive =~ face + sexy
+                Appearance =~ body + appear + attract
+                Muscle =~ muscle + strength + endur
+                Weight =~ lweight + calories + cweight
+                muscle ~~ endur 
+                lweight ~~ body
+                Muscle ~~ 0*Weight #set covariance to 0
+              #Structural model (regressions)
+                Appearance ~ a*Attractive
+                Muscle ~ b1*Appearance
+                Weight ~ b2*Appearance
+              #Indirect effects
+                #of Attraction on Muscle
+                ind1 := a*b1 
+                #of Attraction on Weight
+                ind2 := a*b2 
+                '
+est.full.lpa.mod2 <- sem(full.lpa.mod2, data=workout2)
+summary(est.full.lpa.mod2, standardized=TRUE)
+```
+
+
+```{r}
+# recheck with se="bootstrap"
+est.full.lpa.mod2 <- sem(full.lpa.mod2, data=workout2, se="bootstrap")
+summary(est.full.lpa.mod2, standardized=TRUE)
+
+# assess moderating effects (moderation analysis)
+# If we have two groups of customers, women and men and want to see the differences between them
+# we can implement multigroups analysis
+```
+
+
+```{r}
+# for this example, I created a fictitious variable representing women and men in our sample
+# also I imputed the missing values 
+# upload the new data
+workout2_imputed <- read_csv("C:/Users/Bruger/OneDrive - Aarhus universitet/8. semester - BI/CA - Customer Analytics/Explain Customer Behavior/workout2_imputed.csv")
+imputed_data <- workout2_imputed
+```
+
+
+```{r}
+# Generate random binary variable
+# workout2$gender <- sample(0:1, nrow(workout2), replace = TRUE)
+# also as we have many missing I will impute with knn the values for this demo
+# library(mice)
+# imputed_data <- complete(mice(workout2, method = "pmm", m = 5))
+# write.csv(imputed_data, file="workout2_imputed.csv", row.names = FALSE)
+
+
+# cfa multigroup to assess configural invariance
+est.meas.lpa.mod_configural <- cfa(meas.lpa.mod, 
+                         data=imputed_data,
+                         group = "gender")
+summary(est.meas.lpa.mod_configural, fit.measures=TRUE, standardized=TRUE)
+# check output - not excellent but we have very small sample in each group
+# let us consider it acceptable.
+# We save this for later:
+    # Test statistic                               280.675
+    # Degrees of freedom                                76
+```
+
+
+```{r}
+# modified cfa multigroup - metric invariance (factor loadings are equal between groups)
+est.meas.lpa.mod_metric <- cfa(meas.lpa.mod, 
+                            data=imputed_data,
+                            group = "gender",
+                            group.equal = c("loadings"))
+summary(est.meas.lpa.mod_metric, fit.measures=TRUE, standardized=TRUE)
+
+# Test statistic                               288.578
+# Degrees of freedom                                83
+```
+
+
+```{r}
+# Test of difference in fit
+(Chisquare_Dif = 288.578 - 280.675)
+#[1] 7.903
+(df_Dif=83-76)
+#[1] 7
+(p_value <- 1 - pchisq(7.903, 7))
+# 0.341225 
+# Increase in chi-square is n.s., meaning that a model imposing equal loadings
+# performs equally good. Thus the loadings are not sig. different between groups
+# Therefore metric invariance is fulfilled.
+```
+
+
+```{r}
+# once configureal and metric invariance are established, we test SEM multi-group
+est.full.lpa.mod_MG <- sem(full.lpa.mod, 
+                           data=imputed_data, 
+                           group = "gender")
+summary(est.full.lpa.mod_MG)
+```
+
+
+```{r}
+# Go to output Regressions: and evaluate the size and sig. of path coefficients
+# Are they significantly different in the two groups? 
+# In other words, is gender a moderator?
+
+# Impose them to be equal and assess the modification in model fit (chi-square dif.)
+est.full.lpa.mod_eqpath <- sem(full.lpa.mod, 
+                           data=imputed_data, 
+                           group = "gender", 
+                           group.equal = c("regressions"))
+summary(est.full.lpa.mod_eqpath)
+```
+
+
+```{r}
+# Test of difference in fit
+(Chisquare_Dif = 224.756 - 222.613)
+#[1] 2.143
+(df_Dif=79-76)
+#[1] 3
+(p_value <- 1 - pchisq(2.143, 3))
+# 0.53
+# Conclusion: the increase in chi-square is n.s., meaning the model imposing equal path
+# coeficients is not signbiifcantly worse than the standard model 
+# Therefore, we conclude that paths are not significantly different between groups.
+# In other words, gender does not moderate the relationships between constructs.
+# For both women and men the relationships between constructs are the same.
+# Note: recall that we created gender. 
+# This is a demo and does not mean the results correspond to reality.
+```
+# ApplicationEFA_CFA_SEM_Lavaan.RMD
+THIS ONE HAS NOT BEEN PROCESSED YET!
+
+---
+title: "The relationships between Customer Perceptions and the Likelihood of Future Business"
+author: "Copyright: Ana Alina Tudoran"
+date: "12/01/2022"
+geometry: margin=0.9in  
+fontsize: 11pt
+output:
+  html_document: default
+  pdf_document: 
+  latex_engine: xelatex
+  word_document: default
+---
+
+##### 0. Problem & objective (we use the datafile from Hair et al., Multivariate Data Analysis, Pearson)
+HBAT is a manufacturer of paper products who sells products to two market segments: the newsprint industry and the magazine industry. The current market is very competitive, so the manufacturer wants to understand how its customers perceive the company and make purchasing decisions, in order to enforce customers loyalty. The manufacturer commissioned a study asking its customers to complete a questionnaire on a secure website. In total, 100 customers - purchasing managers from different firms - buying from HBAT completed the questionnaire. The data consist of three main pieces of information:
+&nbsp;
+&nbsp;
+
+•	A 1st type of information is available from HBAT́s data warehouse and includes information on:
+-	customer type in terms of length of purchase relationship (X1)
+-	industry type(X2)
+-	size of the customer(X3)
+-	region of the customer(X4) 
+-	distribution system(X5)
+
+•	The 2nd type of information is collected based on the online questionnaire and includes consumers’ perceptions of HBAT ́s performance on 13 attributes using a continuous 0-10 (line) scale with 10 being “Excellent” and 0 being “Poor”. The 13 attributes are:
+-	X6 Product quality
+-	X7 E-commerce
+-	X8 Technical support
+-	X9 Complaint resolution
+-	X10 Advertising
+-	X11 Product line
+-	X12 Salesforce image
+-	X13 Competitive pricing
+-	X14 Warranty and claims
+-	X15 Packaging
+-	X16 Order and billing
+-	X17 Price flexibility
+-	X18 Delivery speed
+
+• The 3rd type of information relates to purchase outcomes and business relationships:
+-	satisfaction with HBAT, future purchase intention etc.  (X19-X22)
+-	whether the firm would consider a strategic alliance/partnership with HBAT (X23).
+
+&nbsp;
+&nbsp;
+
+The dataset (HBAT.sav) consists of data for n = 100 customers. Each observation contains information on 23 variables described above. Consistent with the marketing theory, there is an underlying factor structure in the data. When designing the study, the company has clearly 4 types of factors in their mind. They expect that the customer satisfaction is determined by the following four type of perceptions: perceptions about the product value, perceptions about the marketing actions, perceptions about the customer service and perceptions about the technical support.These factors are abstract constructs that can be measured in a survey using multi-item scales. The following items define each construct:  
+
+- X18 Delivery Speed 
+- X9 Complain resolution
+- X16 Order and Billing,
+to express “Customer service” 
+
+- X11Product line
+- X6 Product quality
+- X13 Competing pricing,
+to express “Product value”
+
+- X12 Salesforce image
+- X7 E-commerce
+- X10 Advertising, 
+to express “Marketing” 
+
+- X8 Technical support 
+- X14 Warranty and claims,
+to express “Technical support”
+
+##### 1. Data uploading, etc. 
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+```{r}
+library(foreign)
+data <- read.spss("HBAT.sav", to.data.frame=TRUE)
+library(haven)
+HBAT <- read_sav("HBAT.sav")
+View(HBAT)
+```
+
+```{r}
+library(haven)
+HBAT <- read_sav("HBAT.sav")
+View(HBAT)
+```
+
+
+```{r}
+#install.packages("lavaan", dependencies=TRUE)
+library(lavaan)
+```
+```{r eval=FALSE}
+variable.names(data)
+VariableLabels <- unname(attr(data, "variable.labels"))
+# data.label.table <- attr(sav, "label.table") # if you load it with read_sav()
+summary(data)
+```
+
+##### 2. Check if Exploratory factor analysis (EFA) applies
+
+```{r eval=FALSE}
+# Look at their the coefficient of linear correlation
+cormatrix <- cor(data[, c(7:19)])
+round(cormatrix, 2)
+# Observe that most of the variables have a high correlation (>0.40 as a rule-of-thumb) with at least one of the others. x15 does not have decent correlation with any of the others; the analyst may decide to delete x15. If the analyst does not discover the problem here, it will be evident a few steps later. 
+```
+
+
+
+```{r eval=FALSE}
+#install.packages("psych")
+# Bartlett Sphericity Test. The null hypothesis is that the data dimension reduction is not possible. 
+# If p-value < 0.05, we reject the null hypothesis and apply FA. This test is sensitive to N.
+library(psych)
+print(cortest.bartlett(cor(data[, c(7:19)]), nrow(data[, c(7:19)])))
+```
+
+```{r eval=FALSE}
+# Kaiser-Meyer-Oklin Test (KMO). MSA overall should be .60 or higher to proceed with factor analysis
+library(psych)
+KMO(data[, c(7:19)])
+```
+x15 does not share much with the other variables. x6 does share 87% with other variables. Go primarily with overall MSA = 0.61
+
+&nbsp;
+&nbsp;
+
+
+##### 3. Apply EFA with Common Factor Analysis
+```{r eval=FALSE}
+#install.packages("nFactors")
+  # Extracting as many factors as variables and check eigenvalues 
+        library(nFactors)
+        ev <- eigen(cor(data[, c(7:19)]))
+        ev$values
+  # the first 4 factors have an eigenvalue >1
+        plot(ev$values, type="line")   
+  # the screeplot suggests 3 factors
+  # we go for 4 factors and see later if necessary to reduce this number
+
+
+
+  fit1 = factanal(~ x6 + x7 + x8 + x9 + x10 + x11 + x12 + x13 + x14 + x15 + x16 + x17 + x18, factors = 4, data = data, lower=0.1, rotation = "varimax") #we dont have responsevariable bevause of interdependence
+  # factanal() function can analyze raw data or a correlation matrix or covariance matrix; 
+  # factanal() applies Maximum Likelihood by default. 
+  print(fit1, sort=TRUE, cutoff=0.2)
+
+
+# OUTPUT
+        # Uniquenesses: #has to be small, if it big, the variable doesnt share anything with the rest which it bad.R ONly preints uniqueness which is the contrary to Communality
+        #   x6    x7    x8    x9   x10   x11   x12   x13   x14   x15   x16   x17   x18 
+        # 0.623 0.305 0.285 0.183 0.663 0.100 0.100 0.595 0.100 0.987 0.358 0.100 0.100 
+        
+        #Loadings: #This matrix only displays the useable loadings having values above the cutoff (0.2)
+        #    Factor1 Factor2 Factor3 Factor4
+        # x9   0.879                         
+        # x16  0.784                         
+        # x18  0.940                         
+        # x6           0.609                 
+        # x11  0.500   0.814                 
+        # x13         -0.561   0.219         
+        # x17  0.553  -0.750   0.204      We dont want x17 to explain 3 different components. The operator does not matter, as it is just negative or positive relationships.   
+        # x7                   0.826         
+        # x10                  0.530         
+        # x12                  0.929         
+        # x8                           0.838 
+        # x14                          0.931 
+        # x15               
+        
+        #               Factor1 Factor2 Factor3 Factor4
+        # SS loadings      2.910   2.030   1.990   1.657
+        # Proportion Var   0.224   0.156   0.153   0.127
+        # Cumulative Var   0.224   0.380   0.533   0.661 # Cum/Favtor4 means explaining 66% of the data by 4 factors, this can be changed in the "fit1 code by factors = 4 into factors = 5
+        
+        # Test of the hypothesis that 4 factors are sufficient.
+        # The chi-square statistic (comaprison on the actual corr matrix with
+        # the fitted matrix) is 162.89 on 32 degrees of freedom.
+        # The p-value is 1.83e-19 
+        
+#BOOKMARK 1. feb.
+
+# GUIDELINES FOR OUTPUT INTERPRETATION
+      # To ease interpretation, very low loadings (<.1, <.2) are not displayed
+      # According to the guidelines:
+        # High loadings (>0.6 or > 0.7) are expected for the items 
+        # Items with high cross-loadings should be removed 
+        # communalities should be >50 to retain the item in the analysis
+        # factor loaadings should be high to retain the item in the analysis
+        # and eigenvalues should be >=1 for factor selected
+        # cummulative variance explained >0.60
+      
+        # The chi-square test is highly sigificant (p-value is 1.83e-19) 
+        # meaning poor fit. But this test is not always reliable because it is highly 
+        # influenced by the sample size analyzed. 
+    
+        # Loadings
+        # x11 and x17 load high simultaneusly on factor 1 and factor 2
+        # This phenomenon is called  "cross-loading"
+        # It means these items do not measure a single construct 
+        # They are candidates for deletion 
+      
+        # x15 which does not correlate with any of the four factors
+        # Does x15 represent a factor for which we do not have sufficient 
+        # observable variables (measurements)?
+        
+        # Near the bottom of the output, we also see a test
+        # of the hypothesis that 4 factors are sufficient.
+        # The chi-square fit statistic is very small, indicating
+        # the the hypothesis of perfect model fit is rejected. 
+
+        # Uniquesness for each item are 1-communality
+        1- apply(fit1$loadings^2,1,sum)
+        #fit2$uniquenesses
+        # Communalities
+        apply(fit1$loadings^2,1,sum)
+        # as one can observe, some items like x15 have very low communality
+
+
+
+# Refining EFA without x15 and x17 (x11 could also be a candidate)
+fit2 = factanal(~ x6 + x7 + x8 + x9 + x10 + x11 + x12 + x13 + x14 + x16 + x18, factors = 4, data = data, lower=0.1, rotation = "varimax")
+print(fit2, sort=TRUE, cutoff=0.3)
+
+# Uniquenesses:
+#   x6    x7    x8    x9   x10   x11   x12   x13   x14   x16   x18 
+# 0.635 0.305 0.285 0.163 0.668 0.100 0.100 0.599 0.100 0.342 0.100 
+
+# Loadings:
+#    Factor1 Factor2 Factor3 Factor4
+# x9   0.895                         
+# x16  0.796                         
+# x18  0.918                         
+# x7           0.827                 
+# x10          0.537                 
+# x12          0.928                 
+# x8                   0.838         
+# x14                  0.932         
+# x6                           0.598 
+# x11  0.519                   0.786 #Delete or not because of crossload?
+# x13                         -0.553 
+
+#                Factor1 Factor2 Factor3 Factor4
+# SS loadings      2.613   1.962   1.645   1.391
+# Proportion Var   0.238   0.178   0.150   0.126
+# Cumulative Var   0.238   0.416   0.565   0.692
+
+# Test of the hypothesis that 4 factors are sufficient.
+# The chi square statistic is 26.7 on 17 degrees of freedom.
+# The p-value is 0.0626 
+
+
+# Now, the p-value associated with the chi-square statistic 
+# 0.0626. This result is much promising. 
+# The analysis can still be refined by exclussing x11. Some researchers
+# make a compromise and keep x11 in the model if the scale for the corresponding
+# item was validated previously in the literature. 
+
+# Last step: Naming the factors 
+# x9, x16, x18 load high on Factor 1 ; we call it Customer service
+# x7, x10, x12 load high on Factor 2; we call it Marketing
+# x8 and x14 load high on Factor 3; we call it Technical support
+# x6, x11, x13 load high on Factor 4;  we call it Product value
+
+# OBS. Item x13 was negatively formulated in the questionnaire. 
+# It should be reversed if the analysis is ussed further in the CFA and SEM.
+```
+
+Next, we set up a confirmatory factor analysis to confirm the measurement model (CFA). 
+Finaææy, given the measurement model has been examined and validated in the CFA analysis, we set up a SEM model, to test the structural relationships between the four constructs identified and the customers´ likelihood to continue doing business with the company (X19-Satisfaction, X20-Likelihood of recommendation and X21-Likelihood of future purchase).
+
+&nbsp;
+&nbsp;
+
+
+
+
+##### 4. Confirmatory Factor Analyis (CFA)
+```{r eval=FALSE}
+CFA.model <- 'CS =~ x18 + x9 + x16
+             PV =~ x11 + x6 + x13
+             MK =~ x12 + x7 + x10
+             TS =~ x8 + x14
+    # Correlations between exogeneous constructs are optional because
+    # by default, all exogenous latent variables in a CFA model are allowed to correlate
+        CS ~~ PV
+        CS ~~ MK
+        CS ~~ TS
+        PV ~~ MK
+        PV ~~ TS
+        MK ~~ TS'
+
+# fit the model
+fit <- cfa(CFA.model, data = data)
+# display summary output
+summary(fit, fit.measures=TRUE, standardized = TRUE, modindices = FALSE)
+
+# NOTE: we get "lavaan WARNING: some estimated ov variances are negative". 
+# This is called in the literature "Heywood case". Heywood cases or negative variance estimates, are a common occurrence in factor analysis and latent variable structural equation models.
+# There are several potential causes (https://journals.sagepub.com/doi/10.1177/0049124112442138). Here,eliminating the problematic item x11, will solve the problem.  
+
+
+# Before doing that, I ask for the modification indices as a last check
+modificationindices(fit, sort = T, minimum.value = 10, op = "~~")
+# MI reveal that x11 is correlated with x16 and x18; it means that x11 has substantial cross-loading on two factors (as in EFA). Cross-loading goes against one of the principles of unidimensionality in SEM. We delete x11 from the analysis and re-run CFA. 
+
+```
+
+
+```{r}
+# CFA model after deleting x11
+set.seed(1234)
+CFA.model <- 'CS =~ x18 + x9 + x16
+             PV =~ x6 + x13
+             MK =~ x12 + x7 + x10
+             TS =~ x8 + x14'
+# fit the model
+fit <- cfa(CFA.model, data = data)
+# display summary output
+summary(fit, fit.measures=TRUE, standardized = TRUE, modindices = FALSE)
+
+# output not displayed; see in your console
+
+# 1.) Examine the model fit; guidelines for a good model: 
+#     CFI >.90, TLI>.90, RMSEA< 0.08, SRMR <.0.08. 
+#     Some sources require CFI >.95, TLI>.95, RMSEA< 0.05, SRMR <.0.05. 
+
+
+# 2). Examine the loadingss significance, size and sign 
+#     It is desirable to have high and significant loadings - 
+#     reflecting items convergent validity. In the output 
+#     standardized loadings are in the last column "Std.all""
+
+    # In one factor 2, competitive pricing (x13) and product quality (x6)
+    # have opposite signs. It means that the product quality and competitive 
+    # pricing vary together, but move in direction oposite to each other. 
+    # Perceptions are more positive whether product quality increases
+    # or price decreases. This trade-off leads to naming the factor product value. 
+    # When variables have different signs, we need to be careful to reverse one when creating
+    # summated scales or using further in SEM analysis. 
+    # given our variable is using a 0-10 scale , to reverse it we take:
+    data$x13r = 10-data$x13
+
+
+    # and re-run
+    CFA.model <- '
+    # Measurement model
+        CS =~ x18 + x9 + x16
+        PV =~ x6 + x13r
+        MK =~ x12 + x7 + x10
+        TS =~ x8 + x14'
+    
+    fit <- cfa(CFA.model, data = data)
+    summary(fit, fit.measures=TRUE, standardized = TRUE, modindices = FALSE)
+    
+    
+# 3). Examine RELIABILITY of the factors - 
+#   Reliability = degree of consistency between multiple measurements of a variable 
+#   install.packages("semTools")
+    library(semTools)
+    semTools::reliability (fit) # one can conclude that all factors display good reliability
+    # alpha =  coefficient alpha (Cronbach, 1951) - should be > than 0.5 or 0.6 
+    # omega = similar to composite reliability index (CR) (Fornell & Larcker (1981) - should be > 0.7
+    # avevar = average variance extracted (AVE) (Fornell & Larcker (1981))  - should be > than 0.5.
+
+
+    
+# 4). Examine DISCRIMINANT VALIDITY of the factors
+    # the latent variables can be thought of representing two distinct contructs.
+    discriminantValidity(fit, merge=TRUE)
+    # Output: 
+    # The first set are factor correlation estimates and their confidence intervals.
+    # Are these correlations sufficiently low to claim discriminant validity of the four constructs? 
+    # Based on Fornell & Larcker (1981), the square root of each construct´s AVE should have a greater value 
+    # than the inter-constructs corelations (or AVE > corr^2). Let us check that:
+    reliability_out = reliability (fit)
+    AVEs = reliability_out[5,]
+    sqrtAVEs = sqrt(AVEs)
+    sqrtAVEs
+    # Comparing the inter-constructs correlations (see "est"" column in the output of        
+    # discriminantValidity(fit, merge=TRUE)) with the sqrtAVEs, conclude that
+    # the four constructss display significant discriminat validity. 
+```
+
+```{r, echo=FALSE}
+library(lavaanPlot)
+lavaanPlot(model = fit, node_options = list(shape = "box", fontname = "Helvetica"), edge_options = list(color = "grey"), coefs = TRUE, covs=TRUE, stand=TRUE, sig=.05, stars="covs")    
+```
+
+
+##### 5. SEM
+```{r} 
+# Dependent variable: x19-Customer Satisfaction. Build a model to explain x19;
+# NOTE: Three variables were not includeded in the CFA (x11, x15, x17). 
+#       Reason: These variables did not load high on any of the main constructs
+#       If they are important in theory, they can be treated as separate explanatory variables in SEM
+
+
+SEM.model1 <- '
+# Measurement model
+        CS =~ x18 + x9 + x16
+        PV =~ x6 + x13r
+        MK =~ x12 + x7 + x10
+        TS =~ x8 + x14
+# Structural model
+        x19 ~ CS + PV + MK + TS'
+
+# fit the model
+fitSEM1 <- sem(SEM.model1, data=data, se ="robust", estimator = "ML") 
+summary(fitSEM1, fit.measures=TRUE, standardized = TRUE, rsquare=TRUE)
+
+# The message "lavaan WARNING: some estimated ov variances are negative" shows up. 
+# In this case, the problematic items are x12 and x14. It reflects that we would need more
+# items per construct to run a good model. 
+# We set se="robust" to produce robust standard errors; 
+# setting se="boot" or se="bootstrap" will produce bootstrap standard errors. 
+# Check the fit indexes for SEM model as done in CFA 
+# fitmeasures(fit) # alternative summary
+ 
+# Next, check the structural coeficients in summary(). Output partially reproduced below: 
+# Regressions:
+  #                 Estimate  Std.Err  z-value  P(>|z|)   Std.lv  Std.all
+  #x19 ~                                                                 
+ #   CS                0.787    0.116    6.758    0.000    0.534    0.450
+ #   PV                0.663    0.110    6.022    0.000    0.746    0.629
+ #   MK                0.518    0.078    6.671    0.000    0.595    0.502
+ #   TS               -0.039    0.045   -0.870    0.384   -0.042   -0.035
+
+ # Concl.: Customers perceptions about CS, PV and MK are positively and significantly correlated with satisfaction. 
+#          TS (Technical Service) perceptions is not significantly related to customer satisfaction. 
+ 
+# check modification indices if relevant
+  summary(fitSEM1, fit.measures=TRUE, standardized = TRUE, rsquare=TRUE, modindices=TRUE)
+  modificationindices(fitSEM1, sort = T, minimum.value = 10, op = "~~")
+# no suggestion for improvement
+```
+
+```{r}
+# The bootstrap model parameters are available with:
+# PAR.boot <- bootstrapLavaan(fitSEM1, R=10, type="ordinary",FUN="coef")
+# T.boot <- bootstrapLavaan(fitSEM1, R=10, type="bollen.stine",FUN=fitMeasures, fit.measures="chisq")
+
+```
+
+```{r, echo=FALSE}
+#### Plotting the model
+library(lavaanPlot)
+labels <- list(x19 = "SATISFACTION")
+lavaanPlot(model = fitSEM1, node_options = list(shape = "box", fontname = "Helvetica"), edge_options = list(color = "grey"), coefs = TRUE, covs=TRUE, stand=TRUE, sig=.05, stars="regress", labels = labels)   
+
+#or
+library(semPlot)
+semPaths(fitSEM1, "std", intercepts = FALSE, style="lisrel", layout="tree2")
+```
+
+
+
+##### 6. An extended SEM model
+```{r}
+# SEM involving a mediating effect and correcting the model. Consistent with the theory, Sem.model2 proposed x19 (Satisfaction) as mediator between the four latent constructs and Likelihood of future purchase (x21)
+
+SEM.model2 <- '
+# Measurement model
+             CS =~ x18 + x9 + x16
+             PV =~ x6 + x13r
+             MK =~ x7 + x10
+             TS =~ x8
+# Structural model
+             x19 ~ CS + PV + MK + TS
+             x21 ~ x19'
+
+# fit the model
+fitSEM2 <- sem(SEM.model2, data=data, se="robust") 
+summary(fitSEM2, fit.measures=TRUE)
+
+
+summary(fitSEM2, fit.measures=TRUE, standardized = TRUE, rsquare=TRUE, modindices=TRUE)
+modificationindices(fitSEM2, sort = T, minimum.value = 10, op = "~~")
+# model has a good fit
+```
+
+```{r pressure, echo=FALSE}
+# plot
+library(lavaanPlot)
+labels <- list(x19 = "SATISFACTION", x21 = "FUTURE PURCHASE")
+lavaanPlot(model = fitSEM2, node_options = list(shape = "box", fontname = "Helvetica"), edge_options = list(color = "grey"), coefs = TRUE, covs=TRUE, stand=TRUE, sig=.05, stars="regress", labels = labels)
+
+ # - summarizing the findings 
+ # - are the all structural paths in the sem model significant? 
+ # - which is the most important determinant of customer satisfaction? (check std. path coefficients and conclude)
+ # - does satisfaction act as a sigificant mediator? (check the sig. of mediating patterns and conclude)
+ # - how much variance in x21 (Likelihood of future purchase) the model explains? (check R^2 associated)
+```
+
+
+
+
+#PLS (Morten)
+
+
+
