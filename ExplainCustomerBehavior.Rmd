@@ -880,5 +880,1108 @@ lavaanPlot(model = fitSEM2, node_options = list(shape = "box", fontname = "Helve
 
 #PLS (Morten)
 
+## 8.PLS_Ia_solution_estimation_exercise: PLS_SEM Intro
+
+```{r dataload satisfaction }
+rm(list=ls())
+#install.packages("seminr")
+library(seminr)
+# Load data
+#satisfaction <- read.csv(file = "satisfaction.csv", header = TRUE, sep = " ") #Morten's dataload
+satisfaction <- read.csv(file = "C:/Users/Bruger/OneDrive - Aarhus universitet/8. semester - BI/CA - Customer Analytics/Explain Customer Behavior/PLS Morten/satisfaction.csv", header = TRUE, sep = " ")
+```
+
+```{r Original model: measurement/structural/estimate model }
+## Original model
+# Specifying the measurement model 
+simple_mm <- constructs(
+  composite("IMAG", multi_items("imag", 1:5), weights = mode_B),
+  composite("EXPE", c("expe1", "expe2", "expe3", "expe4", "expe5"), weights = mode_A), #Alternative
+  composite("QUAL", multi_items("qual", 1:5), weights = mode_A),
+  composite("VAL", multi_items("val", 1:4), weights = mode_A),
+  composite("SAT", multi_items("sat", 1:4), weights = mode_A),
+  composite("LOY", multi_items("loy", 1:4), weights = mode_A))
+# Specifying the structural model 
+simple_sm <- relationships(
+  paths(from = c("IMAG"), to = c("EXPE", "SAT", "LOY")),
+  paths(from = c("EXPE"), to = c("QUAL","VAL","SAT")),
+  paths(from = c("QUAL"), to = c("VAL", "SAT")),
+  paths(from = c("VAL"), to = c("SAT")),
+  paths(from = c("SAT"), to = c("LOY")))
+# Estimate the model
+sat_model <- estimate_pls(data = satisfaction,
+                          measurement_model = simple_mm,
+                          structural_model = simple_sm,
+                          inner_weights = path_weighting,
+                          missing = mean_replacement,
+                          missing_value = "-99")
+# Summarize the model results
+summary_sat_model <- summary(sat_model)
+# Inspect the indicator loadings
+summary_sat_model$loadings
+# Inspect the model's path coefficients and the R^2 values
+summary_sat_model$paths
+```
+
+```{r Model1 }
+## Model 1
+# Specifying the measurement model 
+simple_mm <- constructs(
+  composite("IMAG", multi_items("imag", 1:5), weights = mode_B),
+  composite("EXPE", multi_items("expe", 1:5), weights = mode_A),
+  composite("QUAL", multi_items("qual", 1:5), weights = mode_A),
+  composite("VAL", multi_items("val", 1:4), weights = mode_A),
+  composite("SAT", multi_items("sat", 1:4), weights = mode_A),
+  composite("LOY", multi_items("loy", 1:4), weights = mode_A))
+# Specifying the structural model 
+simple_sm <- relationships(
+  paths(from = c("IMAG"), to = c("EXPE", "SAT")),
+  paths(from = c("EXPE"), to = c("QUAL", "SAT")),
+  paths(from = c("QUAL"), to = c("VAL")),
+  paths(from = c("VAL"), to = c("SAT")),
+  paths(from = c("SAT"), to = c("LOY")))
+# Estimate the model
+sat_model <- estimate_pls(data = satisfaction,
+                          measurement_model = simple_mm,
+                          structural_model = simple_sm,
+                          inner_weights = path_weighting,
+                          missing = mean_replacement,
+                          missing_value = "-99")
+# Summarize the model results
+summary_sat_model <- summary(sat_model)
+# Inspect the indicator loadings
+summary_sat_model$loadings
+# Inspect the model's path coefficients and the R^2 values
+summary_sat_model$paths
+```
+
+
+```{r Model2 }
+## Model 2
+# Specifying the measurement model 
+simple_mm <- constructs(
+  composite("IMAG", multi_items("imag", 1:5), weights = mode_B),
+  composite("EXPE", c("val1","expe1", "expe2", "expe3", "expe4", "expe5"), weights = mode_A),
+  composite("QUAL", multi_items("qual", 1:4), weights = mode_A),
+  composite("VAL", multi_items("val", 2:4), weights = mode_A),
+  composite("SAT", c("sat1","sat2", "sat3", "sat4", "loy1"), weights = mode_A),
+  composite("LOY", multi_items("loy", 2:4), weights = mode_A))
+# Specifying the structural model 
+simple_sm <- relationships(
+  paths(from = c("IMAG"), to = c("EXPE", "SAT", "LOY")),
+  paths(from = c("EXPE"), to = c("QUAL", "SAT")),
+  paths(from = c("QUAL"), to = c("VAL")),
+  paths(from = c("VAL"), to = c("SAT")),
+  paths(from = c("SAT"), to = c("LOY")))
+# Estimate the model
+sat_model <- estimate_pls(data = satisfaction,
+                          measurement_model = simple_mm,
+                          structural_model = simple_sm,
+                          inner_weights = path_weighting,
+                          missing = mean_replacement,
+                          missing_value = "-99")
+# Summarize the model results
+summary_sat_model <- summary(sat_model)
+# Inspect the indicator loadings
+summary_sat_model$loadings
+# Inspect the model's path coefficients and the R^2 values
+summary_sat_model$paths
+```
+
+
+```{r Model3 }
+## Model 3
+# Specifying the measurement model 
+simple_mm <- constructs(
+  composite("IMAG", multi_items("imag", c(1,2,4,5)), weights = mode_A),
+  composite("EXPE", multi_items("expe", 1:3), weights = mode_A),
+  composite("QUAL", multi_items("qual", 1:5), weights = mode_A),
+  composite("VAL", multi_items("val", 2:4), weights = mode_A),
+  composite("SAT", c("sat1","sat2", "sat3", "sat4"), weights = mode_A),
+  composite("LOY", c("val1","loy1","loy2", "loy3", "loy4"), weights = mode_A))
+# Specifying the structural model 
+simple_sm <- relationships(
+  paths(from = c("IMAG"), to = c("EXPE", "SAT")),
+  paths(from = c("EXPE"), to = c("QUAL", "SAT", "VAL")),
+  paths(from = c("QUAL"), to = c("VAL")),
+  paths(from = c("VAL"), to = c("SAT")),
+  paths(from = c("SAT"), to = c("LOY")))
+# Estimate the model
+sat_model <- estimate_pls(data = satisfaction,
+                          measurement_model = simple_mm,
+                          structural_model = simple_sm,
+                          inner_weights = path_weighting,
+                          missing = mean_replacement,
+                          missing_value = "-99")
+# Summarize the model results
+summary_sat_model <- summary(sat_model)
+# Inspect the indicator loadings
+summary_sat_model$loadings
+# Inspect the model's path coefficients and the R^2 values
+summary_sat_model$paths
+```
+
+## 8.PLS_Ib: Model Estimation
+
+```{r dataload Corporate Reputation}
+# R script for the illustrations in chapter 3
+rm(list=ls())
+library(seminr)
+# Read in data and inspect the first few observations
+#corp_rep_data <- read.csv(file ="Corporate Reputation Data.csv",header=TRUE,sep=";") #Mortens dataload
+corp_rep_data <- read.csv(file ="C:/Users/Bruger/OneDrive - Aarhus universitet/8. semester - BI/CA - Customer Analytics/Explain Customer Behavior/PLS Morten/Corporate Reputation Data.csv",header=TRUE,sep=";")
+head(corp_rep_data)
+```
+
+
+```{r Original model: measurement/structural/estimate model}
+## Preparation
+# Create measurement model
+simple_mm <- constructs(
+  composite("COMP",multi_items("comp_",1:3),weights = mode_A),
+  composite("LIKE",multi_items("like_",1:3),weights = mode_A),
+  composite("CUSA",single_item("cusa")),
+  composite("CUSL",multi_items("cusl_",1:3),weights = mode_A))
+
+# Create structural model
+simple_sm <- relationships(paths(from = c("COMP","LIKE"), to = c("CUSA","CUSL")),
+  paths(from = c("CUSA"), to = c("CUSL")))
+
+## Estimation
+# Estimate the model
+corp_rep_simple_model <- estimate_pls(data = corp_rep_data,
+                                      measurement_model = simple_mm,
+                                      structural_model = simple_sm,
+                                      inner_weights = path_weighting,
+                                      missing = mean_replacement,
+                                      missing_value = "-99")
+
+# Estimate the model with default settings
+corp_rep_simple_model <- estimate_pls(data = corp_rep_data,
+                                      measurement_model = simple_mm,
+                                      structural_model = simple_sm,
+                                      missing_value = "-99")
+
+## Summarizing the results
+# Summarize the model results
+summary_simple_corp_rep <- summary(corp_rep_simple_model)
+summary(corp_rep_simple_model)
+```
+
+
+```{r Iterations + Loadings}
+# Iterations to converge
+summary_simple_corp_rep$iterations
+
+# Inspect the model's loadings
+summary_simple_corp_rep$loadings
+```
+
+
+```{r Path coef + R^2}
+# Inspect the model's path coefficients and the R^2 values
+summary_simple_corp_rep$paths
+```
+
+```{r Bootstrap model}
+# Bootstrap the model
+boot_simple_corp_rep <- bootstrap_model(seminr_model = corp_rep_simple_model,nboot = 1000,cores = NULL, seed = 123)
+
+# Store the summary of the bootstrapped model
+sum_boot_simple_corp_rep <- summary(boot_simple_corp_rep)
+
+# Inspect the bootstrapped indicator loadings
+sum_boot_simple_corp_rep$bootstrapped_loadings
+
+# Inspect the bootstrapped structural paths
+sum_boot_simple_corp_rep$bootstrapped_paths
+```
+
+
+## 8.PLS_Ib_algorithm: Algorithm
+```{r dataload satisfaction}
+#install.packages("cSEM")
+library(cSEM)
+library(seminr)
+# Example of PLS-SEM algorithm
+
+# Get data
+data(satisfaction)
+# Selecting indicators 
+sat_reduc <- satisfaction[,c("imag1", "imag2",
+                             "expe1", "expe2",
+                             "loy1", "loy2", "loy3")]
+```
+
+```{r Original model: measurement/structural model }
+# Specifying the measurement model matrix
+W <- matrix(c(1,0,0,
+              1,0,0,
+              0,1,0,
+              0,1,0,
+              0,0,1,
+              0,0,1,
+              0,0,1), 
+            ncol = 3,
+            byrow = TRUE)
+# Specifying the structural model matrix
+P <- matrix(c(0,0,1,
+              0,0,1,
+              0,0,0), 
+            ncol = 3,
+            byrow = TRUE)
+```
+
+
+```{r Initialization - step1}
+# Standardizing and transforming to matrix
+X <- as.matrix(scale(sat_reduc))
+
+# Creating initial latent variables with weights equal to one
+Y_hat=X%*%W
+```
+
+
+```{r Inner + Outer approximation - step2+3}
+for (i in 1:300){
+# Step 2, inner approximation
+
+# Using factorial weighting scheme
+#P[1:2,3] <- cor(Y_hat)[1:2,3]
+#C <- P+t(P)
+# Using path weighting
+P[1:2,3] <- coef(lm(Y_hat[,3]~0+ Y_hat[,1:2]))
+C <- P+t(P)
+# Each latent variable is created as a weighted sum of its neighboring LVs
+Y_hat <- Y_hat%*%C
+# Standardizing latent variables
+Y_hat <- scale(Y_hat)
+
+# Step 3, outer approximation
+# The reflective part (mode A)
+W[5,3]=coef(lm(X[,5] ~ Y_hat[,3]))[2]
+W[6,3]=coef(lm(X[,6] ~ Y_hat[,3]))[2]
+W[7,3]=coef(lm(X[,7] ~ Y_hat[,3]))[2]
+# The formative part (mode B)
+W[1:2,1]=coef(lm(Y_hat[,1] ~ X[,1:2]))[2:3]
+W[3:4,2]=coef(lm(Y_hat[,2] ~ X[,3:4]))[2:3]
+# Estimate LV approximations
+Y_hat=X%*%W
+# Standardizing latent variables
+Y_hat <- scale(Y_hat)
+
+# Step 4, convergence of weights
+# To simplify the code this step is skipped, and instead we set the number of iteration sufficiently high an hope for convergence. E.g. number of iteration=300.
+# Notice that the algorithm normally converge must faster than after 300 iteration, but just setting a high number of iterations also means that we cannot be sure that the algorithm actually did converge.
+}
+```
+
+
+```{r Final estimates - step5}
+# Step 5: Final estimates
+
+# Inner path coefficients
+paths<-coef(lm(Y_hat[,3] ~ 0 + Y_hat[,1] + Y_hat[,2]))
+# weights for formative models
+weights<-c(coef(lm(Y_hat[,1] ~ 0 + X[,1] + X[,2])),
+           coef(lm(Y_hat[,2] ~ 0 + X[,3] + X[,4])),
+           coef(lm(Y_hat[,3] ~ 0 + X[,5] + X[,6] + X[,7]))
+           )
+# loadings for reflective model
+loadings<-c(cor(Y_hat[,1],X[,1]),cor(Y_hat[,1],X[,2]),
+            cor(Y_hat[,2],X[,3]),cor(Y_hat[,2],X[,4]),
+            cor(Y_hat[,3],X[,5]),cor(Y_hat[,3],X[,6]),cor(Y_hat[,3],X[,7])
+            )
+```
+
+
+```{r seminR Original model: measurement/structural model }
+# Using seminR package
+# Original model
+# Specifying the measurement model 
+simple_mm <- constructs(
+  composite("IMAG", multi_items("imag", 1:2), weights = mode_B),
+  composite("EXPE", multi_items("expe", 1:2), weights = mode_B),
+  composite("LOY", multi_items("loy", 1:3), weights = mode_A))
+
+# Specifying the structural model 
+simple_sm <- relationships(
+  paths(from = c("IMAG","EXPE"), to = c("LOY")))
+# Estimate the model
+sat_model <- estimate_pls(data = sat_reduc,
+                          measurement_model = simple_mm,
+                          structural_model = simple_sm,
+#                          inner_weights = path_factorial,
+                          inner_weights = path_weighting,
+                          missing = mean_replacement,
+                          missing_value = "-99")
+# Summarize the model results
+summary_sat_model <- summary(sat_model)
+# Inspect the model's path coefficients and the R^2 values
+summary_sat_model$paths
+paths
+# Inspect the indicator loadings
+summary_sat_model$loadings
+loadings
+# Inspect the indicator weights
+summary_sat_model$weights
+weights
+```
+
+## 9.PLS_II: Reflective Measurement model
+
+```{r dataload Corporate Reputation }
+# R script for the illustrations in chapter 4
+rm(list=ls())
+library(seminr)
+
+## Preparation
+# Read in data 
+#corp_rep_data <- read.csv(file ="Corporate Reputation Data.csv",header=TRUE,sep=";") #Mortens dataload
+corp_rep_data <- read.csv(file ="C:/Users/Bruger/OneDrive - Aarhus universitet/8. semester - BI/CA - Customer Analytics/Explain Customer Behavior/PLS Morten/Corporate Reputation Data.csv",header=TRUE,sep=";")
+head(corp_rep_data)
+```
+
+
+```{r Original model: measurement/structural/estimate model }
+# Create measurement model
+corp_rep_mm <- constructs(
+  composite("COMP",multi_items("comp_",1:3),weights = mode_A),
+  composite("LIKE",multi_items("like_",1:3),weights = mode_A),
+  composite("CUSA",single_item("cusa")),
+  composite("CUSL",multi_items("cusl_",1:3),weights = mode_A))
+# Create structural model
+corp_rep_sm <- relationships(
+  paths(from = c("COMP","LIKE"), to = c("CUSA","CUSL")),
+  paths(from = c("CUSA"), to = c("CUSL")))
+
+## Estimation
+# Estimate the model
+corp_rep_pls_model <- estimate_pls(data = corp_rep_data,
+                                   measurement_model = corp_rep_mm,
+                                   structural_model = corp_rep_sm,
+                                   inner_weights = path_weighting,
+                                   missing = mean_replacement,
+                                   missing_value = "-99")
+
+## Summarizing the results
+# Summarize the model results
+summary_corp_rep <- summary(corp_rep_pls_model)
+summary(corp_rep_pls_model)
+```
+
+
+```{r Iterations + Loadings }
+# Iterations to converge
+summary_corp_rep$iterations
+
+## Evaluation of reflective measurement model
+# Inspect the indicator loadings
+summary_corp_rep$loadings
+```
+
+
+```{r Reliability + cronbachAlpha + Reliability plot }
+# Inspect the indicator reliability
+summary_corp_rep$loadings^2
+
+# Inspect the Cronbachs alpha and composite reliability
+summary_corp_rep$reliability
+
+# Plot the reliabilities of constructs
+plot(summary_corp_rep$reliability)
+```
+
+
+```{r Validity FL + validity HTMT }
+# Table of the FL criteria (FornellLarcker???)
+summary_corp_rep$validity$fl_criteria
+
+# HTMT criterion
+summary_corp_rep$validity$htmt
+```
+
+```{r Bootstrap model + HTMT }
+# Bootstrap the model
+boot_corp_rep <- bootstrap_model(seminr_model = corp_rep_pls_model,
+                                 nboot = 1000,cores = NULL,seed = 123)
+sum_boot_corp_rep <- summary(boot_corp_rep, alpha = 0.10)
+
+# Extract the bootstrapped HTMT
+sum_boot_corp_rep$bootstrapped_HTMT
+```
+
+
+## 10.PLS_IIIa: Formative Measurement model
+
+```{r dataload Corporate Reputation }
+# R script for the illustrations in chapter 4
+rm(list=ls())
+library(seminr)
+
+## Preparation
+# Read in data 
+#corp_rep_data <- read.csv(file ="Corporate Reputation Data.csv",header=TRUE,sep=";") #Mortens dataload
+corp_rep_data <- read.csv(file ="C:/Users/Bruger/OneDrive - Aarhus universitet/8. semester - BI/CA - Customer Analytics/Explain Customer Behavior/PLS Morten/Corporate Reputation Data.csv",header=TRUE,sep=";")
+head(corp_rep_data)
+```
+
+```{r Original model: measurement/structural/estimate model }
+# Create measurement model
+corp_rep_mm_ext <- constructs(
+  composite("QUAL", multi_items("qual_", 1:8), weights = mode_B),
+  composite("PERF", multi_items("perf_", 1:5), weights = mode_B),
+  composite("CSOR", multi_items("csor_", 1:5), weights = mode_B),
+  composite("ATTR", multi_items("attr_", 1:3), weights = mode_B),
+  composite("COMP", multi_items("comp_", 1:3), weights = mode_A),
+  composite("LIKE", multi_items("like_", 1:3), weights = mode_A),
+  composite("CUSA", single_item("cusa")),
+  composite("CUSL", multi_items("cusl_", 1:3), weights = mode_A))
+# Create structural model
+corp_rep_sm_ext <- relationships(
+  paths(from = c("QUAL", "PERF", "CSOR", "ATTR"), to = c("COMP", "LIKE")),
+  paths(from = c("COMP", "LIKE"), to = c("CUSA", "CUSL")),
+  paths(from = c("CUSA"), to = c("CUSL")))
+
+## Estimation
+# Estimate the model
+corp_rep_pls_model_ext <- estimate_pls(data = corp_rep_data,
+                                       measurement_model = corp_rep_mm_ext,
+                                       structural_model = corp_rep_sm_ext,
+                                       missing = mean_replacement,
+                                       missing_value = "-99")
+## Summarizing the results
+# Summarize the model results
+summary_corp_rep_ext <- summary(corp_rep_pls_model_ext)
+summary(corp_rep_pls_model_ext)
+```
+
+```{r Missingness }
+# Missingness
+summary_corp_rep_ext$descriptives$statistics
+```
+
+
+```{r Iterations + Loadings }
+# Iterations to converge
+summary_corp_rep_ext$iterations
+
+## Evaluation of the reflective measurement model
+# Inspect the indicator loadings
+summary_corp_rep_ext$loadings
+```
+
+
+```{r Reliability + cronbachAlpha }
+# Inspect the indicator reliability
+summary_corp_rep_ext$loadings^2
+# Inspect the internal consistency reliability
+summary_corp_rep_ext$reliability
+```
+
+
+```{r Validity FL + validity HTMT }
+# Table of the FL criteria
+summary_corp_rep_ext$validity$fl_criteria
+# HTMT criterion
+summary_corp_rep_ext$validity$htmt
+```
+
+```{r Bootstrap model + HTMT }
+# Bootstrap the model
+boot_corp_rep_ext <- bootstrap_model(seminr_model = corp_rep_pls_model_ext,
+                                     nboot = 1000,cores = NULL,seed = 123)
+sum_boot_corp_rep_ext <- summary(boot_corp_rep_ext, alpha = 0.10)
+# Extract the bootstrapped HTMT
+sum_boot_corp_rep_ext$bootstrapped_HTMT
+```
+
+
+```{r Formative model ATTR: measurement/structural/estimate model }
+## Evaluation of the formative measurement model
+# Redundancy analysis
+# ATTR: Attractiveness 
+# Create measurement model
+ATTR_redundancy_mm <- constructs(
+  composite("ATTR_F", multi_items("attr_", 1:3), weights = mode_B),
+  composite("ATTR_G", single_item("attr_global")))
+# Create structural model
+ATTR_redundancy_sm <- relationships(
+  paths(from = c("ATTR_F"), to = c("ATTR_G")))
+# Estimate the model
+ATTR_redundancy_pls_model <- estimate_pls(data = corp_rep_data,
+                                          measurement_model = ATTR_redundancy_mm,
+                                          structural_model = ATTR_redundancy_sm,
+                                          missing = mean_replacement,
+                                          missing_value = "-99")
+# Summarize the model
+sum_ATTR_red_model <- summary(ATTR_redundancy_pls_model)
+summary(ATTR_redundancy_pls_model)
+```
+
+
+```{r Formative model CSOR: measurement/structural/estimate model }
+# CSOR: Corporate social responsibility 
+# Create measurement model
+CSOR_redundancy_mm <- constructs(
+  composite("CSOR_F", multi_items("csor_", 1:5), weights = mode_B),
+  composite("CSOR_G", single_item("csor_global")))
+# Create structural model
+CSOR_redundancy_sm <- relationships(
+  paths(from = c("CSOR_F"), to = c("CSOR_G")))
+# Estimate the model
+CSOR_redundancy_pls_model <- estimate_pls(data = corp_rep_data,
+                                          measurement_model = CSOR_redundancy_mm,
+                                          structural_model = CSOR_redundancy_sm,
+                                          missing = mean_replacement,
+                                          missing_value = "-99")
+# Summarize the model
+sum_CSOR_red_model <- summary(CSOR_redundancy_pls_model)
+summary(CSOR_redundancy_pls_model)
+```
+
+
+```{r Formative model PERF: measurement/structural/estimate model }
+# PERF: Performance 
+# Create measurement model
+PERF_redundancy_mm <- constructs(
+  composite("PERF_F", multi_items("perf_", 1:5), weights = mode_B),
+  composite("PERF_G", single_item("perf_global")))
+# Create structural model
+PERF_redundancy_sm <- relationships(
+  paths(from = c("PERF_F"), to = c("PERF_G")))
+# Estimate the model
+PERF_redundancy_pls_model <- estimate_pls(data = corp_rep_data,
+                                          measurement_model = PERF_redundancy_mm,
+                                          structural_model = PERF_redundancy_sm,
+                                          missing = mean_replacement,
+                                          missing_value = "-99")
+# Summarize the model
+sum_PERF_red_model <- summary(PERF_redundancy_pls_model)
+summary(PERF_redundancy_pls_model)
+```
+
+
+```{r Formative model QUAL: measurement/structural/estimate model }
+# QUAL: Quality
+# Create measurement model
+QUAL_redundancy_mm <- constructs(
+  composite("QUAL_F", multi_items("qual_", 1:8), weights = mode_B),
+  composite("QUAL_G", single_item("qual_global")))
+# Create structural model
+QUAL_redundancy_sm <- relationships(
+  paths(from = c("QUAL_F"), to = c("QUAL_G")))
+# Estimate the model
+QUAL_redundancy_pls_model <- estimate_pls(data = corp_rep_data,
+                                          measurement_model = QUAL_redundancy_mm,
+                                          structural_model = QUAL_redundancy_sm,
+                                          missing = mean_replacement,
+                                          missing_value = "-99")
+# Summarize the model
+sum_QUAL_red_model <- summary(QUAL_redundancy_pls_model)
+summary(QUAL_redundancy_pls_model)
+```
+
+```{r Path coef: convergent validity }
+# Check the path coefficients for convergent validity
+sum_ATTR_red_model$paths
+sum_CSOR_red_model$paths
+sum_PERF_red_model$paths
+sum_QUAL_red_model$paths
+```
+
+```{r Collinearity analysis }
+# Collinearity analysis
+summary_corp_rep_ext$validity$vif_items
+# Assess indicator weights for significance and relevance
+```
+
+```{r Bootstrap }
+# Summarize the results of the bootstrap
+# alpha sets the specified level for significance, i.e. 0.05
+sum_boot_corp_rep_ext <- summary(boot_corp_rep_ext, alpha = 0.05)
+# Inspect the bootstrapping results for indicator weights
+sum_boot_corp_rep_ext$bootstrapped_weights
+# Inspect the bootstrapping results for indicator loadings
+sum_boot_corp_rep_ext$bootstrapped_loadings
+```
+
+
+
+## 10.PLS_IIIb: Structural Model
+
+```{r dataload Corporate Reputation }
+# R script for the illustrations in chapter 4
+rm(list=ls())
+library(seminr)
+
+## Preparation
+# Read in data 
+#corp_rep_data <- read.csv(file ="Corporate Reputation Data.csv",header=TRUE,sep=";") #Mortens dataload
+corp_rep_data <- read.csv(file ="C:/Users/Bruger/OneDrive - Aarhus universitet/8. semester - BI/CA - Customer Analytics/Explain Customer Behavior/PLS Morten/Corporate Reputation Data.csv",header=TRUE,sep=";")
+head(corp_rep_data)
+```
+
+```{r Original model: measurement/structural/estimate model }
+# Create measurement model
+corp_rep_mm_ext <- constructs(
+  composite("QUAL", multi_items("qual_", 1:8), weights = mode_B),
+  composite("PERF", multi_items("perf_", 1:5), weights = mode_B),
+  composite("CSOR", multi_items("csor_", 1:5), weights = mode_B),
+  composite("ATTR", multi_items("attr_", 1:3), weights = mode_B),
+  composite("COMP", multi_items("comp_", 1:3), weights = mode_A),
+  composite("LIKE", multi_items("like_", 1:3), weights = mode_A),
+  composite("CUSA", single_item("cusa")),
+  composite("CUSL", multi_items("cusl_", 1:3), weights = mode_A))
+# Create structural model
+corp_rep_sm_ext <- relationships(
+  paths(from = c("QUAL", "PERF", "CSOR", "ATTR"), to = c("COMP", "LIKE")),
+  paths(from = c("COMP", "LIKE"), to = c("CUSA", "CUSL")),
+  paths(from = c("CUSA"), to = c("CUSL")))
+
+## Estimation
+# Estimate the model
+corp_rep_pls_model_ext <- estimate_pls(data = corp_rep_data,
+                                       measurement_model = corp_rep_mm_ext,
+                                       structural_model = corp_rep_sm_ext,
+                                       missing = mean_replacement,
+                                       missing_value = "-99")
+
+## Summarizing the results
+# Summarize the model results
+summary_corp_rep_ext <- summary(corp_rep_pls_model_ext)
+summary(corp_rep_pls_model_ext)
+```
+
+```{r Bootstrap }
+# Bootstrap the model
+boot_corp_rep_ext <- bootstrap_model(seminr_model = corp_rep_pls_model_ext,nboot = 1000,cores = NULL,seed = 123)
+
+# Summarize the results of the bootstrap
+summary_boot_corp_rep_ext <- summary(boot_corp_rep_ext, alpha = 0.05)
+summary(boot_corp_rep_ext, alpha = 0.05)
+```
+
+
+```{r Structural model: collinearity VIF}
+## Evaluation of the structural model
+# Inspect the structural model collinearity VIF (Variance Importance Factor)
+summary_corp_rep_ext$vif_antecedents
+```
+
+
+```{r Structural paths }
+# Inspect the structural paths
+summary_boot_corp_rep_ext$bootstrapped_paths
+#ORIGINAL estimates are the main thing: 
+#WE want to identify the minuses in the ConfIntervals
+```
+
+
+```{r Total effects }
+# Inspect the total effects
+summary_boot_corp_rep_ext$bootstrapped_total_paths
+#WE dont pay attention to CUSA->CUSL as we cant change the CUSA construct. Therefore we primarily focus on the upper constructs/drivers
+#WE have to assess the drivers (as far as possible to the left: QUAL, PERF, CSOR, ATTR) that we actually can regulate
+```
+
+
+```{r R^2 + effect size }
+# Inspect the model RSquares
+summary_corp_rep_ext$paths
+#ARE the values above 0.5??
+
+# Inspect the effect sizes
+summary_corp_rep_ext$fSquare
+#ALL of these r^2 are categorized as "small" except for CUSA having 0.4 or something as value
+```
+
+
+```{r Prediction results }
+# Generate the model predictions
+predict_corp_rep_ext <- predict_pls(model = corp_rep_pls_model_ext,
+                                    technique = predict_DA, noFolds = 10, reps = 10)
+# Summarize the prediction results
+sum_predict_corp_rep_ext <- summary(predict_corp_rep_ext)
+summary(predict_corp_rep_ext)
+```
+
+
+```{r Distribution prediction error }
+# Analyze the distribution of prediction error
+par(mfrow=c(1,3))
+plot(sum_predict_corp_rep_ext, indicator = "cusl_1")
+plot(sum_predict_corp_rep_ext, indicator = "cusl_2")
+plot(sum_predict_corp_rep_ext, indicator = "cusl_3")
+par(mfrow=c(1,1))
+#Look for the distribution in the figure: is RMSE or MAE appropriate?
+```
+
+
+```{r prediction stats }
+# Compute the prediction statistics
+sum_predict_corp_rep_ext
+#LOOK at weather the PLS errors are below the LM errors
+```
+
+```{r Alternative models1;2;3 }
+# Estimate alternative models
+# Create measurement model
+measurement_model <- constructs(
+  composite("QUAL", multi_items("qual_", 1:8), weights = mode_B),
+  composite("PERF", multi_items("perf_", 1:5), weights = mode_B),
+  composite("CSOR", multi_items("csor_", 1:5), weights = mode_B),
+  composite("ATTR", multi_items("attr_", 1:3), weights = mode_B),
+  composite("COMP", multi_items("comp_", 1:3)),
+  composite("LIKE", multi_items("like_", 1:3)),
+  composite("CUSA", single_item("cusa")),
+  composite("CUSL", multi_items("cusl_", 1:3)))
+# Create structural models
+# Model 1
+structural_model1 <- relationships(
+  paths(from = c("QUAL","PERF","CSOR","ATTR"), to = c("COMP", "LIKE")),
+  paths(from = c("COMP","LIKE"), to = c("CUSA", "CUSL")),
+  paths(from = "CUSA", to = c("CUSL")))
+# Model 2
+structural_model2 <- relationships(
+  paths(from = c("QUAL","PERF","CSOR","ATTR"), to = c("COMP", "LIKE", "CUSA")),
+  paths(from = c("COMP","LIKE"), to = c("CUSA", "CUSL")),
+  paths(from = "CUSA", to = c("CUSL")))
+# Model 3
+structural_model3 <- relationships(
+  paths(from = c("QUAL","PERF","CSOR","ATTR"), to = c("COMP", "LIKE", "CUSA", "CUSL")),
+  paths(from = c("COMP","LIKE"), to = c("CUSA", "CUSL")),
+  paths(from = "CUSA", to = c("CUSL")))
+# Estimate and summarize the models
+pls_model1 <- estimate_pls(data = corp_rep_data, 
+                           measurement_model = measurement_model,
+                           structural_model = structural_model1,
+                           missing_value = "-99")
+sum_model1 <- summary(pls_model1)
+pls_model2 <- estimate_pls(data = corp_rep_data,
+                           measurement_model = measurement_model,
+                           structural_model = structural_model2,
+                           missing_value = "-99")
+sum_model2 <- summary(pls_model2)
+pls_model3 <- estimate_pls(data = corp_rep_data,
+                           measurement_model = measurement_model,
+                           structural_model = structural_model3,
+                           missing_value = "-99")
+sum_model3 <- summary(pls_model3)
+```
+
+
+```{r Alternative models1 IT Criteria }
+# Inspect the IT Criteria matrix of Model1
+sum_model1$it_criteria
+```
+
+
+```{r Alternative models1 IT Criteria }
+# Subset the matrix to only return the BIC row and CUSL column
+sum_model1$it_criteria["BIC", "CUSA"]
+```
+
+
+```{r Alternative models1;2;3 BIC values }
+# Collect the vector of BIC values for CUSL
+itcriteria_vector <- c(sum_model1$it_criteria["BIC","CUSA"],
+                       sum_model2$it_criteria["BIC","CUSA"],
+                       sum_model3$it_criteria["BIC","CUSA"])
+
+# Assign the model names to IT Criteria vector
+names(itcriteria_vector) <- c("Model1", "Model2", "Model3")
+
+# Inspect the IT Criteria vector for competing models
+itcriteria_vector
+#CHOOse the lowest BIC-value (be aware of minuses)
+```
+
+
+```{r Alternative models1;2;3 AIC criteria }
+# Calculate the model BIC Akaike weights
+compute_itcriteria_weights(itcriteria_vector)
+#CHoose the highest AIC criteria
+```
+
+
+## 11.PLS_IV: Mediation and moderation
+
+```{r dataload Corporate Reputation }
+# R script for the illustrations in chapter 4
+rm(list=ls())
+library(seminr)
+
+## Preparation
+# Read in data 
+#corp_rep_data <- read.csv(file ="Corporate Reputation Data.csv",header=TRUE,sep=";") #Mortens dataload
+corp_rep_data <- read.csv(file ="C:/Users/Bruger/OneDrive - Aarhus universitet/8. semester - BI/CA - Customer Analytics/Explain Customer Behavior/PLS Morten/Corporate Reputation Data.csv",header=TRUE,sep=";")
+head(corp_rep_data)
+```
+
+```{r Original model: measurement/structural/estimate model }
+# Create measurement model
+corp_rep_mm_ext <- constructs(
+  composite("QUAL", multi_items("qual_", 1:8), weights = mode_B),
+  composite("PERF", multi_items("perf_", 1:5), weights = mode_B),
+  composite("CSOR", multi_items("csor_", 1:5), weights = mode_B),
+  composite("ATTR", multi_items("attr_", 1:3), weights = mode_B),
+  composite("COMP", multi_items("comp_", 1:3), weights = mode_A),
+  composite("LIKE", multi_items("like_", 1:3), weights = mode_A),
+  composite("CUSA", single_item("cusa")),
+  composite("CUSL", multi_items("cusl_", 1:3), weights = mode_A))
+# Create structural model
+corp_rep_sm_ext <- relationships(
+  paths(from = c("QUAL", "PERF", "CSOR", "ATTR"), to = c("COMP", "LIKE")),
+  paths(from = c("COMP", "LIKE"), to = c("CUSA", "CUSL")),
+  paths(from = c("CUSA"), to = c("CUSL")))
+
+## Estimation
+# Estimate the model
+corp_rep_pls_model_ext <- estimate_pls(data = corp_rep_data,
+                                       measurement_model = corp_rep_mm_ext,
+                                       structural_model = corp_rep_sm_ext,
+                                       missing = mean_replacement,
+                                       missing_value = "-99")
+
+## Summarizing the results
+# Summarize the model results
+summary_corp_rep_ext <- summary(corp_rep_pls_model_ext)
+summary(corp_rep_pls_model_ext)
+```
+
+```{r Bootstrap }
+# Bootstrap the model
+boot_corp_rep_ext <- bootstrap_model(seminr_model = corp_rep_pls_model_ext,nboot = 1000,cores = NULL,seed = 123)
+
+# Summarize the results of the bootstrap
+summary_boot_corp_rep_ext <- summary(boot_corp_rep_ext, alpha = 0.10)
+```
+
+
+```{r Mediation analysis - inderict effects }
+## Mediation analysis
+# Inspect total indirect effects
+summary_corp_rep_ext$total_indirect_effects
+# Inspect indirect effects
+specific_effect_significance(boot_corp_rep_ext, from = "COMP", through = "CUSA", 
+                             to = "CUSL", alpha = 0.05)
+specific_effect_significance(boot_corp_rep_ext, from = "LIKE", through = "CUSA",
+                             to = "CUSL", alpha = 0.05)
+```
+
+```{r Mediation analysis - direct effects }
+# Inspect the direct effects
+summary_corp_rep_ext$paths
+# Inspect the confidence intervals for direct effects
+summary_boot_corp_rep_ext$bootstrapped_paths
+# Calculate the sign of p1*p2*p3
+summary_corp_rep_ext$paths["LIKE", "CUSL"] *
+  summary_corp_rep_ext$paths["LIKE","CUSA"] *
+  summary_corp_rep_ext$paths["CUSA","CUSL"]
+```
+
+```{r Moderation analysis: Measurement/Structural/Estimation }
+# Moderation analysis ###
+# Preparation
+# Create measurement model
+corp_rep_mm_mod <- constructs(
+  composite("QUAL", multi_items("qual_", 1:8), weights = mode_B),
+  composite("PERF", multi_items("perf_", 1:5), weights = mode_B),
+  composite("CSOR", multi_items("csor_", 1:5), weights = mode_B),
+  composite("ATTR", multi_items("attr_", 1:3), weights = mode_B),
+  composite("COMP", multi_items("comp_", 1:3), weights = mode_A),
+  composite("LIKE", multi_items("like_", 1:3), weights = mode_A),
+  composite("CUSA", single_item("cusa")),
+  composite("SC",   multi_items("switch_", 1:4),  weights = mode_A),
+  composite("CUSL", multi_items("cusl_", 1:3), weights = mode_A),
+  interaction_term(iv = "CUSA", moderator = "SC", method = two_stage))
+# Create structural model
+corp_rep_sm_mod <- relationships(
+  paths(from = c("QUAL", "PERF", "CSOR", "ATTR"), to = c("COMP", "LIKE")),
+  paths(from = c("COMP", "LIKE"), to = c("CUSA", "CUSL")),
+  paths(from = c("CUSA","SC","CUSA*SC"), to = c("CUSL")))
+
+## Estimation
+# Estimate the model
+corp_rep_pls_model_mod <- estimate_pls(data = corp_rep_data,
+                                       measurement_model = corp_rep_mm_mod,
+                                       structural_model = corp_rep_sm_mod,
+                                       missing = mean_replacement,
+                                       missing_value = "-99")
+
+## Summarizing the results
+# Summarize the model results
+summary_corp_rep_mod <- summary(corp_rep_pls_model_mod)
+summary(corp_rep_pls_model_mod)
+```
+
+
+```{r Bootstrap Moderation }
+# Bootstrap the model
+boot_corp_rep_mod <- bootstrap_model(seminr_model = corp_rep_pls_model_mod,nboot = 1000,cores = NULL,seed = 123)
+
+# Summarize the results of the bootstrap
+summary_boot_corp_rep_mod <- summary(boot_corp_rep_mod, alpha = 0.10)
+```
+
+
+```{r Reflective measurement model: loadings }
+## Evaluation of the reflective measurement model
+# Inspect the indicator loadings
+summary_corp_rep_mod$loadings
+```
+
+
+```{r Reflective measurement model: Reliability }
+# Inspect the indicator reliability
+summary_corp_rep_mod$loadings^2
+```
+
+
+```{r Reflective measurement model: Internal Reliability }
+# Inspect the internal consistency reliability
+summary_corp_rep_mod$reliability
+```
+
+
+```{r Reflective measurement model: Validity FL + HTMT }
+# Table of the FL criteria
+summary_corp_rep_mod$validity$fl_criteria
+
+# HTMT criterion
+summary_corp_rep_mod$validity$htmt
+```
+
+
+```{r Reflective measurement model: Validity FL + HTMT }
+# Extract the bootstrapped HTMT
+summary_boot_corp_rep_mod$bootstrapped_HTMT
+```
+
+```{r Formative measurement model: ATTR }
+## Evaluation of the formative measurement model
+# Redundancy analysis
+# ATTR: Attractiveness
+# Create measurement model
+ATTR_redundancy_mm <- constructs(
+  composite("ATTR_F", multi_items("attr_", 1:3), weights = mode_B),
+  composite("ATTR_G", single_item("attr_global")))
+# Create structural model
+ATTR_redundancy_sm <- relationships(
+  paths(from = c("ATTR_F"), to = c("ATTR_G")))
+# Estimate the model
+ATTR_redundancy_pls_model <- estimate_pls(data = corp_rep_data,
+                                          measurement_model = ATTR_redundancy_mm,
+                                          structural_model = ATTR_redundancy_sm,
+                                          missing = mean_replacement,
+                                          missing_value = "-99")
+# Summarize the model
+sum_ATTR_red_model <- summary(ATTR_redundancy_pls_model)
+summary(ATTR_redundancy_pls_model)
+```
+
+
+```{r Formative measurement model: CSOR }
+# CSOR: Customer Social Responsibility
+# Create measurement model
+CSOR_redundancy_mm <- constructs(
+  composite("CSOR_F", multi_items("csor_", 1:5), weights = mode_B),
+  composite("CSOR_G", single_item("csor_global")))
+# Create structural model
+CSOR_redundancy_sm <- relationships(
+  paths(from = c("CSOR_F"), to = c("CSOR_G")))
+# Estimate the model
+CSOR_redundancy_pls_model <- estimate_pls(data = corp_rep_data,
+                                          measurement_model = CSOR_redundancy_mm,
+                                          structural_model = CSOR_redundancy_sm,
+                                          missing = mean_replacement,
+                                          missing_value = "-99")
+# Summarize the model
+sum_CSOR_red_model <- summary(CSOR_redundancy_pls_model)
+summary(CSOR_redundancy_pls_model)
+```
+
+
+```{r Formative measurement model: PERF }
+# PERF: Performance
+# Create measurement model
+PERF_redundancy_mm <- constructs(
+  composite("PERF_F", multi_items("perf_", 1:5), weights = mode_B),
+  composite("PERF_G", single_item("perf_global")))
+# Create structural model
+PERF_redundancy_sm <- relationships(
+  paths(from = c("PERF_F"), to = c("PERF_G")))
+# Estimate the model
+PERF_redundancy_pls_model <- estimate_pls(data = corp_rep_data,
+                                          measurement_model = PERF_redundancy_mm,
+                                          structural_model = PERF_redundancy_sm,
+                                          missing = mean_replacement,
+                                          missing_value = "-99")
+# Summarize the model
+sum_PERF_red_model <- summary(PERF_redundancy_pls_model)
+summary(PERF_redundancy_pls_model)
+```
+
+
+```{r Formative measurement model: QUAL }
+# QUAL: Quality
+# Create measurement model
+QUAL_redundancy_mm <- constructs(
+  composite("QUAL_F", multi_items("qual_", 1:8), weights = mode_B),
+  composite("QUAL_G", single_item("qual_global")))
+# Create structural model
+QUAL_redundancy_sm <- relationships(
+  paths(from = c("QUAL_F"), to = c("QUAL_G")))
+# Estimate the model
+QUAL_redundancy_pls_model <- estimate_pls(data = corp_rep_data,
+                                          measurement_model = QUAL_redundancy_mm,
+                                          structural_model = QUAL_redundancy_sm,
+                                          missing = mean_replacement,
+                                          missing_value = "-99")
+# Summarize the model
+sum_QUAL_red_model <- summary(QUAL_redundancy_pls_model)
+summary(QUAL_redundancy_pls_model)
+```
+
+```{r Path coef: convergent validity }
+# Check the path coefficients for convergent validity
+sum_ATTR_red_model$paths
+sum_CSOR_red_model$paths
+sum_PERF_red_model$paths
+sum_QUAL_red_model$paths
+```
+
+
+```{r Collinearity VIF }
+# Collinearity analysis
+summary_corp_rep_mod$validity$vif_items
+```
+
+```{r Bootstrap: weights }
+# Summarize the results of the bootstrap
+# alpha sets the specified level for significance, i.e. 0.05
+sum_boot_corp_rep_mod <- summary(boot_corp_rep_mod, alpha = 0.05)
+
+# Inspect the bootstrapping results for indicator weights
+sum_boot_corp_rep_mod$bootstrapped_weights
+```
+
+
+```{r Bootstrap: weights;loadings }
+# Inspect the bootstrapping results for indicator loadings
+sum_boot_corp_rep_mod$bootstrapped_loadings
+```
+
+
+```{r Bootstrap Moderation: structural paths  }
+## Moderation analysis
+# Inspect the bootstrapped structural paths
+sum_boot_corp_rep_mod$bootstrapped_paths
+# Simple slope analysis plot
+slope_analysis(moderated_model = corp_rep_pls_model_mod,dv = "CUSL",
+               moderator = "SC", iv = "CUSA", leg_place = "bottomright")
+```
+
 
 
