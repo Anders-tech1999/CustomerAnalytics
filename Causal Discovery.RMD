@@ -235,7 +235,7 @@ drop.arc(net, from="A", to=""T)
 e.g. newnet = drop.arc(net, from = "T", to = "A")
 Test for the conditional independence between variables 
 ci.test("T", "E", c("O", "R"), test = "x2", data = data) EXPLORES UNCODITIONAL RELAIONSHIPS BETWEEN VARIABLES 
-mb(bn.gs1, "Atti")
+mb(bn.gs1, "Atti") 
 
 
 # 3). Model evaluation
