@@ -236,7 +236,7 @@ retention_csv <- read_csv("C:/Users/Bruger/OneDrive - Aarhus universitet/8. seme
 ###############################
 # 3). Model evaluation 
 ###############################
-    # I.Metrics of model complexity 
+    # I.Metrics of model complexity  
     nodes(bn.mle)
     arcs(bn.mle)
     bn.mle 
