@@ -238,7 +238,7 @@ ci.test("T", "E", c("O", "R"), test = "x2", data = data) EXPLORES UNCODITIONAL R
 mb(bn.gs1, "Atti") 
 
 
-# 3). Model evaluation
+## 3). Model evaluation
 ```{r}
 # I.Metrics of model complexity 
 nodes(bn.mle)
