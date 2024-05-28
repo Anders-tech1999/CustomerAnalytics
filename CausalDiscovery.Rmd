@@ -6,15 +6,16 @@ date: "2024-05-07"
 
 # Customer Retention.R 
 
-```{r}
-# Application 1: Customer Retention 
+CUSTOMER RETENTION
+Application 1: Customer Retention 
+1. Building the structure manually and introducing probabilities manually 
+2. Learning the structure and the probabilities from data - most common
+3. Model evaluation
+4. Making forward and backward inference 
 
-# 1. Building the structure manually and introducing probabilities manually - 
-# 2. Learning the structure and the probabilities from data - most common
-# 3. Model evaluation
-# 4. Making forward and backward inference
-```
+##1. Building the structure and parameters manually
 
+### Graph method
 ```{r 1. Building structure and parameters manually }
 # 1. Building the structure and parameters manually 
 #install.packages("bnlearn")
@@ -43,10 +44,9 @@ library(Rgraphviz)
 graphviz.plot(dag)
 ```
 
-
+## Matrix method
 ```{r Build net: using nodes }
-# Another way to build a large network from scratch is to define the nodes 
-# and create a matrix to set the whole arc set at once:
+# Another way to build a large network from scratch is to define the nodes and create a matrix to set the whole arc set at once:
 dag2 <- empty.graph(nodes = c("Fuse","Plea","Atti","Comm"))
 arcs(dag2) = matrix (c("Fuse", "Atti",
                        "Plea", "Atti",
@@ -56,10 +56,13 @@ arcs(dag2) = matrix (c("Fuse", "Atti",
                      byrow  = TRUE, ncol = 2,
                      dimnames = list (NULL, c("from", "to")))
 plot(dag2)
+graphviz.plot (dag2)
 ```
+This upper matrix has five rows (one for each arc) and two columns representing the 'from' and 'to' nodes, indicating the direction of the relationships. 
+byrow = TRUE parameter specifies that the matrix should be filled by rows. dimnames = used to name the columns "from" and "to".
+NULL is specified in dimnames, it means that no row names are being set for the matrix. The second element, c("from", "to"), provides the names for the columns of the matrix.
 
-
-```{r Build net: using nodes }
+```{r Create model - Manual }
 #  A easy way to build the DAG when we know the structure:
 dag3 <- model2network("[Fuse][Plea][Atti|Fuse:Plea][Comm|Fuse:Plea:Atti]")
 plot(dag3)
@@ -67,7 +70,7 @@ graphviz.plot (dag3)
 ```
 
 
-```{r Compare DAGs }
+```{r Check if DAG is equal }
 # Compare dags
 all.equal(dag, dag2)
 all.equal(dag, dag3)
@@ -140,7 +143,7 @@ Comm.prob
 ```
 
 CPT Conditional Table
-```{r CPT + DAG }
+```{r CPT-table: Conditional Prob Table }
 # Relate the CPT to the labels
 cpt <- list(Fuse = Fuse.prob, 
             Plea = Plea.prob,
@@ -151,98 +154,103 @@ cpt <- list(Fuse = Fuse.prob,
 bn <- custom.fit (dag, cpt)
 bn
 ```
+The resulting Bayesian Network bn represents the combined structure of the DAG and the quantitative CPTs, allowing for probabilistic inferences based on the relationships and probabilities defined in the network.
 
 
-#### BOOKMARK 11/5-24 Cant load this adequately!!!!
+##2. Learning the structure and parameters from observational data
+
 
 ```{r 2. Learning structure and parameters from observational data }
 library(dplyr)
-retention <- read.csv("C:/Users/Bruger/OneDrive - Aarhus universitet/8. semester - BI/CA - Customer Analytics/Causal Discovery - Production Recommendation og Targeting/retention.csv.zip", header = T, colClasses = "factor" )
-retention_test <- read.csv("C:/Users/Bruger/OneDrive - Aarhus universitet/8. semester - BI/CA - Customer Analytics/Causal Discovery - Production Recommendation og Targeting/retention_test.csv.zip", header = T, colClasses = "factor" )
 library(readr)
-retention_csv <- read_csv("C:/Users/Bruger/OneDrive - Aarhus universitet/8. semester - BI/CA - Customer Analytics/Causal Discovery - Production Recommendation og Targeting/retention.csv.zip")
+retention <- read_csv("C:/Users/Bruger/OneDrive - Aarhus universitet/8. semester - BI/CA - Customer Analytics/Causal Discovery - Production Recommendation og Targeting/retention.csv")
+head (retention)
+glimpse(retention)
 
-head (retention_csv)
-glimpse(retention_csv)
-# Reminder: bn are particularly designed for categorical variables
-# continuous variable require to be discretized.
-# However, if all variables are continuous, a Gaussian Bayes net can be built. 
-# A Gaussian Bayes net is equivalent to a path analysis model or a sem model with observable variables instead of latent constructs.
-```
-
-```{r}
-retention_csv <- read_csv("C:/Users/Bruger/OneDrive - Aarhus universitet/8. semester - BI/CA - Customer Analytics/Causal Discovery - Production Recommendation og Targeting/retention.csv.zip", header = T, colClasses = "factor")
-
+retention_test <- read_csv("C:/Users/Bruger/OneDrive - Aarhus universitet/8. semester - BI/CA - Customer Analytics/Causal Discovery - Production Recommendation og Targeting/retention_test.csv")
 ```
 
 
+```{r 2. Test data }
+head (retention_test)
+glimpse(retention_test)
+```
+Reminder: bn are particularly designed for categorical variables continuous variable require to be discretized.
+However, if all variables are continuous, a Gaussian Bayes net can be built. A Gaussian Bayes net is equivalent to a path analysis model or a sem model  with observable variables instead of latent constructs. 
 
-```{r 2. Learning structure and parameters from observational data }
+
+```{r Constrained-based algorithm NOT WORKING }
+library(bnlearn)
 # 2.1 Learning a structure using a constrained-based algorithm 
-    # "grow-shrink (gs)", with conditional independence test chi-squared
-    # Constrained-based alg. do not work with missing data
-    par(mfrow = c(2, 2))
-    bn.gs <- gs (retention, alpha = 0.05, test ="x2") # alternative test ="mi"
-    #plot(bn.gs, main = "Grow shrink_X2")
-    graphviz.plot (bn.gs, main = "Grow shrink_X2") #just use normal plot function
-    # notice that in the constrained-based alg some links are undirected.
-    # this occurs because the algorithm cannot establish the direction of "causality". 
-    
-    # other constraint-based algorithms have been developed
-    bn2 <- iamb (retention, alpha = 0.05, test ="mi")
-    graphviz.plot (bn2, main = "Iamb1_mi" ) 
-    bn3 <- fast.iamb (retention, alpha = 0.05, test ="mi")
-    graphviz.plot (bn3, main = "FastIamb_mi") 
-    bn4 <- inter.iamb (retention, alpha = 0.05, test ="mi" )
-    graphviz.plot (bn4, main = "InterIamb_mi") 
-    # in the optimal case, all will return the same graph
-    
-    # to easily identify undirected paths 
-    undirected.arcs(bn.gs)
-    # We need to set the direction of the undirected arcs to be able 
-    # to learn the parameters from observational data 
-    bn.gs1 <- set.arc (bn.gs, from = "Atti", to = "Comm")
-    #plot(bn.gs1, main = "Grow Shrink_") 
-    graphviz.plot(bn.gs1, main = "Grow Shrink") 
-    
+# "grow-shrink (gs)", with conditional independence test chi-squared
+# Constrained-based alg. do not work with missing data
+par(mfrow = c(2, 2))
+bn.gs <- gs (retention, alpha = 0.05, test ="x2") # alternative test ="mi"
+plot(bn.gs, main = "Grow shrink_X2")
+#///graphviz.plot (bn.gs, main = "Grow shrink_X2") #just use normal plot function
+```
 
-  
-    # 2.2. Learning the structure using a score-based algorithm 
-    # Hill-Climbing (hc) greedy search
-    par(mfrow = c(1, 2))
-    bn.hc <- hc (retention, score = "bic")
-    #plot (bn.hc, main = "Hill Climbing_BIC") 
-    graphviz.plot (bn.hc, main = "Hill Climbing_BIC") 
 
-    
-    # Learning the parameters 
-    # we learn the parameters for bn.gs1 structure (the theoretical structure) 
-    bn.mle <- bn.fit (bn.gs1, data = retention, method = "mle")
-    bn.mle
-    # print them
-    bn.mle$Fuse
-    bn.mle$Plea
-    bn.mle$Atti
-    bn.mle$Comm
-    
-    # Other useful functions 
-    # drop.arc(net, from="A", to=""T)
-    # e.g. newnet = drop.arc(net, from = "T", to = "A")
-    # Test for the conditional independence between variables 
-    # ci.test("T", "E", c("O", "R"), test = "x2", data = data) EXPLORES UNCODITIONAL RELAIONSHIPS BETWEEN VARIABLES 
-    # mb(bn.gs1, "Atti")
-    
+```{r Constrained-based algorithm NOT WORKING}
+# notice that in the constrained-based alg some links are undirected.
+# this occurs because the algorithm cannot establish the direction of "causality". 
 
-###############################
-# 3). Model evaluation 
-###############################
-    # I.Metrics of model complexity  
-    nodes(bn.mle)
-    arcs(bn.mle)
-    bn.mle 
+# other constraint-based algorithms have been developed
+bn2 <- iamb (retention, alpha = 0.05, test ="mi")
+graphviz.plot (bn2, main = "Iamb1_mi" ) 
+bn3 <- fast.iamb (retention, alpha = 0.05, test ="mi")
+graphviz.plot (bn3, main = "FastIamb_mi") 
+bn4 <- inter.iamb (retention, alpha = 0.05, test ="mi" )
+graphviz.plot (bn4, main = "InterIamb_mi") 
+# in the optimal case, all will return the same graph
     
-    
-    # II. Metrics of model sensitivity
+# to easily identify undirected paths 
+undirected.arcs(bn.gs)
+# We need to set the direction of the undirected arcs to be able to learn the parameters from observational data 
+bn.gs1 <- set.arc (bn.gs, from = "Atti", to = "Comm")
+#plot(bn.gs1, main = "Grow Shrink_") 
+graphviz.plot(bn.gs1, main = "Grow Shrink") 
+```
+This error is coming from the bnlearn package, which is used for learning the graphical structure of Bayesian networks, parameter learning, inference, and prediction. The message indicates that the "Fuse" variable is of the type "character", but bnlearn requires variables to be either factors (for discrete Bayesian networks) or numeric (for continuous networks, Gaussian Bayesian networks).
+
+
+```{r Score-based algorithm}
+# 2.2. Learning the structure using a score-based algorithm 
+# Hill-Climbing (hc) greedy search
+par(mfrow = c(1, 2))
+bn.hc <- hc (retention, score = "bic")
+plot (bn.hc, main = "Hill Climbing_BIC") 
+#///graphviz.plot (bn.hc, main = "Hill Climbing_BIC")
+```
+
+
+```{r Score-based algorithm}
+# Learning the parameters 
+# we learn the parameters for bn.gs1 structure (the theoretical structure) 
+bn.mle <- bn.fit (bn.gs1, data = retention, method = "mle")
+bn.mle
+# print them
+bn.mle$Fuse
+bn.mle$Plea
+bn.mle$Atti
+bn.mle$Comm
+```
+Other useful functions:
+drop.arc(net, from="A", to=""T)
+e.g. newnet = drop.arc(net, from = "T", to = "A")
+Test for the conditional independence between variables 
+ci.test("T", "E", c("O", "R"), test = "x2", data = data) EXPLORES UNCODITIONAL RELAIONSHIPS BETWEEN VARIABLES 
+mb(bn.gs1, "Atti") 
+
+
+## 3). Model evaluation
+```{r}
+# I.Metrics of model complexity 
+nodes(bn.mle)
+arcs(bn.mle)
+bn.mle
+
+# II. Metrics of model sensitivity
     # Test if any two nodes are d-separated 
     dsep(bn.mle, x = "Plea", y = "Fuse")
     dsep(bn.mle, x = "Plea", y = "Comm")
@@ -267,9 +275,8 @@ retention_csv <- read_csv("C:/Users/Bruger/OneDrive - Aarhus universitet/8. seme
     arc.strength (bn.hc, retention, criterion = "bic") %>%.[order(.$strength),]
     # As expected, all strengths are negative
     # this is expected as BIC was optimized when the hc algorithm has searched for this model 
-    
-    ############################################################################
-    # III. Metrics of evaluation and selection among several dags: 
+
+        # III. Metrics of evaluation and selection among several dags: 
     # BIC, BDe, AIC scores are used to compare alternative structures and choose the best  
     # In bnlearn, AIC, BIC, BDE closer to zero means better model; often the three indexes
     # do not agree.
@@ -339,44 +346,32 @@ retention_csv <- read_csv("C:/Users/Bruger/OneDrive - Aarhus universitet/8. seme
     # our DV has 3 categories: Low, Med and High
     # we observe that the model has problems when distinguishing between high and medium
     # but performs pretty well when identifying the Low category (customers who are not committed to VC)
-   
-  
-    
-##############################################
+```
+
 # 4) Making queries (forward and backward)
-##############################################
+```{r}
 # How do we use the model in practice?
 # Below we consider several hypothetical situations.   
   
-      
-  # Using BN, one can evaluate the expected changes in attitude, and 
-  # respectively, commitment due to changes in functional usefulness and pleasure. 
-  # We will set evidence in the network for Fuse and Plea and we´ll look at the 
-  # cpt for Atti and Comm before and after setting the evidence. 
-  # Setting (hard) evidence means setting one of the states of the variable
-  # at probability 1 (100%).
+# Using BN, one can evaluate the expected changes in attitude, and respectively, commitment due to changes in functional usefulness and pleasure. 
+# We will set evidence in the network for Fuse and Plea and we´ll look at the cpt for Atti and Comm before and after setting the evidence. Setting (hard) evidence means setting one of the states of the variable at probability 1 (100%).
     
-    
-    # Transform the bn into a junction tree 
-    # options(digits=1)
-    library (gRain)
-    junction <- compile (as.grain(bn.mle))
-    # "querygrain" function extracts the marginal distribution of the nodes
-    querygrain(junction, nodes = "Atti")
-    querygrain(junction, nodes = "Comm")
+# Transform the bn into a junction tree 
+# options(digits=1)
+library (gRain)
+junction <- compile (as.grain(bn.mle))
+# "querygrain" function extracts the marginal distribution of the nodes
+querygrain(junction, nodes = "Atti")
+querygrain(junction, nodes = "Comm")
 
-    
-    # Imagine a new customer joins the VC reporting a Low (Medium or High) 
-    # Functional Usefulness perception. 
-    # This information can be fed to the network as evidence in order to predict 
-    # the conditional probability of his/her attitude and commitment to VC. 
-    
-    # if Fuse = Low
-    jLow <- setEvidence (junction, nodes = "Fuse", states = "Low")
-    A1 = querygrain(jLow, nodes = "Atti")
-    A1
-    C1= querygrain(jLow, nodes = "Comm")
-    C1
+# Imagine a new customer joins the VC reporting a Low (Medium or High) Functional Usefulness perception. This information can be fed to the network as evidence in order to predict the conditional probability of his/her attitude and commitment to VC. 
+
+# if Fuse = Low
+jLow <- setEvidence (junction, nodes = "Fuse", states = "Low")
+A1 = querygrain(jLow, nodes = "Atti")
+A1
+C1= querygrain(jLow, nodes = "Comm")
+C1
     
     # if Fuse = Med
     jMed <- setEvidence (junction, nodes = "Fuse", states = "Med")
@@ -526,6 +521,1056 @@ retention_csv <- read_csv("C:/Users/Bruger/OneDrive - Aarhus universitet/8. seme
     # and they do not perceive the VC to be sufficiently useful to them to 
     # commit to.
 ```
+
+
+
+#TARGETED_ADS
+
+## ELP Expected Lift in Profit
+
+Application 2: 
+Identifying populations with Positive Expected Lift in Profit (ELP) and targeting
+The idea is to use BN to identify segments of customers that will most likely purchase when sending the ad (persuadable segments) and avoid sending the ad to the rest (to the ones who will not buy the advertised product ever, to the ones who will be offended by receiving an unwanted advertisement or call, or to the ones who will always buy)
+
+If historical data is available, we start learning the relationships between the variables train and select the best model as a preliminary step. 
+First we use the model structure from the text (given),and we only have to 
+
+- learn the parameters (probabilities).
+- Next, we focus exclusively on how model is used as a decision support for marketing managers.
+```{r dataload + library}
+library(bnlearn)
+library(Rgraphviz) 
+library(readr)
+
+targeted.adv <- read_csv("C:/8. semester - BI/CA - Customer Analytics/Causal Discovery - Production Recommendation og Targeting/targeted.adv.csv (1).zip")
+
+#head (targeted.adv)
+#str (targeted.adv)
+```
+
+
+```{r Create + Plot model}
+# Build the structure
+dagTA <- model2network("[Income][Sex][Mailed][Buy|Income:Sex:Mailed]")
+plot(dagTA)
+```
+
+
+```{r}
+# Learn the parameters
+bnTA.mle <- bn.fit (dagTA, data = targeted.adv[, c(2:5)], method = "mle")
+bnTA.mle
+```
+
+```{r}
+# ELP
+# ELP = P(Buy = Yes| Mailed = yes) * r_s  - P(Buy = Yes| Mailed = no) r_u - c, 
+# for any given population Y, where:
+#  - c = cost of mailing the ad to a give person
+#  - r_u = the income obtained from a sale to en unsolicited customer
+#  - r_c = the income obtained from a sale to en solicited customer
+#  - r_u and r_s are different because we may offer some discount in the ad
+
+# Asumming 
+c=0.5
+r_s = 8
+r_u = 10
+
+# a. ) Compute the ELP for the population consisting of individuals with medium 
+# income who are male. Should we mail an ad to this population?
+
+# set evidence and get the ctp 
+library (gRain)
+junctionTA <- compile (as.grain(bnTA.mle))
+Med_male_yes <- setEvidence (junctionTA, nodes = c("Income", "Sex", "Mailed"), 
+                             states = c("medium", "male", "yes"))
+querygrain(Med_male_yes, nodes = "Buy")
+# p(buy) = 0.4
+Med_male_no <- setEvidence (junctionTA, nodes = c("Income", "Sex", "Mailed"), 
+                            states = c("medium", "male", "no"))
+querygrain(Med_male_no, nodes = "Buy")
+# p(buy) = 0.2
+
+options(digits=2)
+ELP = querygrain(Med_male_yes, nodes = "Buy")$Buy[[2]] * r_s -
+  querygrain(Med_male_no, nodes = "Buy")$Buy[[2]] * r_u - c
+ELP
+# Since the ELP is positive, we may decide to mail to this population
+
+
+
+# Asumming 
+c=0.6
+r_s = 7
+r_u = 9
+
+# b. ) Compute the ELP for the population consisting of individuals with medium 
+# income who are female. Should we mail the ad to this population?
+
+Med_fem_yes <- setEvidence (junctionTA, nodes = c("Income", "Sex", "Mailed"), 
+                            states = c("medium", "female", "yes"))
+querygrain(Med_fem_yes, nodes = "Buy")
+# p(buy) = 0.7
+Med_fem_no <- setEvidence (junctionTA, nodes = c("Income", "Sex", "Mailed"), 
+                           states = c("medium", "female", "no"))
+querygrain(Med_fem_no, nodes = "Buy")
+# p(buy) = 0.4
+
+options(digits=2)
+ELP = querygrain(Med_fem_yes, nodes = "Buy")$Buy[[2]] * r_s -
+  querygrain(Med_fem_no, nodes = "Buy")$Buy[[2]] * r_u - c
+ELP
+# Since the ELP is positive, we mail to this population
+
+
+
+# c. ) Finally, let us compute the ELP for the population consisting of 
+# individuals with low income. Should we mail an ad this population?
+
+Low_yes <- setEvidence (junctionTA, nodes = c("Income", "Mailed"), 
+                        states = c("low", "yes"))
+querygrain( Low_yes, nodes = "Buy")
+# 0.6
+Low_no <- setEvidence (junctionTA, nodes = c("Income", "Mailed"), 
+                       states = c("low", "no"))
+querygrain( Low_no, nodes = "Buy")
+# 0.5
+
+options(digits=2)
+ELP =  querygrain( Low_yes, nodes = "Buy")$Buy[[2]] * r_s -
+  querygrain( Low_no, nodes = "Buy")$Buy[[2]] * r_u - c
+ELP
+# Since the ELP is negative, we do not mail to this population
+
+
+# Discussion: 
+# Using BN, this application allows to identify persuadable segments of 
+# individuals who would buy only if they are sent an ad. It avoids sending 
+# ads to those who will never buy, those who always buy (thus avoid wasting the 
+# ad), and those who are turned off by the advertisement when they receive it.
+# The network can be extended with more nodes according to the characteristics 
+# of the population in the dataset.
+
+################################################################################
+# Application 2_beta (extension)
+################################################################################
+
+targeted.adv.beta <- read.csv("~/Cloud/Documents/Alina Tudoran/TEACHING/Postgraduate/Customer Analytics_2024/2. BN /Lecture_Applications/Data/simulated_targeted_adv_data.csv", header = T, colClasses = "factor")
+head (targeted.adv.beta)
+str (targeted.adv.beta)  
+
+# Build the structure
+nb_structure <- tree.bayes(targeted.adv.beta[, -1], "Buy")
+plot(nb_structure)
+
+# Learn the parameters
+bnTA.mle <- bn.fit (nb_structure, data = targeted.adv.beta[, -1], method = "mle")
+bnTA.mle
+
+# Asumming 
+c=0.5
+r_s = 8
+r_u = 10
+
+# a. ) Compute the ELP for the population consisting of individuals with the 
+# following characteristics: 
+
+
+# Married, using desktop, average age
+library (gRain)
+junctionTA <- compile (as.grain(bnTA.mle))
+Query_yes <- setEvidence (junctionTA, nodes = c("Marital.Status", 
+                                                "Device.Usage",
+                                                   "Age", 
+                                                  "Mailed"), 
+                             states = c("Married", 
+                                        "Desktop",
+                                        "33-54",
+                                        "Yes"))
+querygrain(Query_yes, nodes = "Buy")
+
+
+Query_no<- setEvidence (junctionTA, nodes = c("Marital.Status", 
+                                                "Device.Usage",
+                                                "Age", 
+                                                "Mailed"), 
+                          states = c("Married", 
+                                     "Desktop",
+                                     "33-54",
+                                     "No"))
+querygrain(Query_no, nodes = "Buy")
+
+options(digits=2)
+ELP = querygrain(Query_yes, nodes = "Buy")$Buy[[2]] * r_s -
+  querygrain(Query_no, nodes = "Buy")$Buy[[2]] * r_u - c
+ELP
+# Since the ELP is positive and high, we mail to this population
+
+
+
+
+# Single, using desktop, young age 
+Query_yes <- setEvidence (junctionTA, nodes = c("Marital.Status", 
+                                                "Device.Usage",
+                                                "Age", 
+                                                "Mailed"), 
+                          states = c("Single", 
+                                     "Desktop",
+                                     "18-24",
+                                     "Yes"))
+querygrain(Query_yes, nodes = "Buy")
+
+
+Query_no <- setEvidence (junctionTA, nodes = c("Marital.Status", 
+                                                "Device.Usage",
+                                                "Age", 
+                                                "Mailed"), 
+                          states = c("Single", 
+                                     "Desktop",
+                                     "18-24",
+                                     "No"))
+querygrain(Query_no, nodes = "Buy")
+
+options(digits=2)
+ELP = querygrain(Query_yes, nodes = "Buy")$Buy[[2]] * r_s -
+  querygrain(Query_no, nodes = "Buy")$Buy[[2]] * r_u - c
+ELP
+# Since the ELP is negative, we do not mail to this population
+
+
+
+# Rural, Blue-Collar, with Online Behavior: Low
+# [Hypothesis: Individuals in rural areas with low engagement in online 
+# activities might also neglect advertisements, 
+# possibly due to a general disinterest in advertising or a preference for local,
+# in-person shopping experiences]
+
+
+Query_yes <- setEvidence (junctionTA, nodes = c("Geographic.Location", 
+                                                "Occupation",
+                                                "Social.Media.Activity",
+                                                "Mailed"), 
+                          states = c("Rural", 
+                                     "Blue-Collar",
+                                     "Low",
+                                     "Yes"))
+querygrain(Query_yes, nodes = "Buy")
+
+
+Query_no <- setEvidence (junctionTA, nodes = c("Geographic.Location", 
+                                               "Occupation",
+                                               "Social.Media.Activity",
+                                               "Mailed"), 
+                         states = c("Rural", 
+                                    "Blue-Collar",
+                                    "Low",
+                                    "No"))
+querygrain(Query_no, nodes = "Buy")
+
+
+options(digits=2)
+ELP = querygrain(Query_yes, nodes = "Buy")$Buy[[2]] * r_s -
+  querygrain(Query_no, nodes = "Buy")$Buy[[2]] * r_u - c
+ELP
+# Since the ELP is positive, we may decide to mail to this population. 
+# As a note, the ELP is much lower than for other populations tested,
+# so once may can make the decision also based on some minimum ELP
+
+
+
+# Married, Desktop, 45-54 years old, White-Collar, Suburban
+# [Hypothesis: This segment, despite being in their prime earning years and 
+# possibly having a stable financial situation, might exhibit a lower 
+# propensity to engage with direct advertisements.] 
+
+
+Query_yes <- setEvidence (junctionTA, nodes = c("Marital.Status", 
+                                                "Device.Usage",
+                                                "Age",
+                                                "Occupation",
+                                                "Mailed"), 
+                          states = c("Married",
+                                     "Desktop",
+                                     "45-54",
+                                     "White-Collar",
+                                     "Yes"))
+querygrain(Query_yes, nodes = "Buy")
+
+
+Query_no <- setEvidence (junctionTA, nodes = c("Marital.Status", 
+                                               "Device.Usage",
+                                               "Age",
+                                               "Occupation",
+                                               "Mailed"), 
+                         states = c("Married",
+                                    "Desktop",
+                                    "45-54",
+                                    "White-Collar",
+                                    "No"))
+querygrain(Query_no, nodes = "Buy")
+
+
+options(digits=2)
+ELP = querygrain(Query_yes, nodes = "Buy")$Buy[[2]] * r_s -
+  querygrain(Query_no, nodes = "Buy")$Buy[[2]] * r_u - c
+ELP
+# contradictory to our hypothesis, since the ELP is positive and high, 
+# we mail to this population
+```
+
+
+
+# PRODUCT_RECOMMENDATION_2024_REVISED
+
+```{r}
+#______________________________________________________________________________
+# Application 3: Product recommendations with probabilistic models
+# Bayesian Nets, Course Customer Analytics
+# March 2024
+# AAT 
+#______________________________________________________________________________
+
+#From option 2 in lecture 18. march
+# In this analysis, we implement a latent class analysis with BN. 
+# This classification is not directly observable; it is inferred from the data. 
+# The key premise is that membership in a particular latent class can accurately
+# predict a user's ratings across a range of items. 
+# This method offers a comprehensive to product recommendation 
+# by considering several factors:
+
+    # User Similarities: By analyzing patterns across users, the model 
+    # identifies underlying groups of users who exhibit similar behavior 
+    # in their ratings. This helps in understanding user preferences and 
+    # can be used to predict how a user might rate items that they have not 
+    # yet encountered, based on the behavior of similar users within the 
+    # same latent class
+
+    # Item Similarities: Similarly, the model accounts for the relationships 
+    # between items. It recognizes that certain items are consistently rated 
+    # similarly by users, suggesting that these items share appealing 
+    # characteristics or cater to specific interests
+
+    
+    # User-Item Interactions: Beyond examining users and items in isolation, 
+    # this approach delves into the interactions between users and items. 
+    # It explores how particular types of users tend to rate certain kinds of
+    # items, capturing the dynamic interplay between user preferences and item 
+    # characteristics
+
+
+
+library(poLCA)      # for latent classification 
+library(bnlearn)    # for building BN
+library (gRain)     # for querying BN
+library(Rgraphviz)  # for visualizing BN
+
+
+# Data on user preferences
+data = read.csv("~/Cloud/Documents/Alina Tudoran/TEACHING/Postgraduate/Customer Analytics_2024/2. BN /Lecture_Applications/Data/Coll Filtering/CollFilforR.csv", 
+                header = T, 
+                colClasses = "factor", 
+                sep = ";")
+View(data)
+
+
+
+
+# First step, test several models with number of classes ranging from 2 to 6
+# Display BIC. Choose the model with the lowest BIC (AIC, G^2, X^2)
+# At this stage we only decide the number of latent classes in the data
+
+set.seed(234)
+# Defining the variables used in the model 
+f <- cbind(V1, V2, V3, V4)~1 #(~1 means without covariates)
+# V1...V4 are the observed categorical variables from which the latent classes are derived 
+# f <- cbind(V1, V2, V3, V4) ~ Cov1 + Cov2 (if covariates, e.g. individual characteristics)
+
+bic_values <- numeric(length = 5) #we are testing 5 models (from 2 to 6 classes)
+min_bic <- 100000
+for(i in 2:6){
+  lc <- poLCA(f, data, nclass=i, maxiter=3000, 
+              tol=1e-5, na.rm=FALSE,  
+              nrep=1, verbose=TRUE, calc.se=TRUE)
+  
+  bic_values[i-1] <- lc$bic  # Store the BIC value for each model
+  
+  if(lc$bic < min_bic){
+    min_bic <- lc$bic
+    LCA_best_model<-lc
+  } 
+}    	
+
+# bic
+print(bic_values)
+# plot bic
+classes <- 2:6
+plot(classes,
+     bic_values, 
+     type = "b", 
+     pch = 19, xlab = "Number of Classes", ylab = "BIC",
+     main = "BIC Values by Number of Classes")
+
+# best selected model - full output
+LCA_best_model 
+# specific output
+LCA_best_model$posterior # matrix of posterior class membership probabilities
+LCA_best_model$predclass # class membership
+LCA_best_model$probs # estimated class-conditional response probabilities
+
+# save the class
+data_copy <- data
+data_copy$class <- factor(LCA_best_model$predclass)
+View (data_copy)
+
+
+
+
+
+# Second step, for making product recommendations, 
+# set up a BN classifier considering the learned class as the 'root' node 
+# and preferences as ´children' nodes
+data_wNA = na.omit(data_copy) # remove missing data from the dataset
+# learn the structure (e.g., TAN structure)
+dag = tree.bayes(data_wNA, "class") 
+graphviz.plot(dag)
+# learn the parameters
+bn.mle <- bn.fit (dag, data = data_wNA, method = "mle")
+bn.fit.barchart(bn.mle$V1)
+
+
+# Now we can use BN to make product recommendations 
+# e.g., given a new customer has reported the following preferences 
+# for V1=5, V2=1, V3=1, what is the estimated preference for V4?
+library (gRain)
+junction <- compile (as.grain(bn.mle))
+
+      # New: Warning due to 0 probabilities tables, we use Bayesian parameter estimation
+      graph.model <- as.graphNEL(dag)
+      gr.model <- grain(graph.model, data =  data_wNA, smooth = 1)
+
+
+# now we can use the net for inference
+V1V2V3 <- setEvidence (gr.model, nodes = c("V1", "V2", "V3"), states = c("5", "1", "1")) # This can be changes into the example having 1,5,5
+prediction = querygrain(V1V2V3, nodes = "V4")
+str(prediction)
+prediction$V4
+
+# $V4
+# V4
+
+#.   1          2          4          5 
+#0.32669680 0.52234158 0.06583710 0.08512452
+# this user most likely he will score 1 or 2 => do not recommend the product V4
+# his expected preference for V4 is 
+preference = prediction$V4[[1]]*1 + prediction$V4[[2]]*2 + prediction$V4[[3]]*4 + prediction$V4[[4]]*5  
+preference
+
+querygrain(V1V2V3, nodes = "class") # to get the expected class 
+
+
+
+
+# To make recommendation in a dataset and save them
+# Loop through each row in dataset (in this example we use our data)
+data=data_copy
+# Initialize predictions_df outside the loop
+predictions_df <- data.frame(RowIndex = integer(), Node = character(), stringsAsFactors = FALSE)
+
+# Loop through each row in your dataset to predict and save the most probable product to recommend
+for (i in 1:nrow(data)) {
+  knownPreferences <- !is.na(data[i, ])
+  unknownPreferences <- is.na(data[i, ])
+  
+  # Ensure there is at least one known preference to set as evidence
+  if(any(knownPreferences)) {
+    nodes <- names(data)[knownPreferences]
+    states <- as.character(data[i, knownPreferences])
+    
+    # Only proceed if there are nodes and states to set as evidence
+    if(length(nodes) > 0 && length(states) > 0) {
+      junctionWithEvidence <- setEvidence(junction, nodes = nodes, states = states)
+      
+      
+      # Now, proceed to query the model for unknown preferences
+      for (nodeToPredict in names(data)[unknownPreferences]) {
+        prediction <- querygrain(junctionWithEvidence, nodes = nodeToPredict)
+        predictions_df <- rbind(predictions_df, data.frame(RowIndex = i, Node = nodeToPredict, stringsAsFactors = FALSE))
+      }
+      }
+    }
+  }
+
+View(predictions_df)
+write.csv(predictions_df, "predictions_product.csv", row.names = FALSE)
+
+
+# To save the probabilities instead of the most probable state
+predictions_df <- data.frame(RowIndex = integer(),
+                             Node = character(),
+                             State = character(),
+                             Probability = numeric(),
+                             stringsAsFactors = FALSE)
+
+for (i in 1:nrow(data)) {
+  knownPreferences <- !is.na(data[i, ])
+  unknownPreferences <- is.na(data[i, ])
+  
+  if(any(knownPreferences)) {
+    nodes <- names(data)[knownPreferences]
+    states <- as.character(data[i, knownPreferences])
+    
+    if(length(nodes) > 0 && length(states) > 0) {
+      junctionWithEvidence <- setEvidence(junction, nodes = nodes, states = states)
+      
+      for (nodeToPredict in names(data)[unknownPreferences]) {
+        prediction <- querygrain(junctionWithEvidence, nodes = nodeToPredict)
+        
+       
+          # Extract probabilities and their corresponding state names
+          probs <- prediction[[nodeToPredict]]  # Accessing the numeric vector of probabilities
+          stateNames <- attr(probs, "dimnames")[[1]]  # Extracting state names from dimnames
+          
+          # Iterate through each state and its probability
+          for (j in seq_along(probs)) {
+            new_row <- data.frame(RowIndex = i,
+                                  Node = nodeToPredict,
+                                  State = stateNames[j],
+                                  Probability = probs[j],
+                                  stringsAsFactors = FALSE)
+            predictions_df <- rbind(predictions_df, new_row)
+          }
+        }
+        
+      }
+    }
+  }
+
+View(predictions_df)
+write.csv(predictions_df, "prediction_probabilities.csv", row.names = FALSE)
+#testtest
+```
+
+
+
+=======
+---
+title: "CausalDiscovery_ProductionRecommendationAndTargeting"
+output: html_document
+date: "2024-03-18"
+---
+
+
+Application 1: Customer Retention 
+1. Building the structure manually and introducing probabilities manually 
+2. Learning the structure and the probabilities from data - most common
+3. Model evaluation
+4. Making forward and backward inference 
+
+#1. Building the structure and parameters manually 
+
+## Graph method
+```{r dataload + library}
+#install.packages("bnlearn")
+library(bnlearn)
+```
+
+```{r Create model - Manual}
+# Create an empty graph 
+dag <- empty.graph(nodes = c("Fuse","Plea","Atti","Comm"))
+# Add the arcs that encode the direct dependencies between variables
+dag <- set.arc (dag, from = "Fuse", to = "Atti")
+dag <- set.arc (dag, from = "Plea", to = "Atti")
+dag <- set.arc (dag, from = "Fuse", to = "Comm")
+dag <- set.arc (dag, from = "Plea", to = "Comm")
+dag <- set.arc (dag, from = "Atti", to = "Comm")
+# Print 
+dag
+```
+
+```{r Plot model}
+# Direct dependencies are listed for each variable
+#///modelstring(dag) #NOT NECCESARY this runs similar above
+
+# Explore the elements of the graphical net
+nodes(dag)
+arcs(dag)
+plot(dag)
+```
+Optional library Rgraphviz (see instructions on Blackboard on how to install it) NOT NECCESARY
+library(Rgraphviz) 
+graphviz.plot(dag)
+
+## Matrix method
+```{r Create matrix model - Manual}
+# Another way to build a large network from scratch is to define the nodes and create a matrix to set the whole arc set at once:
+dag2 <- empty.graph(nodes = c("Fuse","Plea","Atti","Comm"))
+arcs(dag2) = matrix (c("Fuse", "Atti",
+                       "Plea", "Atti",
+                       "Fuse", "Comm",
+                       "Plea", "Comm",
+                       "Atti", "Comm"),
+                     byrow  = TRUE, ncol = 2,
+                     dimnames = list (NULL, c("from", "to")))
+plot(dag2)
+```
+This upper matrix has five rows (one for each arc) and two columns representing the 'from' and 'to' nodes, indicating the direction of the relationships. 
+byrow = TRUE parameter specifies that the matrix should be filled by rows. dimnames = used to name the columns "from" and "to".
+NULL is specified in dimnames, it means that no row names are being set for the matrix. The second element, c("from", "to"), provides the names for the columns of the matrix.
+
+```{r Create model - Manual}
+#  A easy way to build the DAG when we know the structure:
+dag3 <- model2network("[Fuse][Plea][Atti|Fuse:Plea][Comm|Fuse:Plea:Atti]")
+plot(dag3)
+# graphviz.plot (dag3)
+```
+
+```{r Check if DAG is equal}
+# Compare dags
+all.equal(dag, dag2)
+all.equal(dag, dag3)
+```
+
+
+```{r Create Parameters - Manual}
+# Introducing the parameters manually
+Fuse.lv <- c ("Low", "Med", "High") 
+Plea.lv <- c ("Low", "Med", "High")
+Atti.lv <- c ("Low", "Med", "High")
+Comm.lv <- c ("Low", "Med", "High")
+```
+
+
+```{r Fuse Parameter probs }
+Fuse.prob <- array (c(0.02, 0.26, 0.72), dim = 3, dimnames = list (Fuse = Fuse.lv))
+Fuse.prob
+```
+
+```{r Plea Parameter probs}
+Plea.prob <- array (c(0.01, 0.55, 0.44), dim = 3, dimnames= list (Plea = Plea.lv))
+Plea.prob
+```
+
+
+```{r Atti Parameter probs}
+Atti.prob <- array (c(0.99, 0.01, 0.00,
+                          0.00, 0.67, 0.33,
+                          0.01, 0.99, 0.00,
+                          0.34, 0.33, 0.33, 
+                          0.00, 0.79, 0.21,
+                          0.00, 0.40, 0.60,
+                          0.99, 0.01, 0.00,
+                          0.00, 0.47, 0.53,
+                          0.00, 0.09, 0.91), dim = c (3, 3, 3), dimnames= list (Atti = Atti.lv, Plea = Plea.lv, Fuse = Fuse.lv))
+Atti.prob
+```
+
+
+```{r Comm Parameter probs}
+Comm.prob <- array (c(0.00, 1.00, 0.00, 
+                        0.34, 0.33, 0.33, 
+                        0.34, 0.33, 0.33, 
+                        0.34, 0.33, 0.33, 
+                        0.00, 1.00, 0.00, 
+                        1.00, 0.00, 0.00, 
+                        0.34, 0.33, 0.33,
+                        0.00, 1.00, 0.00, 
+                        0.34, 0.33, 0.33,
+                        0.34, 0.33, 0.33,
+                        0.34, 0.33, 0.33,
+                        0.34, 0.33, 0.33,
+                        0.34, 0.33, 0.33,
+                        0.00, 0.98, 0.02,
+                        0.00, 0.83, 0.17,
+                        0.34, 0.33, 0.33,
+                        0.00, 0.33, 0.67,
+                        0.00, 0.44, 0.56,
+                        1.00, 0.00, 0.00,
+                        0.34, 0.33, 0.33,
+                        0.34, 0.33, 0.33,
+                        0.34, 0.33, 0.33,
+                        0.00, 0.84, 0.16,
+                        0.00, 0.71, 0.29,
+                        0.34, 0.33, 0.33,
+                        0.00, 0.40, 0.60,
+                        0.00, 0.10, 0.90), 
+                 dim = c (3, 3, 3, 3), dimnames= list (Comm = Comm.lv,  Atti = Atti.lv, Plea = Plea.lv, Fuse = Fuse.lv))
+Comm.prob
+```
+
+
+```{r CPT-table: Conditional Prob Table}
+# Relate the CPT to the labels
+cpt <- list(Fuse = Fuse.prob, 
+            Plea = Plea.prob,
+            Atti = Atti.prob, 
+            Comm = Comm.prob)
+
+#  Relate the DAG and CPT and define a fully-specified BN
+bn <- custom.fit (dag, cpt)
+bn
+```
+The resulting Bayesian Network bn represents the combined structure of the DAG and the quantitative CPTs, allowing for probabilistic inferences based on the relationships and probabilities defined in the network.
+
+
+
+#2. Learning the structure and parameters from observational data
+
+```{r dataload + library}
+#install.packages("bnlearn")
+#library(bnlearn)
+
+library(readr)
+retention <- read_csv("C:/8. semester - BI/CA - Customer Analytics/Causal Discovery - Production Recommendation og Targeting/retention.csv.zip")
+
+retention_test <- read_csv("C:/8. semester - BI/CA - Customer Analytics/Causal Discovery - Production Recommendation og Targeting/retention_test.csv.zip")
+```
+Reminder: bn are particularly designed for categorical variables continuous variable require to be discretized.
+However, if all variables are continuous, a Gaussian Bayes net can be built. A Gaussian Bayes net is equivalent to a path analysis model or a sem model  with observable variables instead of latent constructs. 
+
+
+```{r Constrained-based algorithm NOT WORKING }
+# 2.1 Learning a structure using a constrained-based algorithm 
+# "grow-shrink (gs)", with conditional independence test chi-squared
+# Constrained-based alg. do not work with missing data
+par(mfrow = c(2, 2))
+bn.gs <- gs (retention, alpha = 0.05, test ="x2") # alternative test ="mi"
+plot(bn.gs, main = "Grow shrink_X2")
+#///graphviz.plot (bn.gs, main = "Grow shrink_X2") #just use normal plot function
+```
+
+
+```{r Constrained-based algorithm NOT WORKING}
+# notice that in the constrained-based alg some links are undirected.
+# this occurs because the algorithm cannot establish the direction of "causality". 
+
+# other constraint-based algorithms have been developed
+bn2 <- iamb (retention, alpha = 0.05, test ="mi")
+graphviz.plot (bn2, main = "Iamb1_mi" ) 
+bn3 <- fast.iamb (retention, alpha = 0.05, test ="mi")
+graphviz.plot (bn3, main = "FastIamb_mi") 
+bn4 <- inter.iamb (retention, alpha = 0.05, test ="mi" )
+graphviz.plot (bn4, main = "InterIamb_mi") 
+# in the optimal case, all will return the same graph
+    
+# to easily identify undirected paths 
+undirected.arcs(bn.gs)
+# We need to set the direction of the undirected arcs to be able to learn the parameters from observational data 
+bn.gs1 <- set.arc (bn.gs, from = "Atti", to = "Comm")
+#plot(bn.gs1, main = "Grow Shrink_") 
+graphviz.plot(bn.gs1, main = "Grow Shrink") 
+```
+This error is coming from the bnlearn package, which is used for learning the graphical structure of Bayesian networks, parameter learning, inference, and prediction. The message indicates that the "Fuse" variable is of the type "character", but bnlearn requires variables to be either factors (for discrete Bayesian networks) or numeric (for continuous networks, Gaussian Bayesian networks).
+
+
+```{r Score-based algorithm}
+# 2.2. Learning the structure using a score-based algorithm 
+# Hill-Climbing (hc) greedy search
+par(mfrow = c(1, 2))
+bn.hc <- hc (retention, score = "bic")
+plot (bn.hc, main = "Hill Climbing_BIC") 
+#///graphviz.plot (bn.hc, main = "Hill Climbing_BIC")
+```
+
+
+```{r Score-based algorithm}
+# Learning the parameters 
+# we learn the parameters for bn.gs1 structure (the theoretical structure) 
+bn.mle <- bn.fit (bn.gs1, data = retention, method = "mle")
+bn.mle
+# print them
+bn.mle$Fuse
+bn.mle$Plea
+bn.mle$Atti
+bn.mle$Comm
+```
+Other useful functions:
+drop.arc(net, from="A", to=""T)
+e.g. newnet = drop.arc(net, from = "T", to = "A")
+Test for the conditional independence between variables 
+ci.test("T", "E", c("O", "R"), test = "x2", data = data) EXPLORES UNCODITIONAL RELAIONSHIPS BETWEEN VARIABLES 
+mb(bn.gs1, "Atti")
+
+
+# 3). Model evaluation
+```{r}
+# I.Metrics of model complexity 
+nodes(bn.mle)
+arcs(bn.mle)
+bn.mle
+
+# II. Metrics of model sensitivity
+    # Test if any two nodes are d-separated 
+    dsep(bn.mle, x = "Plea", y = "Fuse")
+    dsep(bn.mle, x = "Plea", y = "Comm")
+
+    
+    # III. Evaluate the arc.strength()
+    # a) with criterion ="x2" or "mi", the output reports the p-value for the test. 
+    #    The lower the p-value, the stronger the relationship. 
+    # b) with criterion ="bic" reports the change in the BIC score of the net caused 
+    #    by an arc removal.The more negative the change, means the BIC score will go 
+    #    worse if we delete that arc (i.e. the arc is important for the model).
+    library(dplyr)
+    options(scipen = 0)
+    arc.strength (bn.gs1, retention, criterion = "x2") %>%.[order(.$strength),]
+    arc.strength (bn.gs1, retention, criterion = "bic") %>%.[order(.$strength),]
+    # The output reveals that, if we remove Plea -> Comm, BIC will decrease with -668.211, 
+    # which in bnlearn means the model will get worse.
+    # The output reveals that, if we remove Atti -> Comm, BIC will increase with 40.48, 
+    # which in bnlearn package means the model may improve based on this index.
+    
+    # Repeating the analysis for the hill-climbing structure
+    arc.strength (bn.hc, retention, criterion = "bic") %>%.[order(.$strength),]
+    # As expected, all strengths are negative
+    # this is expected as BIC was optimized when the hc algorithm has searched for this model 
+
+        # III. Metrics of evaluation and selection among several dags: 
+    # BIC, BDe, AIC scores are used to compare alternative structures and choose the best  
+    # In bnlearn, AIC, BIC, BDE closer to zero means better model; often the three indexes
+    # do not agree.
+    bnlearn::score (bn.gs1, retention, type = "aic")
+    bnlearn::score (bn.hc, retention, type = "aic")
+    
+    bnlearn::score (bn.gs1, retention, type = "bic")
+    bnlearn::score (bn.hc, retention, type = "bic")
+    
+    
+    ############################################################################
+    # IV. Metrics of predictive accuracy (error rate, confusion matrix, AUC)  
+    library(gRain)
+    library(gRbase)
+    library (caTools)
+    
+    
+    # using k-fold cross validation 
+    # This function requires as one of its parameters only structure, not the full model
+    # Here I use classification error ("pred") for the node Comm (our target) as a loss function. 
+    netcv = bn.cv (retention, bn.gs1, loss ="pred", k = 5, loss.args = list(target = "Comm"), debug = TRUE)
+    netcv 
+    # the prediction accuracy of Comm based on 5-fold cross validation is 1-0.18 = 0.82 
+    # in a similar way one can assess each individual variable
+    
+    
+    
+    # using a testing sample to evaluate the model performance
+    # we need to transform the full model into a gRain object 
+    net1 =  as.grain(bn.mle)
+    net1
+    # assuming Comm is the target node, we predict the probability of Comm 
+    # using net1 in the test sample
+    predComm = predict (net1, response = c("Comm"), newdata = retention_test, 
+                        predictors = names (retention_test)[-4], 
+                        type = "distribution") 
+    #target variable is the 4th column in the testing dataset 
+    predComm = predComm$pred$Comm
+    predComm
+
+    # Instead of probabilities of 0 or 1, one can save the actual CLASS (0/1). 
+    predComm_class = predict (net1, response = c("Comm"), 
+                              newdata = retention_test, 
+                              predictors = names (retention_test)[-4], 
+                              type = "class")
+    predCommclass = predComm_class$pred$Comm
+    predCommclass
+
+        ########################################################################
+        # Another method if you cannot use package gRain 
+          bn.mle1 = bn.fit(model2network("[Fuse][Plea][Atti|Fuse:Plea][Comm|Fuse:Plea:Atti]"),retention) 
+          predComm1= predict(bn.mle1, node = "Comm",data = retention_test) 
+          predComm1
+          table(predCommclass, predComm1)
+        ########################################################################
+        
+    
+    # confusion matrix
+    table(predComm_class$pred$Comm, retention_test$Comm)
+ 
+    
+    # ROC and AUC 
+    library(caTools) 
+    colAUC(predComm, retention_test[ ,4], plotROC = TRUE) 
+    # requires the predicted probabilities, not the predicted class
+    # we get an AUC for every column of the prediction matrix
+    # our DV has 3 categories: Low, Med and High
+    # we observe that the model has problems when distinguishing between high and medium
+    # but performs pretty well when identifying the Low category (customers who are not committed to VC)
+```
+
+
+# 4) Making queries (forward and backward)
+```{r}
+# How do we use the model in practice?
+# Below we consider several hypothetical situations.   
+  
+# Using BN, one can evaluate the expected changes in attitude, and respectively, commitment due to changes in functional usefulness and pleasure. 
+# We will set evidence in the network for Fuse and Plea and we´ll look at the cpt for Atti and Comm before and after setting the evidence. Setting (hard) evidence means setting one of the states of the variable at probability 1 (100%).
+    
+# Transform the bn into a junction tree 
+# options(digits=1)
+library (gRain)
+junction <- compile (as.grain(bn.mle))
+# "querygrain" function extracts the marginal distribution of the nodes
+querygrain(junction, nodes = "Atti")
+querygrain(junction, nodes = "Comm")
+
+# Imagine a new customer joins the VC reporting a Low (Medium or High) Functional Usefulness perception. This information can be fed to the network as evidence in order to predict the conditional probability of his/her attitude and commitment to VC. 
+
+# if Fuse = Low
+jLow <- setEvidence (junction, nodes = "Fuse", states = "Low")
+A1 = querygrain(jLow, nodes = "Atti")
+A1
+C1= querygrain(jLow, nodes = "Comm")
+C1
+    
+    # if Fuse = Med
+    jMed <- setEvidence (junction, nodes = "Fuse", states = "Med")
+    A2 = querygrain(jMed, nodes = "Atti")
+    A2
+    C2 = querygrain(jMed, nodes = "Comm")
+    C2
+    
+    
+    # if Fuse = High
+    jHigh <- setEvidence (junction, nodes = "Fuse", states = "High")
+    A3 = querygrain(jHigh, nodes = "Atti")
+    A3
+    C3 = querygrain(jHigh, nodes = "Comm")
+    C3
+    
+    
+    # Summary (only for Atti)
+    AttiHigh <- c(A1$Atti[[1]], A2$Atti[[1]], A3$Atti[[1]])
+    AttiLow <- c(A1$Atti[[2]], A2$Atti[[2]], A3$Atti[[2]])
+    AttiMed <-c(A1$Atti[[3]], A2$Atti[[3]], A3$Atti[[3]])
+    df1 <- data.frame(Fuse = c("Low", "Med", "High"), AttiLow, AttiMed, AttiHigh)
+    df1
+    matplot(rownames(df1), df1, type='l', xlab='Fuse', ylab='', ylim=c(0,1))
+    legend('topright', inset=.01, legend=colnames(df1[,2:4]), 
+           pch=1, horiz=T, col=2:4)
+    
+    # Discussion
+    # As Fuse changes from Low to Medium to High, 
+    #   - the high state of attitude shows an increasing trend, 
+    #   - the medium state of attitude shows a decreasing trend,
+    #   - the low state of attitude shows a constant trend. 
+    # Notice in the figure that when functional usefulness is low (left-side), 
+    # the probability of attitude medium is quite high (0.80); it may suggest that
+    # functional usefulness does not radically affect the customer´s attitude.  
+    
+    
+    # same analysis by setting evidence in Pleasure
+    # if Plea = Low
+    jLow <- setEvidence (junction, nodes = "Plea", states = "Low")
+    A1 = querygrain(jLow, nodes = "Atti")
+    C1= querygrain(jLow, nodes = "Comm")
+    
+    # if Plea = Med
+    jMed <- setEvidence (junction, nodes = "Plea", states = "Med")
+    A2 = querygrain(jMed, nodes = "Atti")
+    C2 = querygrain(jMed, nodes = "Comm")
+  
+    # if Plea = High
+    jHigh <- setEvidence (junction, nodes = "Plea", states = "High")
+    A3 = querygrain(jHigh, nodes = "Atti")
+    C3 = querygrain(jHigh, nodes = "Comm")
+    
+    # summary This ection is optional, we dont have to build these plots
+    AttiHigh <- c(A1$Atti[[1]], A2$Atti[[1]], A3$Atti[[1]])
+    AttiLow <- c(A1$Atti[[2]], A2$Atti[[2]], A3$Atti[[2]])
+    AttiMed <-c(A1$Atti[[3]], A2$Atti[[3]], A3$Atti[[3]])
+    df2 <- data.frame(Plea = c("Low", "Med", "High"), AttiLow, AttiMed, AttiHigh)
+    options(scipen = 999)
+    df2
+    matplot(rownames(df2), df2, type='l', xlab='Plea', ylab='', ylim=c(0,1))
+    legend('topright', inset=.01, legend=colnames(df2[,2:4]), 
+           pch=1, horiz=T, col=2:4)
+    # Discussion
+    # as we set evidence in Plea from low to medium to high, we notice
+    #  - the high state of attitude shows an increasing trend
+    #  - the medium state of attitude shows a mixed trend and 
+    #  - the low state of attitude shows a decreasing trend 
+    # Notice in the figure, when pleasure is low, the probability of attitude 
+    # being low is high (0.8592). This means pleasure has a stronger 
+    # relationship with attitude; 
+    # hence, linked to the previous result, for positive attitudes,
+    # it is more important to enhance perceived pleasure than to enhance 
+    # functional usefulness. 
+    
+  
+    
+  
+    # Diagnostic (backward inference)
+    # Let us assume that the evidence given is that the customer’s attitude towards VC
+    # is high. This information is fed to the network by setting the probability of 
+    # attitude being high and observing the changes in the parent 
+    # variables (Fuse and Plea)
+    
+    # Prior ctp (conditional tables) p?
+    querygrain(junction, nodes = "Fuse")
+    querygrain(junction, nodes = "Plea")
+    
+    # New ctp
+    jHigh <- setEvidence (junction, nodes = "Atti", states = "High")
+    querygrain(jHigh, nodes = "Fuse")
+    querygrain(jHigh, nodes = "Plea")
+    # Discussion
+    # After we set evidence for Atti as High, the probability of the high state 
+    # of Plea and Fuse is increasing, while the probability of the low and 
+    # medium states of Plea and Fuse is decreasing. 
+    # This implies that positive attitude towards interaction in a VC is because of 
+    # person’s increased perception of pleasure and functional usefulness in the VC.
+    
+    
+    # Assume that the online vendor observes decreasing commitment towards participation
+    # among its customers. He can set evidence to the network that the probability 
+    # of commitment is low and see the effect of the parent variables (attitude,
+    # functional usefulness and pleasure).
+    # Prior ctp
+    querygrain(junction, nodes = "Atti")
+    querygrain(junction, nodes = "Fuse")
+    querygrain(junction, nodes = "Plea")
+    
+    # New ctp
+    CLow <- setEvidence (junction, nodes = "Comm", states = "Low")
+    querygrain(CLow, nodes = "Atti")
+    querygrain(CLow, nodes = "Fuse")
+    querygrain(CLow, nodes = "Plea")
+    # Discussion
+    # After we set evidence for Comm as Low, the prob of Pleasure to be High is 
+    # 0.00000. A vendor, therefore, needs to take corrective action to enhance 
+    # customers’ pleasure aspect in the VC to improve customers’ commitment. 
+    # The results infer that low commitment is mainly due to lack of enhancement 
+    # of the pleasure aspect of the website. 
+    # The vendors need to take corrective action to provide the customers 
+    # with more fun and enjoyment. 
+    
+    
+    
+    # Modeling contradictory behavior
+    # Assume some customers interact in the VC to seek information from the VC, 
+    # but do not participate in VC activities. 
+    # Such customers can be considered persons with positive attitudes but low 
+    # commitment.
+    # Can BN predict the reasons behind such contradictory behavior?
+    # Prior ctp
+    querygrain(junction, nodes = "Fuse")
+    querygrain(junction, nodes = "Plea")
+    
+    # New ctp
+    AHigh <- setEvidence (junction, nodes = "Att", states = "High")
+    AHighCLow <- setEvidence (AHigh, nodes = "Comm", states = "Low")
+    querygrain(AHighCLow, nodes = "Fuse")
+    querygrain(AHighCLow, nodes = "Plea")
+    # Discussion
+    # After we set evidence for attiude and commitment we observe that 
+    # FUSE is 0.30 likely to be Low, but a significant 
+    # proportion is still likely to be High (0.62); instead,
+    # PLEA is most likely to be Low (0.69) and unlikely to be High (0%) 
+    # This reveals that customers interact primarily because of fun, 
+    # and they do not perceive the VC to be sufficiently useful to them to 
+    # commit to.
+```
+
 
 
 
