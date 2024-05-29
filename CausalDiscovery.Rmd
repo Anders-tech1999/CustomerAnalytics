@@ -348,7 +348,7 @@ bn.mle
     # but performs pretty well when identifying the Low category (customers who are not committed to VC)
 ```
 
-# 4) Making queries (forward and backward)
+## 4) Making queries (forward and backward)
 ```{r}
 # How do we use the model in practice?
 # Below we consider several hypothetical situations.   

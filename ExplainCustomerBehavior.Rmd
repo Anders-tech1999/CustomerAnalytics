@@ -4,19 +4,17 @@ output: html_document
 date: "2024-05-07"
 ---
 
-#FACTOR ANALYSIS + SEM (Alina)
+#FACTOR ANALYSIS (+SEM) Alina
 
 ## chapter_13-FactorAnalysis (1).R
 
+###WORKOUT Exercise
 This file contains all code examples from chapter 13 in Mehmetoglu & Mittner (2021). Applied Statistics Using R. SAGE.
-
-```{r}
-install.packages("psych")
-```
 
 
 ```{r}
 ## setup
+#install.packages("psych")
 library(tidyverse)
 #library(astatur) - NOT AVAILABLE
 #theme_set(theme_astatur()) - NOT AVAILABLE
@@ -44,33 +42,79 @@ paranalysis <- fa.parallel(workout3_comp,
       fm="pa", fa="fa", SMC="TRUE")
 print(paranalysis)
 ```
+Parallel analysis suggests that the number of factors =  2
+- the analysis compared the actual eigenvalues of your data to those of random data and found that 2 factors are significant.
+
+eigen values of factorsc[1]  2.34  2.28  0.00 -0.07 -0.08 -0.12
+- The first two eigenvalues (2.34 and 2.28) are greater than 1, which is another criterion often used to determine the number of factors to retain.
+ - -	Eigenvalue represents the variance in all of the observed variables which is accounted for by that principal component (Slide5.2)
+
+Scree plot
+ - Evaluated from FA Actual data (blue triangle) that 2 factors are above eigenvalue 1
+
+SUMMARY: retaining 2 factors from the data.
 
 
-```{r ii) squared multiple correlations }
+```{r ii) SMC Squared Multiple cCorrelations }
 #(SMC are commonalities at the first iteration)
 squaredmc <- smc(workout3_comp)
 squaredmc
 mean(squaredmc)
 ```
+ - SMCs are the squared correlations of each variable with all other variables in the dataset. They represent the proportion of variance in each variable that can be explained by the other variables.
+ - In factor analysis, SMCs are often used as initial estimates of the communality for each variable.
+ - High SMC values indicate that the variables are well explained by the others, which is useful information in factor analysis. 
+ - The mean SMC value gives an overall sense of how well the variables are explained on average.
 
+Gaining Loadings and cumulative variance of factors
 ```{r Extract factors }
 library(psych) 
 fmodel1 <- fa(workout3_comp,
-              nfactors = 2, 
+              nfactors = 2, #Choosing Factors with eigenvalue > 1
               fm="pa",
-              rotate = "varimax")
+              rotate = "varimax")#orthogonal rotation method simplifies factor loadings to make them more interpretable.
 
 print(fmodel1$n.obs)
 print(fmodel1$loadings, digits=4, cutoff=0) 
 # for better interpretation play with cutoff
 ```
+194
+ - obsersations in dataset
 
+Loadings:
+     PA1     PA2    
+Var1  0.8662 -0.0287
+Var2  0.9522 -0.0480
+Var3  0.8689  0.0465
+Var4  0.0575  0.7990
+Var5  0.0093  0.9550
+Var6 -0.0382  0.8943
+- values represent the loadings of each variable on the two extracted factors (PA1 and PA2).
+ - higher absolute values indicate stronger relationships between the variable and the factor.
+ 
+PA1 / Factor 1
+ - Variables Var1, Var2, and Var3 load highly on PA1 (0.8662, 0.9522, and 0.8689, respectively).
+
+PA2 / Factor 2
+ - Variables Var4, Var5, and Var6 load highly on PA2 (0.9040, 0.9550, and 0.8943, respectively).
+
+Cumulative Var: 0.4028 0.7954
+ - These two factors together explain approximately 79.54% of the variance in the dataset. (factor 1 explains 0.4028)
+
+Graphical representation of the factor loading:
 ```{r Factor and variable relationship }
 #relationship between factors and variables geometrically
 fa.plot(fmodel1)
 ```
+Factor Analysis Plot
+ - each point in the plot represents one of the variables from your dataset.
+ - position of the points shows how strongly each variable loads on the two factors.
+ 
+Var1, Var2, and Var3 have high loadings on PA1 (Factor 1) and low loadings on PA2 (Factor 2)
+Var4, Var5, and Var6 have high loadings on PA2 and low loadings on PA1
 
-
+Communalities of each variable after the factor estimation.
+ - Communalities represent the proportion of each variable's variance that can be explained by the common factors
 ```{r Commonalities after estimation }
 #commonalities after estimation
 comm <- fmodel1$communality
@@ -79,50 +123,112 @@ comm
 sum(comm)
 # [1] 4.772239; in PCA it would be 6 (6X1)
 ```
+Var1      Var2      Var3      Var4      Var5      Var6 
+0.7511719 0.9088973 0.7572130 0.6417337 0.9120803 0.8011432
+ - communalities for each variable
+
+Var1: 0.7511719
+- approximately 75.12% of the variance in Var1 is explained by the common factors.
+
+4.772239:
+ - total variance explained by the common factors (sum of communalities)
 
 
 ```{r Eigenvalues Communalities Uniqueness }
 #diving the eigenvalues by the total variance explained
-shareFactor1 = 2.42/4.77
-shareFactor2 = 2.36/4.77
+shareFactor1 = 2.34/4.77 #change from eigenvalues from above
+shareFactor2 = 2.28/4.77
+shareFactor1
+shareFactor2
 
 #communilities and uniquenesses
-cbind(h2=fmodel1$communality, u2=fmodel1$uniquenesses)
+cbind(Communality=fmodel1$communality, Uniquenesses=fmodel1$uniquenesses)
+
 ```
+[1] 0.490566
+[1] 0.4779874
+ - Factor 1 explains approximately 0.490566 of the total variance.
+ - Factor 2 explains approximately 0.4779874 of the total variance.
 
+     Communality Uniquenesses
+Var1   0.7511719   0.24882811
+Var2   0.9088973   0.09110270
+Var3   0.7572130   0.24278697
+Var4   0.6417337   0.35826630
+Var5   0.9120803   0.08791973
+Var6   0.8011432   0.19885679
+Communalities: 
+ - the proportion of each variable's variance that is explained by the common factors.
+ - higher communalities indicate that the variable is well represented by the factors.
+ - example, Var2 has a high communality (0.9088973), indicating that about 90.89% of its variance is explained by the factors.
 
+Uniquenesses
+ - the proportion of each variable's variance that is not explained by the common factors
+ - Lower uniquenesses indicate that the variable has less unique variance and is better represented by the factors.
+ - example, Var2 has a low uniqueness (0.09110270), indicating that only about 9.11% of its variance is unique and not explained by the factors.
+
+Estimated factor scores for each observation in the dataset after performing factor analysis
 ```{r Estimated factor scores }
 #estimated factor scores
 fmodel1$scores
 ```
+First 5 Observations in the dataset of 194 observations
+              PA1          PA2
+  [1,] -0.074738530 -0.796923818
+  [2,]  0.610194365 -1.247087125
+  [3,] -1.236137173  0.265908825
+  [4,]  1.252333167 -0.861741812
+  [5,] -0.691961764  0.974229599
+Factor Scores:
+ - the values of the latent variables (factors) for each observation in the dataset. They represent how each observation scores on the extracted factors.
+ - this output, there are two factors (PA1 and PA2), and the scores for each observation on these factors are provided.
+ 
+Positive and Negative Scores:
+ - positive scores on a factor indicate that the observation has higher levels of the underlying construct measured by that factor.
+ - negative scores indicate lower levels of the underlying construct.
 
+Magnitude of Scores:
+- magnitude of the scores indicates the strength of the relationship between the observation and the factor. Larger absolute values indicate a stronger relationship.
 
-```{r Generated factor scores }
+Here the analyst must group the variables based on previous Factor Extraction - Find appropriate names
+ - expands upon the previous analysis by including additional reliability and correlation metrics for the factor scores
+```{r Generated factor scores + Cronbach Alpha }
 #generated factors scores (average of the var expressing each factor)
+#HERE the analyst makes groups of the variables
 itemlist <- list(relaxation=c("Var1","Var2","Var3"),
                  appearance=c("Var4","Var5","Var6"))
-summateds <- scoreItems(itemlist, workout3_comp, 
+
+scoreitems <- scoreItems(itemlist, workout3_comp, 
                          min=1, max=6, totals = FALSE)
+#scoreitems # - Print for standard errors alpha, Average item correlation  Guttman 6* reliability, etctectetc
+
+scoreitems$alpha
 factordata <- as.data.frame(summateds$scores)
-summateds
 factordata
 ```
+Cronbach's Alpha: 
+relaxation: 0.92
+appearance: 0.91
+ - values indicate high internal consistency for both scales.
 
+Factor Scorres
+ - factor scores for each observation in the dataset after performing factor analysis and grouping variables into two factors: relaxation and appearance.
 
+Showing the first 3 observations
+relaxation    appearance
+4.000000	    2.333333			
+5.000000	    2.000000			
+1.666667	    4.000000
+
+Add the 2 new constructs to the dataset
 ```{r adding new variables }
 # add new var to the dataset
 workout3_comp <- cbind(workout3_comp, factordata)
 names(workout3_comp)
+as.data.frame(workout3_comp)
 ```
 
-```{r Cronbach alpha }
-#Cronbach´s alpha coef
-relaxation <- data.frame(workout3_comp[,1:3])
-psych::alpha(relaxation)$total$std.alpha
-
-appearance <- data.frame(workout3_comp[,4:6])
-psych::alpha(appearance)$total$std.alpha
-```
+#SEM ANALYSIS (+Factor Analysis) Alina
 
 ## Chapter_14-StructuralEq.R
 
@@ -149,9 +255,10 @@ glimpse(workout2)
 library(readr)
 workout2_imputed <- read_csv("C:/Users/Bruger/OneDrive - Aarhus universitet/8. semester - BI/CA - Customer Analytics/Explain Customer Behavior/workout2_imputed.csv")
 ```
+## Unuseful Measurement model - CFA Confirmatory Factor Analysis
 
-
-```{r}
+This is the measurement model - we DO NOT USE THESE OUTPUTS AS THIS MODEL IS NOT ADEQUATE
+```{r Measurement model - NOT USE!}
 # read hypotheses (p. 395) and poposed model (p. 396)
 
 ## cfa
@@ -164,22 +271,26 @@ meas.lpa.mod <- '
 est.meas.lpa.mod <- cfa(meas.lpa.mod, data=workout2)
 summary(est.meas.lpa.mod, fit.measures=TRUE, standardized=TRUE)
 ```
+fit not acceptable^^^
+RMSEA (modified model): 0.129
+- the threshold is RMSEA < 0.1
+- The measurement model is not a good fit!
 
+Chi-Square Distribution:
+ - chi-square distribution is used in many statistical tests, including those related to goodness-of-fit and modification indices in SEM.
+ - the value 3.84 corresponds to the critical value for a chi-square distribution with 1 degree of freedom at the 0.05 significance level.
+```{r MI Modification Indices }
+modindices(est.meas.lpa.mod, minimum.value = 3.84) #From Chisquare distribution
 
-```{r}
-# fit not acceptable
-modindices(est.meas.lpa.mod, minimum.value = 3.84)
-# 107     muscle ~~    endur 20.263 -0.553  -0.553   -0.585   -0.585
-# 90        body ~~  lweight 16.845 -0.285  -0.285   -0.354   -0.354
-# 111   strength ~~    endur 27.772  0.577   0.577    1.042    1.042. 
 # high MI but not mentioned in the textbook
 ```
+MI Modification Indices:
+ - In SEM, modification indices indicate the expected drop in the overall chi-square statistic if a particular fixed parameter (such as a path or a covariance) were freely estimated.
+ - a high modification index suggests that freeing this parameter would significantly improve the model fit.
 
-
-```{r}
-## modified cfa (allowing correlations between the error variances - this is not
-## considered good practice and it reveals the data is not good quality - but we
-# keep to the case study for this demo)
+##Modified CFA Confirmatory Factor Analysis
+```{r Modified CDF Confirmatory Factor Analysis}
+## modified cfa (allowing correlations between the error variances - this is not considered good practice and it reveals the data is not good quality - but we keep to the case study for this demo)
 meas.lpa.mod2 <- '
                 Attractive =~ face + sexy
                 Appearance =~ body + appear + attract
@@ -193,29 +304,89 @@ est.meas.lpa.mod2 <- cfa(meas.lpa.mod2, data=workout2)
 summary(est.meas.lpa.mod2, fit.measures=TRUE, standardized=TRUE)
 # acceptable fit
 ```
+RMSEA (modified model): 0.107
+- in reality the threshold is RMSEA < 0.1, but accepting this RMSEA Root Mean Square Error Approximation
+- Lecture 6.4 commands the threshhold being RMSEA < 0.08???
+- when having adequate level of RMSEA, the model proceeds to validity and reliability properties
+
+     Further Metrics threshold from Lecture 6.4
+RMSR Root Mean Square Residual: 0.074
+ - threshold RMSR < 0.08
+ - adequate measure in this case
+
+Tucker-Lewis Index (TLI)      : 0.905
+ - threshold TLI > 0.95
+ - NOT adequate measure in this case
+
+Comparative Fit Index (CFI)   : 0.938
+ - threshold TLI > 0.95
+ - NOT adequate measure in this case
 
 
-```{r}
+Loadings (standardized):
+- minimum accpetable level: 0.4 (look in Estimate column)
+- p-values significance (all has to be > 0.05)
+Latent Variables:
+                   Estimate  Std.Err  z-value  P(>|z|)   Std.lv
+  Attractive =~                                                
+    face              1.000                               0.710
+    sexy              1.418    0.376    3.769    0.000    1.007
+  Appearance =~                                                
+    body              1.000                               1.222
+    appear            1.322    0.078   16.924    0.000    1.615
+    attract           1.252    0.081   15.505    0.000    1.530
+  Muscle =~                                                    
+    muscle            1.000                               1.505
+    strength          0.530    0.093    5.673    0.000    0.798
+    endur             0.510    0.076    6.737    0.000    0.768
+  Weight =~                                                    
+    lweight           1.000                               1.489
+    calories          0.995    0.060   16.463    0.000    1.482
+    cweight           0.977    0.062   15.875    0.000    1.454
+
+Convergent and Discriminant validity
+ - Construct validity: is the extent to which the measured items actually reflect the theoretical latent construct they are designed to measure
+```{r Convergent + Discriminant validity}
 # convergent and discriminnat analysis, and scale reliability
 # loadings all high and sig.
 condisc(est.meas.lpa.mod2)
 relicoef(est.meas.lpa.mod2)
 # all tests are in line with recommendations
 ```
+$Average_Variance_Extracted
+Attractive Appearance     Muscle     Weight 
+     0.688      0.796      0.631      0.779
 
+Convergent validity:
+ - all AVEs Average Variance Extracted must be (bigger than) > 0.5
+ - this is the case for all AVEs Average Variance Extracted^^^
 
-```{r}
+$Squared_Factor_Correlation
+           Attrct Apprnc Muscle Weight
+Attractive  1.000                     
+Appearance  0.063  1.000              
+Muscle      0.013  0.208  1.000       
+Weight      0.001  0.213  0.069  1.000
+
+Discriminant validity:
+ - the extent to which a construct is truly distinct from other constructs.
+ - all AVEs Average Variance Extracted must be considerely larger than $Squared_Factor_Correlations among latent variables
+ - This is the case for all correlations^^^
+
+##Structural Part - LPA Latent Part Analysis
+-	Once a satisfactory measurement model is obtained, the 2nd step is to test the structural model (stages 5-6). The structural model tests a theory and relates the constructs to other constructs
+```{r Structural Model - LPA Latent Part Analysis}
 # structural part
 full.lpa.mod <- '
-              #Measurement model 
+              #Measurement model (latent variables)
                 Attractive =~ face + sexy
                 Appearance =~ body + appear + attract
                 Muscle =~ muscle + strength + endur
                 Weight =~ lweight + calories + cweight
                 muscle ~~ endur 
                 lweight ~~ body
-                Muscle ~~ 0*Weight #set covariance to 0          # note extra assumption
-              #Structural model 
+                Muscle ~~ 0*Weight #set covariance to 0
+              #Structural model (regressions)
                 Appearance ~ Attractive
                 Muscle ~ Appearance
                 Weight ~ Appearance
@@ -223,28 +394,86 @@ full.lpa.mod <- '
 est.full.lpa.mod <- sem(full.lpa.mod, data=workout2)
 summary(est.full.lpa.mod, fit.measures=TRUE, standardized=TRUE)
 # check fit
-
-# Go to output Regressions: and interpret sign, significance and size of the path coefficients
-# here basically we assess our theoretical hypotheses
-# guidelines: 
-  # 0.09 small effects
-  # 0.1-0.2 medium effects
-  # 0.2 and above large effects
 ```
+RMSEA (structural part - Latent Part Analysis): 0.104
+- in reality the threshold is RMSEA < 0.1, but accepting this RMSEA Root Mean Square Error Approximation
+- Lecture 6.4 commands the threshhold being RMSEA < 0.08???
 
+Tucker-Lewis Index (TLI)      : 0.911
+ - threshold TLI > 0.95 (CH14 Mehmetoglu having 0.9 as threshold???)
+ - NOT adequate measure in this case
 
-```{r}
+Comparative Fit Index (CFI)   : 0.937
+ - threshold TLI > 0.95 (CH14 Mehmetoglu having 0.9 as threshold???)
+ - NOT adequate measure in this case
+
+SRMR                          : 0.082
+ - threshold SRMR < 0.1
+ - adequate measure in this case
+
+- when having adequate level of RMSEA, Tucker-Lewis Index,  Comparative Fit Index and SRMR the model proceeds to interpretation of the Structural part LPA Latens Part Analysis estimates
+
+Alina: Go to output Regressions: and interpret sign, significance and size of the path coefficients
+ - here basically we assess our theoretical hypotheses
+guidelines: 
+ - 0.09 small effects
+ - 0.1-0.2 medium effects
+ - 0.2 and above large effects
+
+Regressions: (standardized beta coefficients)
+                   Estimate  Std.Err  z-value  P(>|z|)   Std.lv
+  Appearance ~                                                 
+    Attractive        0.413    0.140    2.949    0.003    0.254
+  Muscle ~                                                     
+    Appearance        0.575    0.086    6.689    0.000    0.466
+  Weight ~                                                     
+    Appearance        0.559    0.095    5.865    0.000    0.461
+ - standardized coefficients range typically between +-1
+ - the closer a path coeff is to +-1, the stronger the relationship (pos/neg) is
+  - standardized beta coeff < 0.09 indicate small effect
+  - standardized beta coeff between 0.1 - 0.2 indicate medium effect
+  - standardized beta coeff > 0.2 indicate large effect
+  - standardized beta coeff must be significant (pvalue < 0.01)
+SUMMARY
+these findings provide support for the 3 first hypothesis that
+ - the more attractive -> the more desire workout improve appearance
+Attractive -> Appearance
+
+ - the more workout improve appearance -> the more desire to improve muscles
+Appearance -> Muscle
+
+ - the more workout improve appearance -> the more desire to lose weight
+Appearance -> Weight
+
+Rsquares for dependent/endogenous variable
+```{r Rsquares for dependent/endogenous variable}
 #get R-squares
 inspect(est.full.lpa.mod, what="rsquare")
 ```
+This plot has to be inspected in the light of relationships in the Structural Part - LPA Laten Part Analysis
+Structural model (regressions)
+                Appearance ~ Attractive
+                Muscle ~ Appearance
+                Weight ~ Appearance
+- Attractive alone explains 6.5% of variance in Appearance
+- Appearance alone explains 21.7% of variance in Muscle 
+- Appearance alone explains 21.2% of variance in Weight 
 
-```{r}
-install.packages("lavaanPlot")
-```
 
+###Indirect Effects: Structural Part - LPA Latent Part Analysis
 
-```{r}
+Turning to Hypothesis 4 and 5
+ - the more attractive -> the more this is indirectly effects desire  to workout improving muscles
+Attractive -> Appearance -> Muscle
+
+ - the more attractive -> the more this is indirectly effects desire  to workout losing weight
+Attractive -> Appearance -> Weight
+
+Path diagram Plot
+visualizes the relationships among latent variables and observed variables in a structural equation model (SEM). 
+```{r Path diagram Plot}
 # plot
+#install.packages("lavaanPlot")
 library(lavaanPlot)
 lavaanPlot(model = est.full.lpa.mod, 
            node_options = list(shape = "box", 
@@ -254,8 +483,35 @@ lavaanPlot(model = est.full.lpa.mod,
            stand=TRUE, sig=.05, stars="regress")
 # - summarize the findings
 ```
+      Path diagram Elements
+Nodes:
+ - Latent Variables (Ovals): These represent unobserved constructs measured by multiple observed variables. Examples include Attractive, Appearance, Muscle, and Weight.
+ - Observed Variables (Boxes): These represent directly measured variables. Examples include face, sexy, body, appear, attract, lweight, cweight, calories, muscle, strength, endur.
+
+Edges (Arrows):
+ - Single-headed Arrows: Indicate causal relationships or regressions. An arrow from Appearance to Attractive suggests that Appearance is predicted by Attractive.
+ - Double-headed Arrows: Represent covariances or correlations between variables. For example, the double-headed arrow between muscle and endur indicates a covariance between these variables.      
+
+Path Coefficients:
+ - the numbers on the arrows, representing standardized regression weights or factor loadings - indicate the strength and direction of the relationship.
+ - 0.77 between Attractive and face indicates that face is strongly and positively related to the latent variable Attractive.
+
+Significance Levels:
+ - Stars (*, **, ***, ****) indicate the significance level of the path coefficients.
+*: p < 0.05
+**: p < 0.01
+
+      Interrelationships
+Measurement Model:
+ - Attractive is measured by face and sexy with loadings of 0.77 and 0.87 respectively.
+
+Structural Model:
+ - Appearance is predicted by Attractive with a path coefficient of 0.25**, indicating a significant relationship.
+ - Muscle is predicted by Appearance with a path coefficient of 0.44****, indicating a highly significant relationship.
+ - Weight is predicted by Appearance with a path coefficient of 0.47****, indicating a highly significant relationship.
 
 
+Indirect Effects - Structural Model output
 ```{r}
 # assess indirect effects and mediation 
 full.lpa.mod2 <- '
@@ -277,10 +533,10 @@ full.lpa.mod2 <- '
                 #of Attraction on Weight
                 ind2 := a*b2 
                 '
-est.full.lpa.mod2 <- sem(full.lpa.mod2, data=workout2)
-summary(est.full.lpa.mod2, standardized=TRUE)
+#est.full.lpa.mod2 <- sem(full.lpa.mod2, data=workout2)
+#summary(est.full.lpa.mod2, standardized=TRUE)
 ```
-
+Preferring the bootstrapped output below instead of the non-bootstrap
 
 ```{r}
 # recheck with se="bootstrap"
@@ -288,29 +544,75 @@ est.full.lpa.mod2 <- sem(full.lpa.mod2, data=workout2, se="bootstrap")
 summary(est.full.lpa.mod2, standardized=TRUE)
 
 # assess moderating effects (moderation analysis)
-# If we have two groups of customers, women and men and want to see the differences between them
-# we can implement multigroups analysis
+# If we have two groups of customers, women and men and want to see the differences between them we can implement multigroups analysis
 ```
+Defined Parameters:
+            Estimate  Std.Err  z-value  P(>|z|)   Std.lv  Std.all
+    ind1      0.238    0.100    2.365    0.018    0.119   0.119
+    ind2      0.231    0.089    2.586    0.010    0.117   0.117
+
+    ind1 (Indirect effect 1):
+Estimate: 0.238
+P(>|z|): 0.018
+Std.lv: 0.119
+ - interpretation: The parameter ind1 is significant (p = 0.018) (actually not by the level of 99% significance), with a standardized loading of 0.119.
+
+     ind2 (Indirect effect 2):
+Estimate: 0.231
+P(>|z|): 0.010
+Std.lv: 0.117
+ - interpretation: The parameter ind2 is significant (p = 0.010), with a standardized loading of 0.117.
+
+Alina: Go to output Regressions: and interpret sign, significance and size of the path coefficients
+
+Regressions: (standardized beta coefficients)
+                   Estimate  Std.Err  z-value  P(>|z|)   Std.lv
+  Appearance ~                                                 
+    Attractiv  (a)    0.413    0.163    2.537    0.011    0.254
+  Muscle ~                                                     
+    Appearanc (b1)    0.575    0.092    6.275    0.000    0.466
+  Weight ~                                                     
+    Appearanc (b2)    0.559    0.106    5.274    0.000    0.461
+ - standardized coefficients range typically between +-1
+ - the closer a path coeff is to +-1, the stronger the relationship (pos/neg) is
+  - standardized beta coeff < 0.09 indicate small effect
+  - standardized beta coeff between 0.1 - 0.2 indicate medium effect
+  - standardized beta coeff > 0.2 indicate large effect
+  - standardized beta coeff must be significant (pvalue < 0.01)
+SUMMARY
+these findings provide support for the 2 last hypothesis that
+ - the more attractive -> the more this is indirectly effects desire  to workout improving muscles
+Attractive -> Appearance -> Muscle
+
+ - the more attractive -> the more this is indirectly effects desire  to workout losing weight
+Attractive -> Appearance -> Weight
+
+The significance of the path between Attractive and Appearance is not quite significant but really close. Therefore accepting the Alternative hypothesis
 
 
-```{r}
-# for this example, I created a fictitious variable representing women and men in our sample
-# also I imputed the missing values 
-# upload the new data
+###Alina selfmade: Creating men and women
+
+for this example, Alina created a fictitious variable representing women and men in our sample
+ - also I imputed the missing values 
+ - upload the new data
+```{r Creating men/women data}
 workout2_imputed <- read_csv("C:/Users/Bruger/OneDrive - Aarhus universitet/8. semester - BI/CA - Customer Analytics/Explain Customer Behavior/workout2_imputed.csv")
 imputed_data <- workout2_imputed
 ```
 
-
-```{r}
+Generate new gender variable
+```{r Generate new gender variable }
 # Generate random binary variable
-# workout2$gender <- sample(0:1, nrow(workout2), replace = TRUE)
+workout2$gender <- sample(0:1, nrow(workout2), replace = TRUE)
 # also as we have many missing I will impute with knn the values for this demo
-# library(mice)
-# imputed_data <- complete(mice(workout2, method = "pmm", m = 5))
+#install.packages("mice")
+library(mice)
+imputed_data <- complete(mice(workout2, method = "pmm", m = 5))
 # write.csv(imputed_data, file="workout2_imputed.csv", row.names = FALSE)
+```
 
 
+```{r CFA multigroup }
 # cfa multigroup to assess configural invariance
 est.meas.lpa.mod_configural <- cfa(meas.lpa.mod, 
                          data=imputed_data,
@@ -349,8 +651,10 @@ summary(est.meas.lpa.mod_metric, fit.measures=TRUE, standardized=TRUE)
 # performs equally good. Thus the loadings are not sig. different between groups
 # Therefore metric invariance is fulfilled.
 ```
+P-value: [1] 0.341225
+ - therefore metric invariance is fulfilled.
 
-
+SEM:
 ```{r}
 # once configureal and metric invariance are established, we test SEM multi-group
 est.full.lpa.mod_MG <- sem(full.lpa.mod, 
@@ -390,19 +694,10 @@ summary(est.full.lpa.mod_eqpath)
 # Note: recall that we created gender. 
 # This is a demo and does not mean the results correspond to reality.
 ```
+
 # ApplicationEFA_CFA_SEM_Lavaan.RMD
 
----
-title: "The relationships between Customer Perceptions and the Likelihood of Future Business"
-author: "Copyright: Ana Alina Tudoran"
-date: "12/01/2022"
-geometry: margin=0.9in  
-fontsize: 11pt
-output:
-  html_document: default
-  pdf_document: 
-  latex_engine: xelatex
-  word_document: default
+"The relationships between Customer Perceptions and the Likelihood of Future Business"
 
 0. Problem & objective (we use the datafile from Hair et al., Multivariate Data Analysis, Pearson)
 HBAT is a manufacturer of paper products who sells products to two market segments: the newsprint industry and the magazine industry. The current market is very competitive, so the manufacturer wants to understand how its customers perceive the company and make purchasing decisions, in order to enforce customers loyalty. The manufacturer commissioned a study asking its customers to complete a questionnaire on a secure website. In total, 100 customers - purchasing managers from different firms - buying from HBAT completed the questionnaire. The data consist of three main pieces of information:
@@ -485,33 +780,38 @@ VariableLabels <- unname(attr(data, "variable.labels"))
 summary(data)
 ```
 
-2. Check if Exploratory factor analysis (EFA) applies
+##2. Check if Exploratory factor analysis (EFA) applies
 
-```{r Linear correlation }
+```{r Linear correlationmatrix }
 # Look at their the coefficient of linear correlation
 cormatrix <- cor(data[, c(7:19)])
 round(cormatrix, 2)
-# Observe that most of the variables have a high correlation (>0.40 as a rule-of-thumb) with at least one of the others. x15 does not have decent correlation with any of the others; the analyst may decide to delete x15. If the analyst does not discover the problem here, it will be evident a few steps later. 
 ```
+Observe that most of the variables have a high correlation (>0.40 as a rule-of-thumb) with at least one of the others. 
+ - x15 does not have decent correlation with any of the others; the analyst may decide to delete x15. 
+ - If the analyst does not discover the problem here, it will be evident a few steps later. 
 
-
-
+Bartlett Sphericity Test. 
+ - The null hypothesis is that the data dimension reduction is not possible. 
+ - If p-value < 0.05, we reject the null hypothesis and apply FA. This test is sensitive to N.
 ```{r Bartlett Sphericity Test }
 #install.packages("psych")
-# Bartlett Sphericity Test. The null hypothesis is that the data dimension reduction is not possible. 
-# If p-value < 0.05, we reject the null hypothesis and apply FA. This test is sensitive to N.
 library(psych)
 print(cortest.bartlett(cor(data[, c(7:19)]), nrow(data[, c(7:19)])))
 ```
+$p.value: 8.81589e-150
+ - is close to 0.000->: we reject the H0
 
+Kaiser-Meyer-Oklin Test (KMO). 
+ - MSA overall should be .60 or higher to proceed with factor analysis
 ```{r Kaiser-Meyer-Oklin Test (KMO) }
-# Kaiser-Meyer-Oklin Test (KMO). MSA overall should be .60 or higher to proceed with factor analysis
 library(psych)
 KMO(data[, c(7:19)])
 ```
-x15 does not share much with the other variables. x6 does share 87% with other variables. Go primarily with overall MSA = 0.61
+x15 does not share much with the other variables. x6 does share 87% with other variables. 
+ - Go primarily with overall MSA = 0.61
 
-3. Apply EFA with Common Factor Analysis
+##3. Apply EFA Exploratory Factor Analysis with Common Factor Analysis
 ```{r EFA Exploratory Factor Analysis }
 #install.packages("nFactors")
 # Extracting as many factors as variables and check eigenvalues 
@@ -523,301 +823,405 @@ plot(ev$values, type="line")
 # the screeplot suggests 3 factors
 # we go for 4 factors and see later if necessary to reduce this number
 ```
+[1] 3.567074795 2.997644547 1.738077491 1.287225051 1.005237601
+ - from output, the 5 first eigenvalues exceeds 1. 
+ - These 5 values pass the step and goes further into the analysis
 
-
+CHANGE factors = 4 in relation to the eigenvalues
 ```{r EFA factanal() }
 fit1 = factanal(~ x6 + x7 + x8 + x9 + x10 + x11 + x12 + x13 + x14 + x15 + x16 + x17 + x18, factors = 4, data = data, lower=0.1, rotation = "varimax") #we dont have responsevariable bevause of interdependence
 # factanal() function can analyze raw data or a correlation matrix or covariance matrix; 
 # factanal() applies Maximum Likelihood by default. 
-print(fit1, sort=TRUE, cutoff=0.2)
+print(fit1, sort=TRUE, cutoff=0.2) #Choose the cut-off!!!
 ```
+Uniquenesses: 
+x6    x7    x8    x9   x10   x11   x12   x13   x14   x15   
+0.623 0.305 0.285 0.183 0.663 0.100 0.100 0.595 0.100 0.987 
+x16   x17   x18 
+0.358 0.100 0.100
+ - has to be small, if its big, the variable doesnt share anything with the rest which it bad. 
+ - R ONly prints uniqueness which is the contrary to Communality
 
-```{r EFA factanal() output }
-# OUTPUT
-        # Uniquenesses: #has to be small, if it big, the variable doesnt share anything with the rest which it bad.R ONly preints uniqueness which is the contrary to Communality
-        #   x6    x7    x8    x9   x10   x11   x12   x13   x14   x15   x16   x17   x18 
-        # 0.623 0.305 0.285 0.183 0.663 0.100 0.100 0.595 0.100 0.987 0.358 0.100 0.100 
-        
-        #Loadings: #This matrix only displays the useable loadings having values above the cutoff (0.2)
-        #    Factor1 Factor2 Factor3 Factor4
-        # x9   0.879                         
-        # x16  0.784                         
-        # x18  0.940                         
-        # x6           0.609                 
-        # x11  0.500   0.814                 
-        # x13         -0.561   0.219         
-        # x17  0.553  -0.750   0.204      We dont want x17 to explain 3 different components. The operator does not matter, as it is just negative or positive relationships.   
-        # x7                   0.826         
-        # x10                  0.530         
-        # x12                  0.929         
-        # x8                           0.838 
-        # x14                          0.931 
-        # x15               
-        
-        #               Factor1 Factor2 Factor3 Factor4
-        # SS loadings      2.910   2.030   1.990   1.657
-        # Proportion Var   0.224   0.156   0.153   0.127
-        # Cumulative Var   0.224   0.380   0.533   0.661 # Cum/Favtor4 means explaining 66% of the data by 4 factors, this can be changed in the "fit1 code by factors = 4 into factors = 5
-        
-        # Test of the hypothesis that 4 factors are sufficient.
-        # The chi-square statistic (comaprison on the actual corr matrix with
-        # the fitted matrix) is 162.89 on 32 degrees of freedom.
-        # The p-value is 1.83e-19 
-        
-#BOOKMARK 1. feb.
+Loadings:
+- matrix only displays the useable loadings having values above the cutoff (0.2)
+    Factor1 Factor2 Factor3 Factor4
+x9   0.879                         
+x16  0.784                         
+x18  0.940                         
+x6           0.609                 
+x11  0.500   0.814                 
+x13         -0.561   0.219         
+x17  0.553  -0.750   0.204         
+x7                   0.826         
+x10                  0.530         
+x12                  0.929         
+x8                           0.838 
+x14                          0.931 
+x15                                
 
-# GUIDELINES FOR OUTPUT INTERPRETATION
-      # To ease interpretation, very low loadings (<.1, <.2) are not displayed
-      # According to the guidelines:
-        # High loadings (>0.6 or > 0.7) are expected for the items 
-        # Items with high cross-loadings should be removed 
-        # communalities should be >50 to retain the item in the analysis
-        # factor loaadings should be high to retain the item in the analysis
-        # and eigenvalues should be >=1 for factor selected
-        # cummulative variance explained >0.60
-      
-        # The chi-square test is highly sigificant (p-value is 1.83e-19) 
-        # meaning poor fit. But this test is not always reliable because it is highly 
-        # influenced by the sample size analyzed. 
+- x17        0.553  -0.750   0.204 
+- We dont want x17 to explain 3 different components. The operator does not matter, as it is just negative or positive relationships.
+
+               Factor1 Factor2 Factor3 Factor4
+SS loadings      2.910   2.030   1.990   1.657
+Proportion Var   0.224   0.156   0.153   0.127
+Cumulative Var   0.224   0.380   0.533   0.661
+ - Cum/Favtor4 means explaining 66,1% of the data by 4 factors, this can be changed in the "fit1 code by factors = 4 into factors = 5
+        
+Test of the hypothesis that 4 factors are sufficient.
+The chi-square statistic (comparison on the actual corr matrix with the fitted matrix) is 162.89 on 32 degrees of freedom.
+The p-value is 1.83e-19 
+
+GUIDELINES FOR OUTPUT INTERPRETATION
+ - To ease interpretation, very low loadings (<.1, <.2) are not displayed
+According to the guidelines:
+ - High loadings (>0.6 or > 0.7) are expected for the items 
+ - Items with high cross-loadings should be removed 
+ - communalities should be >50 to retain the item in the analysis
+ - factor loaadings should be high to retain the item in the analysis
+ - and eigenvalues should be >=1 for factor selected
+ - cummulative variance explained >0.60
+ - The chi-square test is highly sigificant (p-value is 1.83e-19) meaning poor fit. But this test is not always reliable because it is highly influenced by the sample size analyzed. 
     
-        # Loadings
-        # x11 and x17 load high simultaneusly on factor 1 and factor 2
-        # This phenomenon is called  "cross-loading"
-        # It means these items do not measure a single construct 
-        # They are candidates for deletion 
+Loadings
+ - x11 and x17 load high simultaneusly on factor 1 and factor 2
+ - This phenomenon is called  "cross-loading" - it means these items do not measure a single construct 
+ - They are candidates for deletion 
       
-        # x15 which does not correlate with any of the four factors
-        # Does x15 represent a factor for which we do not have sufficient 
-        # observable variables (measurements)?
+ - x15 which does not correlate with any of the four factors
+ - Does x15 represent a factor for which we do not have sufficient observable variables (measurements)?
         
-        # Near the bottom of the output, we also see a test
-        # of the hypothesis that 4 factors are sufficient.
-        # The chi-square fit statistic is very small, indicating
-        # the the hypothesis of perfect model fit is rejected. 
+Near the bottom of the output, we also see a test of the hypothesis that 4 factors are sufficient.
+ - the chi-square fit statistic is very small, indicating the hypothesis of perfect model fit is rejected. 
 
-        # Uniquesness for each item are 1-communality
-        1- apply(fit1$loadings^2,1,sum)
-        #fit2$uniquenesses
-        # Communalities
-        apply(fit1$loadings^2,1,sum)
-        # as one can observe, some items like x15 have very low communality
+```{r Uniqueness EFA factanal() output }
+# Uniquesness for each item are 1-communality
+1- apply(fit1$loadings^2,1,sum)
+#fit2$uniquenesses
 ```
+one can observe, some items like x15 have very higfh uniqueness
 
-```{r EFA fit2 factanal() }
+
+```{r Communalities - EFA factanal() output }
+# Communalities
+apply(fit1$loadings^2,1,sum)
+# as one can observe, some items like x15 have very low communality
+```
+one can observe, some items like x15 have very low communality
+
+
+Deleting x15 and x17 due to the former analysis
+ - finding these variables redundant or making noise to the model
+```{r Refit EFA fit2 factanal() }
 # Refining EFA without x15 and x17 (x11 could also be a candidate)
 fit2 = factanal(~ x6 + x7 + x8 + x9 + x10 + x11 + x12 + x13 + x14 + x16 + x18, factors = 4, data = data, lower=0.1, rotation = "varimax")
-print(fit2, sort=TRUE, cutoff=0.3)
-
-# Uniquenesses:
-#   x6    x7    x8    x9   x10   x11   x12   x13   x14   x16   x18 
-# 0.635 0.305 0.285 0.163 0.668 0.100 0.100 0.599 0.100 0.342 0.100 
-
-# Loadings:
-#    Factor1 Factor2 Factor3 Factor4
-# x9   0.895                         
-# x16  0.796                         
-# x18  0.918                         
-# x7           0.827                 
-# x10          0.537                 
-# x12          0.928                 
-# x8                   0.838         
-# x14                  0.932         
-# x6                           0.598 
-# x11  0.519                   0.786 #Delete or not because of crossload?
-# x13                         -0.553 
-
-#                Factor1 Factor2 Factor3 Factor4
-# SS loadings      2.613   1.962   1.645   1.391
-# Proportion Var   0.238   0.178   0.150   0.126
-# Cumulative Var   0.238   0.416   0.565   0.692
-
-# Test of the hypothesis that 4 factors are sufficient.
-# The chi square statistic is 26.7 on 17 degrees of freedom.
-# The p-value is 0.0626 
-
-
-# Now, the p-value associated with the chi-square statistic 
-# 0.0626. This result is much promising. 
-# The analysis can still be refined by exclussing x11. Some researchers
-# make a compromise and keep x11 in the model if the scale for the corresponding
-# item was validated previously in the literature. 
-
-# Last step: Naming the factors 
-# x9, x16, x18 load high on Factor 1 ; we call it Customer service
-# x7, x10, x12 load high on Factor 2; we call it Marketing
-# x8 and x14 load high on Factor 3; we call it Technical support
-# x6, x11, x13 load high on Factor 4;  we call it Product value
-
-# OBS. Item x13 was negatively formulated in the questionnaire. 
-# It should be reversed if the analysis is ussed further in the CFA and SEM.
+print(fit2, sort=TRUE, cutoff=0.3) #The cut-off is higher compared to previous model
 ```
+Uniquenesses:
+x6    x7    x8    x9   x10   x11   x12   x13   x14   x16   x18 
+0.635 0.305 0.285 0.163 0.668 0.100 0.100 0.599 0.100 0.342 0.100 
+
+Loadings:
+    Factor1 Factor2 Factor3 Factor4
+x9   0.895                         
+x16  0.796                         
+x18  0.918                         
+x7           0.827                 
+x10          0.537                 
+x12          0.928                 
+x8                   0.838         
+x14                  0.932         
+x6                           0.598 
+x11  0.519                   0.786#Delete because of crossload?
+x13                         -0.553
+
+                 Factor1 Factor2 Factor3 Factor4
+SS loadings      2.613   1.962   1.645   1.391
+Proportion Var   0.238   0.178   0.150   0.126
+Cumulative Var   0.238   0.416   0.565   0.692
+
+Test of the hypothesis that 4 factors are sufficient.
+The chi square statistic is 26.7 on 17 degrees of freedom.
+The p-value is 0.0626 
+ - p-value 0.0626 associated with the chi-square statistic 
+ - this result is much promising. 
+
+The analysis can still be refined by exclussing x11. 
+ - some researchers make a compromise and keep x11 in the model if the scale for the corresponding item was validated previously in the literature. 
+
+Last step: Naming the factors 
+x9, x16, x18 load high on Factor 1 ; we call it Customer service
+x7, x10, x12 load high on Factor 2; we call it Marketing
+x8 and x14 load high on Factor 3; we call it Technical support
+x6, x11, x13 load high on Factor 4;  we call it Product value
+
+OBS. Item x13 was negatively formulated in the questionnaire. 
+It should be reversed if the analysis is ussed further in the CFA and SEM.
+
+
+##4. Confirmatory Factor Analyis (CFA)
 
 Next, we set up a confirmatory factor analysis to confirm the measurement model (CFA). 
 Finally, given the measurement model has been examined and validated in the CFA analysis, we set up a SEM model, to test the structural relationships between the four constructs identified and the customers´ likelihood to continue doing business with the company (X19-Satisfaction, X20-Likelihood of recommendation and X21-Likelihood of future purchase).
 
-4. Confirmatory Factor Analyis (CFA)
 ```{r CFA Confirmatory Factor Analyis }
-CFA.model <- 'CS =~ x18 + x9 + x16
-             PV =~ x11 + x6 + x13
-             MK =~ x12 + x7 + x10
-             TS =~ x8 + x14
-    # Correlations between exogeneous constructs are optional because
-    # by default, all exogenous latent variables in a CFA model are allowed to correlate
-        CS ~~ PV
-        CS ~~ MK
-        CS ~~ TS
-        PV ~~ MK
-        PV ~~ TS
-        MK ~~ TS'
+CFA.model <- 'CustomerService =~ x18 + x9 + x16
+             ProductValue =~ x11 + x6 + x13
+             MarKeting =~ x12 + x7 + x10
+             TechSupport =~ x8 + x14
+# Correlations between exogeneous constructs are optional because by default, all exogenous latent variables in a CFA model are allowed to correlate
+        CustomerService ~~ ProductValue
+        CustomerService ~~ MarKeting
+        CustomerService ~~ TechSupport
+        ProductValue ~~ MarKeting
+        ProductValue ~~ TechSupport
+        MarKeting ~~ TechSupport'
 
 # fit the model
 fit <- cfa(CFA.model, data = data)
 # display summary output
 summary(fit, fit.measures=TRUE, standardized = TRUE, modindices = FALSE)
-
-# NOTE: we get "lavaan WARNING: some estimated ov variances are negative". 
-# This is called in the literature "Heywood case". Heywood cases or negative variance estimates, are a common occurrence in factor analysis and latent variable structural equation models.
-# There are several potential causes (https://journals.sagepub.com/doi/10.1177/0049124112442138). Here,eliminating the problematic item x11, will solve the problem.
 ```
+fit is acceptable^^^
+RMSEA (modified model): 0.079
+- the threshold is RMSEA < 0.1
+- The measurement model is a good fit!
 
+NOTE: we get "lavaan WARNING: some estimated ov variances are negative". 
+This is called in the literature "Heywood case". Heywood cases or negative variance estimates, are a common occurrence in factor analysis and latent variable structural equation models.
+There are several potential causes (https://journals.sagepub.com/doi/10.1177/0049124112442138). Here,eliminating the problematic item x11, will solve the problem.
 
-```{r CFA Confirmatory Factor Analyis }
-# Before doing that, I ask for the modification indices as a last check
+Chi-Square Distribution:
+ - chi-square distribution is used in many statistical tests, including those related to goodness-of-fit and modification indices in SEM.
+ - the value 3.84 corresponds to the critical value for a chi-square distribution with 1 degree of freedom at the 0.05 significance level.
+```{r MI Modification Indices }
+#From Chisquare distribution
 modificationindices(fit, sort = T, minimum.value = 10, op = "~~")
-# MI reveal that x11 is correlated with x16 and x18; it means that x11 has substantial cross-loading on two factors (as in EFA). Cross-loading goes against one of the principles of unidimensionality in SEM. We delete x11 from the analysis and re-run CFA.
+#The minimumvalue = 10 is really conservative and only shows the variables which impacts the model heavily.
 ```
+MI Modification Indices:
+ - In SEM, modification indices indicate the expected drop in the overall chi-square statistic if a particular fixed parameter (such as a path or a covariance) were freely estimated.
+ - a high modification index suggests that freeing this parameter would significantly improve the model fit.
+- MI reveals that x11 is correlated with x16 and x18; it means that x11 has substantial cross-loading on two factors (as in EFA).
+ - Cross-loading goes against one of the principles of unidimensionality in SEM. 
+ - delete x11 from the analysis and re-run CFA.
 
 
-```{r CFA post deletion}
+Modified CFA Confirmatory Factor Analysis
+
+```{r Modified CFA post deletion}
 # CFA model after deleting x11
 set.seed(1234)
-CFA.model <- 'CS =~ x18 + x9 + x16
-             PV =~ x6 + x13
-             MK =~ x12 + x7 + x10
-             TS =~ x8 + x14'
+CFA.model <- 'CustomerService =~ x18 + x9 + x16
+             ProductValue =~ x6 + x13
+             MarKeting =~ x12 + x7 + x10
+             TechSupport =~ x8 + x14'
 # fit the model
 fit <- cfa(CFA.model, data = data)
 # display summary output
 summary(fit, fit.measures=TRUE, standardized = TRUE, modindices = FALSE)
-# output not displayed; see in your console
 ```
+RMSEA (modified model): 0.000
+- in reality the threshold is RMSEA < 0.1, but accepting this RMSEA Root Mean Square Error Approximation
+- Lecture 6.4 commands the threshhold being RMSEA < 0.08
+- when having adequate level of RMSEA, the model proceeds to validity and reliability properties
+
+     Further Metrics threshold from Lecture 6.4
+Tucker-Lewis Index (TLI)      : 1.035
+ - threshold TLI > 0.95
+ - adequate measure in this case
+
+Comparative Fit Index (CFI)   : 1.000
+ - threshold TLI > 0.95
+ - adequate measure in this case
+
+SRMR                          : 0.039
+ - threshold SRMR < 0.05
+ - adequate measure in this case
 
 
+Loadings (standardized):
+- minimum acceptable level: 0.4 (look in Estimate column)
+- p-values significance (all has to be > 0.05)
+Latent Variables:
+                     Estimate  Std.Err  z-value  P(>|z|)
+  CustomerService =~                                    
+    x18                 1.000                           
+    x9                  1.658    0.113   14.664    0.000
+    x16                 1.107    0.098   11.294    0.000
+  ProductValue =~                                       
+    x6                  1.000                           
+    x13                -2.197    0.962   -2.284    0.022
+  MarKeting =~                                          
+    x12                 1.000                           
+    x7                  0.518    0.063    8.249    0.000
+    x10                 0.571    0.103    5.531    0.000
+  TechSupport =~                                        
+    x8                  1.000                           
+    x14                 0.604    0.135    4.467    0.000
+ - standardized coefficients range typically between +-1
+ - the closer a path coeff is to +-1, the stronger the relationship (pos/neg) is
+  - standardized beta coeff < 0.09 indicate small effect
+  - standardized beta coeff between 0.1 - 0.2 indicate medium effect
+  - standardized beta coeff > 0.2 indicate large effect
+  - standardized beta coeff must be significant (pvalue < 0.01)
+
+SUMMARY:
+ - factor 2, competitive pricing (x13) and product quality (x6) have opposite signs. 
+ - It means that the product quality and competitive pricing vary together, but move in direction oposite to each other. 
+ - Perceptions are more positive whether product quality increases or price decreases. This trade-off leads to naming the factor product value. 
+ - When variables have different signs, we need to be careful to reverse one when creating summated scales or using further in SEM analysis. 
+
+
+In case of negative path coefficient x13 is subtracted with 10, as the scale of the variable is on 10
 ```{r CFA rerun}
-# 1.) Examine the model fit; guidelines for a good model: 
-#     CFI >.90, TLI>.90, RMSEA< 0.08, SRMR <.0.08. 
-#     Some sources require CFI >.95, TLI>.95, RMSEA< 0.05, SRMR <.0.05. 
+#given our variable is using a 0-10 scale , to reverse it we take:
+data$x13r = 10-data$x13
 
-# 2). Examine the loadingss significance, size and sign 
-#     It is desirable to have high and significant loadings - 
-#     reflecting items convergent validity. In the output 
-#     standardized loadings are in the last column "Std.all""
-
-# In one factor 2, competitive pricing (x13) and product quality (x6)
-# have opposite signs. It means that the product quality and competitive 
-    # pricing vary together, but move in direction oposite to each other. 
-    # Perceptions are more positive whether product quality increases
-    # or price decreases. This trade-off leads to naming the factor product value. 
-    # When variables have different signs, we need to be careful to reverse one when creating
-    # summated scales or using further in SEM analysis. 
-    # given our variable is using a 0-10 scale , to reverse it we take:
-    data$x13r = 10-data$x13
-
-    # and re-run
-    CFA.model <- '
+# and re-run
+CFA.model <- '
     # Measurement model
         CS =~ x18 + x9 + x16
         PV =~ x6 + x13r
         MK =~ x12 + x7 + x10
         TS =~ x8 + x14'
     
-    fit <- cfa(CFA.model, data = data)
-    summary(fit, fit.measures=TRUE, standardized = TRUE, modindices = FALSE)
+fit <- cfa(CFA.model, data = data)
+summary(fit, fit.measures=TRUE, standardized = TRUE, modindices = FALSE)
 ```
 
+Examine RELIABILITY of the factors
+ - Reliability = degree of consistency between multiple measurements of a variable 
 ```{r CFA Reliability}
-# 3). Examine RELIABILITY of the factors - 
-# Reliability = degree of consistency between multiple measurements of a variable 
 #install.packages("semTools")
 library(semTools)
-    semTools::reliability (fit) # one can conclude that all factors display good reliability
-# alpha =  coefficient alpha (Cronbach, 1951) - should be > than 0.5 or 0.6 
-# omega = similar to composite reliability index (CR) (Fornell & Larcker (1981) - should be > 0.7
-# avevar = average variance extracted (AVE) (Fornell & Larcker (1981))  - should be > than 0.5.
+semTools::reliability (fit)
 ```
+one can conclude that all factors display good reliability
 
+alpha Cronbach
+- should be > than 0.5 or 0.6
+
+omega = similar to composite reliability index (CR) (Fornell & Larcker (1981) 
+- should be > 0.7
+
+avevar = average variance extracted (AVE) (Fornell & Larcker (1981))  - should be > than 0.5
+
+
+4). Examine DISCRIMINANT VALIDITY of the factors
+ - the latent variables can be thought of representing two distinct contructs.
 ```{r CFA Discriminant validity}
-# 4). Examine DISCRIMINANT VALIDITY of the factors
-# the latent variables can be thought of representing two distinct contructs.
-    discriminantValidity(fit, merge=TRUE)
-# Output: 
-# The first set are factor correlation estimates and their confidence intervals.
-# Are these correlations sufficiently low to claim discriminant validity of the four constructs?
+discriminantValidity(fit, merge=TRUE)
 ```
+Discriminant validity:
+ - the extent to which a construct is truly distinct from other constructs
+ - The first set are factor correlation estimates and their confidence intervals.
+ - Are these correlations sufficiently low to claim discriminant validity of the four constructs?
+ 
+The "{r Convergent + Discriminant validity}" treats dicsriminant validity much better and easier
 
+
+Based on Fornell & Larcker (1981), the square root of each construct´s AVE Average Vairance Explained should have a greater value than the inter-constructs correlations (or AVE > corr^2). Let us check that:
 ```{r CFA FornellLarcker}
-# Based on Fornell & Larcker (1981), the square root of each construct´s AVE should have a greater value than the inter-constructs corelations (or AVE > corr^2). Let us check that:
-    reliability_out = reliability (fit)
-    AVEs = reliability_out[5,]
-    sqrtAVEs = sqrt(AVEs)
-    sqrtAVEs
-# Comparing the inter-constructs correlations (see "est"" column in the output of discriminantValidity(fit, merge=TRUE)) with the sqrtAVEs, conclude that the four constructss display significant discriminat validity.
+reliability_out = reliability (fit)
+AVEs = reliability_out[5,]
+sqrtAVEs = sqrt(AVEs)
+sqrtAVEs
 ```
+Comparing the inter-constructs correlations (see "est"" column in the output of discriminantValidity(fit, merge=TRUE)) with the sqrtAVEs, conclude that the four constructss display significant discriminant validity.
+ - All Fornell-Larcker values exceeds the "est" in discriminant validity table
+ - There is significant discriminant validity
+
 
 ```{r Lavaanplot }
 library(lavaanPlot)
-lavaanPlot(model = fit, node_options = list(shape = "box", fontname = "Helvetica"), edge_options = list(color = "grey"), coefs = TRUE, covs=TRUE, stand=TRUE, sig=.05, stars="covs")    
+lavaanPlot(model = fit, 
+           node_options = list(shape = "box", 
+                               fontname = "Helvetica"), 
+           edge_options = list(color = "grey"), 
+           coefs = TRUE, covs=TRUE, stand=TRUE, 
+           sig=.05, stars="covs")    
 ```
+      Path diagram Elements
+Nodes:
+ - Latent Variables (Ovals): These represent unobserved constructs measured by multiple observed variables. Examples include Attractive, Appearance, Muscle, and Weight.
+ - Observed Variables (Boxes): These represent directly measured variables. Examples include face, sexy, body, appear, attract, lweight, cweight, calories, muscle, strength, endur.
+
+Edges (Arrows):
+ - Single-headed Arrows: Indicate causal relationships or regressions. An arrow from Appearance to Attractive suggests that Appearance is predicted by Attractive.
+ - Double-headed Arrows: Represent covariances or correlations between variables. For example, the double-headed arrow between muscle and endur indicates a covariance between these variables.      
+
+Path Coefficients:
+ - the numbers on the arrows, representing standardized regression weights or factor loadings - indicate the strength and direction of the relationship.
+ - 0.77 between Attractive and face indicates that face is strongly and positively related to the latent variable Attractive.
+
+Significance Levels:
+ - Stars (*, **, ***, ****) indicate the significance level of the path coefficients.
+*: p < 0.05
+**: p < 0.01
+
+      Interrelationships
+Measurement Model:
+ - Attractive is measured by face and sexy with loadings of 0.77 and 0.87 respectively.
+
+Structural Model:
+ - Appearance is predicted by Attractive with a path coefficient of 0.25**, indicating a significant relationship.
+ - Muscle is predicted by Appearance with a path coefficient of 0.44****, indicating a highly significant relationship.
+ - Weight is predicted by Appearance with a path coefficient of 0.47****, indicating a highly significant relationship.
 
 
 5. SEM
+
+Dependent variable: 
+ - x19-Customer Satisfaction. Build a model to explain x19;
+ - NOTE: Three variables were not includeded in CFA (x11, x15, x17).
+ - Reason: These variables did not load high on the main constructs
+ - If they are important in theory, they can be treated as separate explanatory variables in SEM
 ```{r SEM} 
-# Dependent variable: x19-Customer Satisfaction. Build a model to explain x19;
-# NOTE: Three variables were not includeded in the CFA (x11, x15, x17). 
-#       Reason: These variables did not load high on any of the main constructs
-#       If they are important in theory, they can be treated as separate explanatory variables in SEM
 SEM.model1 <- '
 # Measurement model
-        CS =~ x18 + x9 + x16
-        PV =~ x6 + x13r
-        MK =~ x12 + x7 + x10
-        TS =~ x8 + x14
+        CustomerService =~ x18 + x9 + x16
+        ProductValue =~ x6 + x13r
+        MarKeting =~ x12 + x7 + x10
+        TechSupport =~ x8 + x14
 # Structural model
-        x19 ~ CS + PV + MK + TS'
-
+        x19 ~ CustomerService + ProductValue + MarKeting + TechSupport'
 # fit the model
 fitSEM1 <- sem(SEM.model1, data=data, se ="robust", estimator = "ML") 
 summary(fitSEM1, fit.measures=TRUE, standardized = TRUE, rsquare=TRUE)
-
-# The message "lavaan WARNING: some estimated ov variances are negative" shows up. 
-# In this case, the problematic items are x12 and x14. It reflects that we would need more items per construct to run a good model. 
-# We set se="robust" to produce robust standard errors; 
-# setting se="boot" or se="bootstrap" will produce bootstrap standard errors. 
-# Check the fit indexes for SEM model as done in CFA 
-# fitmeasures(fit) # alternative summary
- 
-# Next, check the structural coeficients in summary(). Output partially reproduced below: 
-# Regressions:
-  #                 Estimate  Std.Err  z-value  P(>|z|)   Std.lv  Std.all
-  #x19 ~                                                                 
- #   CS                0.787    0.116    6.758    0.000    0.534    0.450
- #   PV                0.663    0.110    6.022    0.000    0.746    0.629
- #   MK                0.518    0.078    6.671    0.000    0.595    0.502
- #   TS               -0.039    0.045   -0.870    0.384   -0.042   -0.035
-
- # Concl.: Customers perceptions about CS, PV and MK are positively and significantly correlated with satisfaction. 
-#          TS (Technical Service) perceptions is not significantly related to customer satisfaction.
 ```
+The message "lavaan WARNING: some estimated ov variances are negative" shows up. 
+ - In this case, the problematic items are x12 and x14. It reflects that we would need more items per construct to run a good model. 
+ - We set se="robust" to produce robust standard errors; 
+ - setting se="boot" or se="bootstrap" will produce bootstrap standard errors. 
+ - Check the fit indexes for SEM model as done in CFA 
+ - fitmeasures(fit) # alternative summary
+ 
+Structural coefficients:
+Regressions:
+                   Estimate  Std.Err  z-value  P(>|z|)   Std.lv
+  x19 ~                                                        
+    CustomerServic    0.787    0.116    6.758    0.000    0.534
+    ProductValue      0.663    0.110    6.022    0.000    0.746
+    MarKeting         0.518    0.078    6.671    0.000    0.595
+    TechSupport      -0.039    0.045   -0.870    0.384   -0.042
+SUMMARY: 
+ - Customers perceptions about CustomerServic, ProductValue and MarKeting are positively and significantly correlated with satisfaction. 
+ - TechSupport perceptions is not significantly related to customer satisfaction. pvalue:0.384
 
-
-```{r SEM modefication indices } 
+```{r SEM modification indices } 
 # check modification indices if relevant
 summary(fitSEM1, fit.measures=TRUE, standardized = TRUE, rsquare=TRUE, modindices=TRUE)
-  modificationindices(fitSEM1, sort = T, minimum.value = 10, op = "~~")
+modificationindices(fitSEM1, sort = T, minimum.value = 10, op = "~~")
 # no suggestion for improvement
 ```
+MI Modification Indices:
+ - In SEM, modification indices indicate the expected drop in the overall chi-square statistic if a particular fixed parameter (such as a path or a covariance) were freely estimated.
+ - a high modification index suggests that freeing this parameter would significantly improve the model fit.
+- The table is empty, whereas there is no variables which could create impactful model improvement by bveing deleted from the Structural model
 
-```{r}
+
+```{r IF bootstrap is asked}
 # The bootstrap model parameters are available with:
 # PAR.boot <- bootstrapLavaan(fitSEM1, R=10, type="ordinary",FUN="coef")
 # T.boot <- bootstrapLavaan(fitSEM1, R=10, type="bollen.stine",FUN=fitMeasures, fit.measures="chisq")
@@ -827,21 +1231,46 @@ summary(fitSEM1, fit.measures=TRUE, standardized = TRUE, rsquare=TRUE, modindice
 #### Plotting the model
 library(lavaanPlot)
 labels <- list(x19 = "SATISFACTION")
-lavaanPlot(model = fitSEM1, node_options = list(shape = "box", fontname = "Helvetica"), edge_options = list(color = "grey"), coefs = TRUE, covs=TRUE, stand=TRUE, sig=.05, stars="regress", labels = labels)
+lavaanPlot(model = fitSEM1, 
+           node_options = list(shape = "box", 
+                               fontname = "Helvetica"), 
+           edge_options = list(color = "grey"), 
+           coefs = TRUE, covs=TRUE, stand=TRUE, 
+           sig=.05, stars="regress", labels = labels)
 ```
+      Path diagram Elements
+Nodes:
+ - Latent Variables (Ovals): These represent unobserved constructs measured by multiple observed variables. Examples include Attractive, Appearance, Muscle, and Weight.
+ - Observed Variables (Boxes): These represent directly measured variables. Examples include face, sexy, body, appear, attract, lweight, cweight, calories, muscle, strength, endur.
+
+Edges (Arrows):
+ - Single-headed Arrows: Indicate causal relationships or regressions. An arrow from Appearance to Attractive suggests that Appearance is predicted by Attractive.
+ - Double-headed Arrows: Represent covariances or correlations between variables. For example, the double-headed arrow between muscle and endur indicates a covariance between these variables.      
+
+Path Coefficients:
+ - the numbers on the arrows, representing standardized regression weights or factor loadings - indicate the strength and direction of the relationship.
+ - 0.77 between Attractive and face indicates that face is strongly and positively related to the latent variable Attractive.
+
+Significance Levels:
+ - Stars (*, **, ***, ****) indicate the significance level of the path coefficients.
+*: p < 0.05
+**: p < 0.01
+
+      Interrelationships
+Measurement Model:
+ - Attractive is measured by face and sexy with loadings of 0.77 and 0.87 respectively.
+
+Structural Model:
+ - Appearance is predicted by Attractive with a path coefficient of 0.25**, indicating a significant relationship.
+ - Muscle is predicted by Appearance with a path coefficient of 0.44****, indicating a highly significant relationship.
+ - Weight is predicted by Appearance with a path coefficient of 0.47****, indicating a highly significant relationship.
 
 
-```{r SEM plot}
-#or
-library(semPlot)
-semPaths(fitSEM1, "std", intercepts = FALSE, style="lisrel", layout="tree2")
-```
-
-
-
- 6. An extended SEM model
+ 6. extended SEM model - Mediating effects
+ - RUN THROUGH QUICKLY...
+ 
+SEM involving a mediating effect and correcting the model. Consistent with the theory, Sem.model2 proposed x19 (Satisfaction) as mediator between the four latent constructs and Likelihood of future purchase (x21)
 ```{r extended SEM }
-# SEM involving a mediating effect and correcting the model. Consistent with the theory, Sem.model2 proposed x19 (Satisfaction) as mediator between the four latent constructs and Likelihood of future purchase (x21)
 SEM.model2 <- '
 # Measurement model
              CS =~ x18 + x9 + x16
@@ -851,7 +1280,6 @@ SEM.model2 <- '
 # Structural model
              x19 ~ CS + PV + MK + TS
              x21 ~ x19'
-
 # fit the model
 fitSEM2 <- sem(SEM.model2, data=data, se="robust") 
 summary(fitSEM2, fit.measures=TRUE)
@@ -864,11 +1292,19 @@ modificationindices(fitSEM2, sort = T, minimum.value = 10, op = "~~")
 # model has a good fit
 ```
 
+
+
 ```{r Lavaan plot }
 # plot
 library(lavaanPlot)
-labels <- list(x19 = "SATISFACTION", x21 = "FUTURE PURCHASE")
-lavaanPlot(model = fitSEM2, node_options = list(shape = "box", fontname = "Helvetica"), edge_options = list(color = "grey"), coefs = TRUE, covs=TRUE, stand=TRUE, sig=.05, stars="regress", labels = labels)
+labels <- list(x19 = "SATISFACTION", 
+               x21 = "FUTURE PURCHASE")
+lavaanPlot(model = fitSEM2, 
+           node_options = list(shape = "box", 
+                               fontname = "Helvetica"), 
+           edge_options = list(color = "grey"), 
+           coefs = TRUE, covs=TRUE, stand=TRUE, 
+           sig=.05, stars="regress", labels = labels)
 
  # - summarizing the findings 
  # - are the all structural paths in the sem model significant? 
