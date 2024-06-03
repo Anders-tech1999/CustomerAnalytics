@@ -2406,6 +2406,9 @@ AdjR^2 0.627 0.552 0.288 0.558
  - R^2: Indicates the proportion of variance in the dependent variables explained by the independent variables.
  - High R^2 values indicate that a significant portion of the variance in the endogenous constructs (COMP, LIKE, CUSA, CUSL) is explained by the exogenous constructs and other predictors.
  - AdjR^2: Adjusted R-squared accounts for the number of predictors in the model.
+Slides:
+o	The model can explain more than 50% of the variance in all endogenous constructs, except CUSA
+o	Only minor difference between R^2 and R^2_adj
 
         COMP  LIKE  CUSA  CUSL
 QUAL   0.430 0.380     .     .
@@ -2417,6 +2420,17 @@ LIKE       .     . 0.436 0.344
 CUSA       .     .     . 0.505
  - These coefficients indicate the strength and direction of the relationships between constructs.
  - QUAL -> COMP: The path coefficient is 0.430, indicating that QUAL positively influences COMP.
+Slides:
+ -	Path coefficients relevance, direct effects
+o	QUAL is the strongest driver of COMP and LIKE
+o	CSOR and ATTR are more important for LIKE than for COMP
+o	LIKE is the most important corporate reputation dimension in terms of creating customer satisfaction and customer loyalty
+ -	Path coefficients relevance, total effects
+o	QUAL is the most important of the four formative driver constructs in terms of creating customer satisfaction and customer loyalty
+ -	Path coefficients significance
+o	All direct effects are significant on a 5% level except the following four relations: CSOR  COMP, ATTR  COMP, PERF  LIKE and COMP  CUSL
+-	The results indicate that companies should focus on creating likeability instead of competence to increase the customer loyalty
+
 
 Reliability:
      alpha  rhoC   AVE  rhoA
@@ -2429,6 +2443,11 @@ LIKE 0.831 0.899 0.747 0.836
 CUSA 1.000 1.000 1.000 1.000
 CUSL 0.831 0.899 0.748 0.839
  - COMMENT ON RELIABILITY BELOW!
+
+```{r}
+plot(corp_rep_pls_model_ext)
+```
+
 
 Bootstrap analysis
  - Bootstrapping is a resampling technique used to estimate the precision of sample estimates (such as path coefficients) by resampling with replacement from the original data and calculating the estimates in each resample.
@@ -2443,6 +2462,11 @@ summary(boot_corp_rep_ext, alpha = 0.05)
 BOOTSTRAP STRUCTURAL PATH
 Bootstrap Mean:
 - if the bootstrap mean values are very close to the original estimates, indicating that the original loadings are stable.
+IF ASKED FOR INDIRECT EFFECTS: Indirect Effects:
+ - To calculate indirect effects, identify the paths through intermediate variables and multiply the direct effects along these paths. For example, the indirect effect of QUAL on CUSA through COMP and LIKE can be calculated by:
+ - QUAL -> COMP -> CUSA
+ - QUAL -> LIKE -> CUSA
+ - The indirect effect of QUAL on CUSA through COMP is QUAL -> COMP * COMP -> CUSA = 0.430 * 0.146 = 0.06278
 
 Bootstrap SD:
  - if the standard deviations (Bootstrap SD) are relatively small, indicating that the estimated loadings have low variability across the bootstrap samples, suggesting reliable estimates.
@@ -2518,53 +2542,82 @@ This is adressed with CAPS SUMMARY above
 ```
 
 Effect size f^2
-BOOKMARK 30/5-24
+ -  a measure of the impact of a specific exogenous construct on an endogenous construct in a structural model. It provides an indication of how much an exogenous construct contributes to the R^2 value of an endogenous construct
 ```{r R^2 + effect size }
 # Inspect the model RSquares
-summary_corp_rep_ext$paths
+#summary_corp_rep_ext$paths
 #ARE the values above 0.5??
+#THE R^2 VALUES ARE ASSESSED ABOVE
 
 # Inspect the effect sizes
 summary_corp_rep_ext$fSquare
-#ALL of these r^2 are categorized as "small" except for CUSA having 0.4 or something as value
 ```
+Effect size f^2
+ - Lecture: ALL of these r^2 are categorized as "small" except for CUSA having 0.4 or something as value
+ - Small effect: f^2 > 0.02
+ - Medium effect: f^2 > 0.15
+ - Large effect: f^2 > 0.35
+SUMMARY f^2:
+ - The f^2 effect size values help in understanding the relative importance of each exogenous construct on the endogenous constructs. In this model, "CUSA" has a large effect on "CUSL", while most other effects are small or very small.
+  - These insights can guide researchers in focusing on the most impactful relationships in their structural model.
+Slides:
 
 
+Results of model predictions
+ - both in-sample and out-of-sample, using Partial Least Squares (PLS) and Linear Model (LM) techniques. 
 ```{r Prediction results }
 # Generate the model predictions
-predict_corp_rep_ext <- predict_pls(model = corp_rep_pls_model_ext,
-                                    technique = predict_DA, noFolds = 10, reps = 10)
+predict_corp_rep_ext <- predict_pls(
+  model = corp_rep_pls_model_ext,
+  technique = predict_DA, 
+  noFolds = 10, reps = 10)
+
 # Summarize the prediction results
 sum_predict_corp_rep_ext <- summary(predict_corp_rep_ext)
 summary(predict_corp_rep_ext)
 ```
+Comparison:    PLS vs. LM:
+In-Sample:
+ - Generally, the RMSE and MAE values for the LM model are slightly lower compared to the PLS model, indicating that the LM model fits the in-sample data better.
+Out-of-Sample:
+For out-of-sample data, the RMSE and MAE values for the LM model are slightly higher compared to the PLS model, suggesting that the PLS model might generalize better to new data.
 
+Metrics Interpretation:
+RMSE and MAE Values:
+ - Lower RMSE and MAE values indicate better predictive performance. Comparing these values across different constructs and models helps to understand which model performs better for specific constructs.
+SUMMARY Model predictions:
+The metrics provided indicate that both PLS and LM models have their strengths, with the LM model performing better in-sample and the PLS model showing slightly better generalization out-of-sample. 
+ - The choice between PLS and LM models may depend on the specific context and goals of the analysis. For more robust generalization, the PLS model might be preferred based on the given results.
 
+Model prediction plot
+ - shows the distribution of the predictive errors for the indicator cusl_1. 
+  - The goal is to analyze the prediction errors to determine whether RMSE (Root Mean Square Error) or MAE (Mean Absolute Error) is more appropriate for evaluating the model's performance.
 ```{r Distribution prediction error }
 # Analyze the distribution of prediction error
-par(mfrow=c(1,3))
+#par(mfrow=c(1,3))
 plot(sum_predict_corp_rep_ext, indicator = "cusl_1")
 plot(sum_predict_corp_rep_ext, indicator = "cusl_2")
 plot(sum_predict_corp_rep_ext, indicator = "cusl_3")
-par(mfrow=c(1,1))
+#par(mfrow=c(1,1))
 #Look for the distribution in the figure: is RMSE or MAE appropriate?
 ```
+Model prediction plot for sepcific indicator
+ - The plot appears to be roughly centered around zero, which is ideal because it indicates that the prediction errors are symmetrically distributed around the actual values.
+Slides:
+o	Only slightly negative skewed prediction errors
+o	PLS-SEM predictions is better than linear benchmark predictions on all indicators
 
 
-```{r prediction stats }
-# Compute the prediction statistics
-sum_predict_corp_rep_ext
-#LOOK at weather the PLS errors are below the LM errors
-```
 
+## 10.PLS_IIIb: Alternative models
 ```{r Alternative models1;2;3 }
 # Estimate alternative models
 # Create measurement model
 measurement_model <- constructs(
-  composite("QUAL", multi_items("qual_", 1:8), weights = mode_B),
-  composite("PERF", multi_items("perf_", 1:5), weights = mode_B),
-  composite("CSOR", multi_items("csor_", 1:5), weights = mode_B),
-  composite("ATTR", multi_items("attr_", 1:3), weights = mode_B),
+composite("QUAL", multi_items("qual_", 1:8), weights = mode_B),
+composite("PERF", multi_items("perf_", 1:5), weights = mode_B),
+composite("CSOR", multi_items("csor_", 1:5), weights = mode_B),
+composite("ATTR", multi_items("attr_", 1:3), weights = mode_B),
   composite("COMP", multi_items("comp_", 1:3)),
   composite("LIKE", multi_items("like_", 1:3)),
   composite("CUSA", single_item("cusa")),
@@ -2572,35 +2625,55 @@ measurement_model <- constructs(
 # Create structural models
 # Model 1
 structural_model1 <- relationships(
-  paths(from = c("QUAL","PERF","CSOR","ATTR"), to = c("COMP", "LIKE")),
-  paths(from = c("COMP","LIKE"), to = c("CUSA", "CUSL")),
-  paths(from = "CUSA", to = c("CUSL")))
+  paths(from = c("QUAL","PERF","CSOR","ATTR"), 
+        to = c("COMP", "LIKE")),
+  paths(from = c("COMP","LIKE"), 
+        to = c("CUSA", "CUSL")),
+  paths(from = "CUSA", 
+        to = c("CUSL")))
 # Model 2
 structural_model2 <- relationships(
-  paths(from = c("QUAL","PERF","CSOR","ATTR"), to = c("COMP", "LIKE", "CUSA")),
-  paths(from = c("COMP","LIKE"), to = c("CUSA", "CUSL")),
-  paths(from = "CUSA", to = c("CUSL")))
+  paths(from = c("QUAL","PERF","CSOR","ATTR"), 
+        to = c("COMP", "LIKE", "CUSA")),
+  paths(from = c("COMP","LIKE"), 
+        to = c("CUSA", "CUSL")),
+  paths(from = "CUSA", 
+        to = c("CUSL")))
 # Model 3
 structural_model3 <- relationships(
-  paths(from = c("QUAL","PERF","CSOR","ATTR"), to = c("COMP", "LIKE", "CUSA", "CUSL")),
-  paths(from = c("COMP","LIKE"), to = c("CUSA", "CUSL")),
-  paths(from = "CUSA", to = c("CUSL")))
+  paths(from = c("QUAL","PERF","CSOR","ATTR"), 
+        to = c("COMP", "LIKE", "CUSA", "CUSL")),
+  paths(from = c("COMP","LIKE"), 
+        to = c("CUSA", "CUSL")),
+  paths(from = "CUSA", 
+        to = c("CUSL")))
 # Estimate and summarize the models
-pls_model1 <- estimate_pls(data = corp_rep_data, 
-                           measurement_model = measurement_model,
-                           structural_model = structural_model1,
-                           missing_value = "-99")
+pls_model1 <- estimate_pls(
+  data = corp_rep_data,
+  measurement_model = measurement_model,
+  structural_model = structural_model1,
+  missing_value = "-99")
 sum_model1 <- summary(pls_model1)
-pls_model2 <- estimate_pls(data = corp_rep_data,
-                           measurement_model = measurement_model,
-                           structural_model = structural_model2,
-                           missing_value = "-99")
+
+pls_model2 <- estimate_pls(
+  data = corp_rep_data,
+  measurement_model = measurement_model,
+  structural_model = structural_model2,
+  missing_value = "-99")
 sum_model2 <- summary(pls_model2)
-pls_model3 <- estimate_pls(data = corp_rep_data,
-                           measurement_model = measurement_model,
-                           structural_model = structural_model3,
-                           missing_value = "-99")
+
+pls_model3 <- estimate_pls(
+  data = corp_rep_data,
+  measurement_model = measurement_model,
+  structural_model = structural_model3,
+  missing_value = "-99")
 sum_model3 <- summary(pls_model3)
+```
+
+```{r}
+plot(pls_model1)
+plot(pls_model2)
+plot(pls_model3)
 ```
 
 
@@ -2608,12 +2681,9 @@ sum_model3 <- summary(pls_model3)
 # Inspect the IT Criteria matrix of Model1
 sum_model1$it_criteria
 ```
-
-
-```{r Alternative models1 IT Criteria }
-# Subset the matrix to only return the BIC row and CUSL column
-sum_model1$it_criteria["BIC", "CUSA"]
-```
+AIC BIC Criteria
+-	Generally a model with a high R^2 is preferred but at the same time parsimonious models are seen as more likely to generalize to other settings
+-	The Bayesian information criterion (BIC) seeks to balance those two goals
 
 
 ```{r Alternative models1;2;3 BIC values }
@@ -2629,6 +2699,9 @@ names(itcriteria_vector) <- c("Model1", "Model2", "Model3")
 itcriteria_vector
 #CHOOse the lowest BIC-value (be aware of minuses)
 ```
+-	The model with the smallest BIC value is preferred
+-	The relative benefits of the different models can be determined based on Akaike weights (building on BIC values)
+-	These weights indicate a model’s relative likelihood given the data and a set of competing models
 
 
 ```{r Alternative models1;2;3 AIC criteria }
@@ -2636,6 +2709,7 @@ itcriteria_vector
 compute_itcriteria_weights(itcriteria_vector)
 #CHoose the highest AIC criteria
 ```
+-	Comparing model 1 to model 2 and 3 gives a very strong weighting to model 1
 
 
 ## 11.PLS_IV: Mediation and moderation
@@ -2644,9 +2718,6 @@ compute_itcriteria_weights(itcriteria_vector)
 # R script for the illustrations in chapter 4
 rm(list=ls())
 library(seminr)
-
-## Preparation
-# Read in data 
 #corp_rep_data <- read.csv(file ="Corporate Reputation Data.csv",header=TRUE,sep=";") #Mortens dataload
 corp_rep_data <- read.csv(file ="C:/Users/Bruger/OneDrive - Aarhus universitet/8. semester - BI/CA - Customer Analytics/Explain Customer Behavior/PLS Morten/Corporate Reputation Data.csv",header=TRUE,sep=";")
 head(corp_rep_data)
@@ -2655,54 +2726,165 @@ head(corp_rep_data)
 ```{r Original model: measurement/structural/estimate model }
 # Create measurement model
 corp_rep_mm_ext <- constructs(
-  composite("QUAL", multi_items("qual_", 1:8), weights = mode_B),
-  composite("PERF", multi_items("perf_", 1:5), weights = mode_B),
-  composite("CSOR", multi_items("csor_", 1:5), weights = mode_B),
-  composite("ATTR", multi_items("attr_", 1:3), weights = mode_B),
-  composite("COMP", multi_items("comp_", 1:3), weights = mode_A),
-  composite("LIKE", multi_items("like_", 1:3), weights = mode_A),
-  composite("CUSA", single_item("cusa")),
-  composite("CUSL", multi_items("cusl_", 1:3), weights = mode_A))
+composite("QUAL", multi_items("qual_", 1:8), weights = mode_B),
+composite("PERF", multi_items("perf_", 1:5), weights = mode_B),
+composite("CSOR", multi_items("csor_", 1:5), weights = mode_B),
+composite("ATTR", multi_items("attr_", 1:3), weights = mode_B),
+composite("COMP", multi_items("comp_", 1:3), weights = mode_A),
+composite("LIKE", multi_items("like_", 1:3), weights = mode_A),
+composite("CUSA", single_item("cusa")),
+composite("CUSL", multi_items("cusl_", 1:3), weights = mode_A))
 # Create structural model
 corp_rep_sm_ext <- relationships(
-  paths(from = c("QUAL", "PERF", "CSOR", "ATTR"), to = c("COMP", "LIKE")),
-  paths(from = c("COMP", "LIKE"), to = c("CUSA", "CUSL")),
-  paths(from = c("CUSA"), to = c("CUSL")))
-
-## Estimation
+  paths(from = c("QUAL", "PERF", "CSOR", "ATTR"), 
+        to = c("COMP", "LIKE")),
+  paths(from = c("COMP", "LIKE"), 
+        to = c("CUSA", "CUSL")),
+  paths(from = c("CUSA"), 
+        to = c("CUSL")))
 # Estimate the model
-corp_rep_pls_model_ext <- estimate_pls(data = corp_rep_data,
-                                       measurement_model = corp_rep_mm_ext,
-                                       structural_model = corp_rep_sm_ext,
-                                       missing = mean_replacement,
-                                       missing_value = "-99")
-
-## Summarizing the results
+corp_rep_pls_model_ext <- estimate_pls(
+  data = corp_rep_data,
+  measurement_model = corp_rep_mm_ext,
+  structural_model = corp_rep_sm_ext,
+  missing = mean_replacement,
+  missing_value = "-99")
 # Summarize the model results
 summary_corp_rep_ext <- summary(corp_rep_pls_model_ext)
 summary(corp_rep_pls_model_ext)
 ```
+Path Coefficients:
+        COMP  LIKE  CUSA  CUSL
+R^2    0.631 0.558 0.292 0.562
+AdjR^2 0.627 0.552 0.288 0.558
+ - R^2: Indicates the proportion of variance in the dependent variables explained by the independent variables.
+ - High R^2 values indicate that a significant portion of the variance in the endogenous constructs (COMP, LIKE, CUSA, CUSL) is explained by the exogenous constructs and other predictors.
+ - AdjR^2: Adjusted R-squared accounts for the number of predictors in the model.
 
+        COMP  LIKE  CUSA  CUSL
+QUAL   0.430 0.380     .     .
+PERF   0.295 0.117     .     .
+CSOR   0.059 0.178     .     .
+ATTR   0.086 0.167     .     .
+COMP       .     . 0.146 0.006
+LIKE       .     . 0.436 0.344
+CUSA       .     .     . 0.505
+ - These coefficients indicate the strength and direction of the relationships between constructs.
+ - QUAL -> COMP: The path coefficient is 0.430, indicating that QUAL positively influences COMP.
+
+Reliability:
+     alpha  rhoC   AVE  rhoA
+QUAL 0.878 0.894 0.518 1.000
+PERF 0.747 0.824 0.488 1.000
+CSOR 0.816 0.854 0.545 1.000
+ATTR 0.600 0.770 0.540 1.000
+COMP 0.776 0.869 0.688 0.786
+LIKE 0.831 0.899 0.747 0.836
+CUSA 1.000 1.000 1.000 1.000
+CUSL 0.831 0.899 0.748 0.839
+ - COMMENT ON RELIABILITY BELOW!
+
+```{r}
+plot(corp_rep_pls_model_ext)
+```
+
+Bootstrap analysis
+ - Bootstrapping is a resampling technique used to estimate the precision of sample estimates (such as path coefficients) by resampling with replacement from the original data and calculating the estimates in each resample.
 ```{r Bootstrap }
 # Bootstrap the model
 boot_corp_rep_ext <- bootstrap_model(seminr_model = corp_rep_pls_model_ext,nboot = 1000,cores = NULL,seed = 123)
 
 # Summarize the results of the bootstrap
 summary_boot_corp_rep_ext <- summary(boot_corp_rep_ext, alpha = 0.10)
+summary(boot_corp_rep_ext, alpha = 0.05)
 ```
+BOOTSTRAP STRUCTURAL PATH
+Bootstrap Mean:
+- if the bootstrap mean values are very close to the original estimates, indicating that the original loadings are stable.
+IF ASKED FOR INDIRECT EFFECTS: Indirect Effects:
+ - To calculate indirect effects, identify the paths through intermediate variables and multiply the direct effects along these paths. For example, the indirect effect of QUAL on CUSA through COMP and LIKE can be calculated by:
+ - QUAL -> COMP -> CUSA
+ - QUAL -> LIKE -> CUSA
+ - The indirect effect of QUAL on CUSA through COMP is QUAL -> COMP * COMP -> CUSA = 0.430 * 0.146 = 0.06278
+
+Bootstrap SD:
+ - if the standard deviations (Bootstrap SD) are relatively small, indicating that the estimated loadings have low variability across the bootstrap samples, suggesting reliable estimates.
+
+95% Confidence Intervals (CI):
+ - confidence intervals (2.5% CI and 97.5% CI) do not include zero for any of the loadings, reinforcing the significance of these loadings.
+
+SUMMARY BOOTSTRAPPED STRUCTURAL PATHS:
+ - The bootstrap results indicate which paths in the structural model are statistically significant. Paths with t-statistics greater than 1.96 and confidence intervals that do not include zero are considered significant. 
+  - From this analysis, most paths are significant, but 
+  - paths like PERF -> LIKE, CSOR -> COMP, ATTR -> COMP, and COMP -> CUSL are not significant due to their confidence intervals including zero, indicating that these relationships are not statistically supported by the data.
 
 
-```{r Mediation analysis - inderict effects }
-## Mediation analysis
+BOOTSTRAP WEIGHTS
+ - The table of bootstrapped weights includes the same columns as the structural paths, providing estimates for the measurement model.
+ 
+BOOTSTRAP LOADINGS
+ - provides the loadings for each indicator on their respective latent constructs, including the original estimate, bootstrap mean, standard deviation and confidence intervals.
+
+BOOTSTRAP HTMT
+ -  a measure of discriminant validity. The bootstrapped HTMT values include the original estimate, bootstrap mean, standard deviation, and confidence intervals.
+ 
+BOOTSTRAP TOTAL PATHS
+ - summarizes the total effects of the constructs on each other, including the direct and indirect effects.
+
+ - dont pay attention to CUSA->CUSL as cant change the CUSA construct.  - primarily focus on the upper constructs/drivers
+ - have to assess the drivers (as far as possible to the left: QUAL, PERF, CSOR, ATTR) that is actually able to regulate
+
+
+SUMMARY BOOTSTRAPPING
+ - Significant Paths: Paths with t-statistics greater than 1.96 (for a 95% confidence level) are considered statistically significant. For example, the path QUAL -> COMP is significant with a t-statistic of 6.603.
+ - Confidence Intervals: If the confidence interval for a path does not include zero, the path is considered significant. For example, the path QUAL -> COMP has a 95% CI of (0.303, 0.552), which does not include zero, indicating significance.
+ - Weights and Loadings: These should be significant to confirm the measurement model's reliability and validity.
+ - HTMT: Values below 0.90 indicate good discriminant validity between constructs.
+
+
+-	SEM models in general and hence PLS-SEM allow for several advanced analysis possibilities
+-	Mediation and moderation are two of the most profound examples
+-	Mediation is not available in plain vanilla regression but only for the more complex models we study
+-	Moderation is also known in regression analysis (based on simple/naive measurement models)
+Mediation: formidling/mellemkomst(uvildig indblanden)/mægling
+```{r Mediation analysis - TOTAL inderict effects }
 # Inspect total indirect effects
 summary_corp_rep_ext$total_indirect_effects
-# Inspect indirect effects
-specific_effect_significance(boot_corp_rep_ext, from = "COMP", through = "CUSA", 
-                             to = "CUSL", alpha = 0.05)
-specific_effect_significance(boot_corp_rep_ext, from = "LIKE", through = "CUSA",
-                             to = "CUSL", alpha = 0.05)
 ```
+Row and Column Variables:
+ - The rows represent the independent variables.
+ - The columns represent the dependent variables.
+QUAL (Quality):
+ - QUAL -> CUSA: 0.228
+This value indicates that the total indirect effect of "QUAL" on "CUSA" through all mediators is 0.228.
+SUMMARY:
+ - table provides a comprehensive view of how the independent variables affect the dependent variables through mediators. It helps in understanding the indirect pathways and their magnitudes in the model, which is crucial for mediation analysis and for identifying the most influential variables in the structural equation model.
+ 
+ - specific_effect_significance function is used to test the significance of these indirect effects through bootstrapping. 
+```{r Mediation analysis - inderict effects }
+# Inspect indirect effects
+specific_effect_significance(
+  boot_corp_rep_ext, 
+  from = "COMP", 
+  through = "CUSA",
+  to = "CUSL", alpha = 0.05)
 
+specific_effect_significance(
+  boot_corp_rep_ext, 
+  from = "LIKE", 
+  through = "CUSA",
+  to = "CUSL", alpha = 0.05)
+```
+COMP -> CUSA -> CUSL
+ - tests the significance of the indirect effect of "COMP" on "CUSL" through "CUSA".
+
+Both indirect effect significance
+ - COMP -> CUSA -> CUSL: This indirect effect is significant with an estimate of approximately 0.0735.
+ - LIKE -> CUSA -> CUSL: This indirect effect is highly significant with an estimate of approximately 0.2200
+
+Both of these mediators are significant.
+
+TESTING ON LIKE (NOT COMP)
 ```{r Mediation analysis - direct effects }
 # Inspect the direct effects
 summary_corp_rep_ext$paths
@@ -2713,37 +2895,50 @@ summary_corp_rep_ext$paths["LIKE", "CUSL"] *
   summary_corp_rep_ext$paths["LIKE","CUSA"] *
   summary_corp_rep_ext$paths["CUSA","CUSL"]
 ```
+Check if the mediator is directly significant? (p3)
+LIKE is significant:
+                 T Stat.
+LIKE  ->  CUSA   7.069
+LIKE  ->  CUSL   6.175
+and p1*p2*p3 is positive: 0.07569007
+The mediator effect is then=
+Complementary (partial mediation)
 
+MODERATION
+o	A moderator variable changes the strength or the direction of a relation between two constructs. Accounts for           heterogeneity in the data
+o	A priori hypothesis about the data: Is it some specific     relation that is influenced by the moderator variable (interaction effect), or is it the entire model (multigroup analysis)?
+o	Moderators can be single variables or constructs measured either formatively or reflectively
+o	Can be categorical variables, e.g. the strength of the relation between satisfaction and loyalty could depend on gender. Most often used in multigroup analysis
+Can be continuous variables, e.g. the relation between satisfaction and loyalty is influenced by the level of income
+The moderation part
+  interaction_term(iv = "CUSA", 
+                   moderator = "SC", 
+                   method = two_stage))
 ```{r Moderation analysis: Measurement/Structural/Estimation }
-# Moderation analysis ###
-# Preparation
 # Create measurement model
 corp_rep_mm_mod <- constructs(
-  composite("QUAL", multi_items("qual_", 1:8), weights = mode_B),
-  composite("PERF", multi_items("perf_", 1:5), weights = mode_B),
-  composite("CSOR", multi_items("csor_", 1:5), weights = mode_B),
-  composite("ATTR", multi_items("attr_", 1:3), weights = mode_B),
-  composite("COMP", multi_items("comp_", 1:3), weights = mode_A),
-  composite("LIKE", multi_items("like_", 1:3), weights = mode_A),
-  composite("CUSA", single_item("cusa")),
-  composite("SC",   multi_items("switch_", 1:4),  weights = mode_A),
-  composite("CUSL", multi_items("cusl_", 1:3), weights = mode_A),
-  interaction_term(iv = "CUSA", moderator = "SC", method = two_stage))
+composite("QUAL", multi_items("qual_", 1:8), weights = mode_B),
+composite("PERF", multi_items("perf_", 1:5), weights = mode_B),
+composite("CSOR", multi_items("csor_", 1:5), weights = mode_B),
+composite("ATTR", multi_items("attr_", 1:3), weights = mode_B),
+composite("COMP", multi_items("comp_", 1:3), weights = mode_A),
+composite("LIKE", multi_items("like_", 1:3), weights = mode_A),
+composite("CUSA", single_item("cusa")),
+composite("SC",   multi_items("switch_",1:4),weights = mode_A),
+composite("CUSL", multi_items("cusl_", 1:3), weights = mode_A),
+  interaction_term(iv = "CUSA", 
+                   moderator = "SC", 
+                   method = two_stage))
 # Create structural model
 corp_rep_sm_mod <- relationships(
   paths(from = c("QUAL", "PERF", "CSOR", "ATTR"), to = c("COMP", "LIKE")),
   paths(from = c("COMP", "LIKE"), to = c("CUSA", "CUSL")),
   paths(from = c("CUSA","SC","CUSA*SC"), to = c("CUSL")))
-
-## Estimation
 # Estimate the model
-corp_rep_pls_model_mod <- estimate_pls(data = corp_rep_data,
-                                       measurement_model = corp_rep_mm_mod,
-                                       structural_model = corp_rep_sm_mod,
-                                       missing = mean_replacement,
-                                       missing_value = "-99")
-
-## Summarizing the results
+corp_rep_pls_model_mod <- estimate_pls(
+  data = corp_rep_data,measurement_model = corp_rep_mm_mod,
+  structural_model = corp_rep_sm_mod,missing = mean_replacement,
+  missing_value = "-99")
 # Summarize the model results
 summary_corp_rep_mod <- summary(corp_rep_pls_model_mod)
 summary(corp_rep_pls_model_mod)
@@ -2763,10 +2958,7 @@ summary_boot_corp_rep_mod <- summary(boot_corp_rep_mod, alpha = 0.10)
 ## Evaluation of the reflective measurement model
 # Inspect the indicator loadings
 summary_corp_rep_mod$loadings
-```
 
-
-```{r Reflective measurement model: Reliability }
 # Inspect the indicator reliability
 summary_corp_rep_mod$loadings^2
 ```
@@ -2792,23 +2984,22 @@ summary_corp_rep_mod$validity$htmt
 summary_boot_corp_rep_mod$bootstrapped_HTMT
 ```
 
+REDUNDANCY:
 ```{r Formative measurement model: ATTR }
-## Evaluation of the formative measurement model
-# Redundancy analysis
+#Evaluation of formative measurement model Redundancy analysis
 # ATTR: Attractiveness
 # Create measurement model
 ATTR_redundancy_mm <- constructs(
-  composite("ATTR_F", multi_items("attr_", 1:3), weights = mode_B),
-  composite("ATTR_G", single_item("attr_global")))
+composite("ATTR_F", multi_items("attr_",1:3),weights = mode_B),
+composite("ATTR_G", single_item("attr_global")))
 # Create structural model
 ATTR_redundancy_sm <- relationships(
-  paths(from = c("ATTR_F"), to = c("ATTR_G")))
+paths(from = c("ATTR_F"), to = c("ATTR_G")))
 # Estimate the model
-ATTR_redundancy_pls_model <- estimate_pls(data = corp_rep_data,
-                                          measurement_model = ATTR_redundancy_mm,
-                                          structural_model = ATTR_redundancy_sm,
-                                          missing = mean_replacement,
-                                          missing_value = "-99")
+ATTR_redundancy_pls_model <- estimate_pls(
+  data = corp_rep_data,measurement_model = ATTR_redundancy_mm,
+  structural_model = ATTR_redundancy_sm,missing = mean_replacement,
+  missing_value = "-99")
 # Summarize the model
 sum_ATTR_red_model <- summary(ATTR_redundancy_pls_model)
 summary(ATTR_redundancy_pls_model)
@@ -2819,17 +3010,16 @@ summary(ATTR_redundancy_pls_model)
 # CSOR: Customer Social Responsibility
 # Create measurement model
 CSOR_redundancy_mm <- constructs(
-  composite("CSOR_F", multi_items("csor_", 1:5), weights = mode_B),
-  composite("CSOR_G", single_item("csor_global")))
+composite("CSOR_F",multi_items("csor_",1:5),weights = mode_B),
+composite("CSOR_G", single_item("csor_global")))
 # Create structural model
 CSOR_redundancy_sm <- relationships(
-  paths(from = c("CSOR_F"), to = c("CSOR_G")))
+paths(from = c("CSOR_F"), to = c("CSOR_G")))
 # Estimate the model
-CSOR_redundancy_pls_model <- estimate_pls(data = corp_rep_data,
-                                          measurement_model = CSOR_redundancy_mm,
-                                          structural_model = CSOR_redundancy_sm,
-                                          missing = mean_replacement,
-                                          missing_value = "-99")
+CSOR_redundancy_pls_model <- estimate_pls(
+  data = corp_rep_data,measurement_model = CSOR_redundancy_mm,
+  structural_model = CSOR_redundancy_sm,missing = mean_replacement,
+  missing_value = "-99")
 # Summarize the model
 sum_CSOR_red_model <- summary(CSOR_redundancy_pls_model)
 summary(CSOR_redundancy_pls_model)
@@ -2840,17 +3030,16 @@ summary(CSOR_redundancy_pls_model)
 # PERF: Performance
 # Create measurement model
 PERF_redundancy_mm <- constructs(
-  composite("PERF_F", multi_items("perf_", 1:5), weights = mode_B),
+composite("PERF_F",multi_items("perf_", 1:5),weights = mode_B),
   composite("PERF_G", single_item("perf_global")))
 # Create structural model
 PERF_redundancy_sm <- relationships(
-  paths(from = c("PERF_F"), to = c("PERF_G")))
+paths(from = c("PERF_F"), to = c("PERF_G")))
 # Estimate the model
-PERF_redundancy_pls_model <- estimate_pls(data = corp_rep_data,
-                                          measurement_model = PERF_redundancy_mm,
-                                          structural_model = PERF_redundancy_sm,
-                                          missing = mean_replacement,
-                                          missing_value = "-99")
+PERF_redundancy_pls_model <- estimate_pls(
+  data = corp_rep_data,measurement_model = PERF_redundancy_mm,structural_model = PERF_redundancy_sm,
+  missing = mean_replacement,
+  missing_value = "-99")
 # Summarize the model
 sum_PERF_red_model <- summary(PERF_redundancy_pls_model)
 summary(PERF_redundancy_pls_model)
@@ -2861,17 +3050,18 @@ summary(PERF_redundancy_pls_model)
 # QUAL: Quality
 # Create measurement model
 QUAL_redundancy_mm <- constructs(
-  composite("QUAL_F", multi_items("qual_", 1:8), weights = mode_B),
-  composite("QUAL_G", single_item("qual_global")))
+composite("QUAL_F", multi_items("qual_",1:8),weights = mode_B),
+composite("QUAL_G", single_item("qual_global")))
 # Create structural model
 QUAL_redundancy_sm <- relationships(
-  paths(from = c("QUAL_F"), to = c("QUAL_G")))
+paths(from = c("QUAL_F"), to = c("QUAL_G")))
 # Estimate the model
-QUAL_redundancy_pls_model <- estimate_pls(data = corp_rep_data,
-                                          measurement_model = QUAL_redundancy_mm,
-                                          structural_model = QUAL_redundancy_sm,
-                                          missing = mean_replacement,
-                                          missing_value = "-99")
+QUAL_redundancy_pls_model <- estimate_pls(
+  data = corp_rep_data,
+  measurement_model = QUAL_redundancy_mm,
+  structural_model = QUAL_redundancy_sm,
+  missing = mean_replacement,
+  missing_value = "-99")
 # Summarize the model
 sum_QUAL_red_model <- summary(QUAL_redundancy_pls_model)
 summary(QUAL_redundancy_pls_model)
@@ -2912,9 +3102,28 @@ sum_boot_corp_rep_mod$bootstrapped_loadings
 # Inspect the bootstrapped structural paths
 sum_boot_corp_rep_mod$bootstrapped_paths
 # Simple slope analysis plot
-slope_analysis(moderated_model = corp_rep_pls_model_mod,dv = "CUSL",
-               moderator = "SC", iv = "CUSA", leg_place = "bottomright")
+slope_analysis(
+  moderated_model = corp_rep_pls_model_mod,dv = "CUSL",
+  moderator = "SC", 
+  iv = "CUSA", 
+  leg_place = "bottomright")
 ```
+The moderatio n part:
+  interaction_term(iv = "CUSA", 
+                   moderator = "SC", 
+                   method = two_stage))
+Plot
+Moderation Analysis Plot:
+ - Moderated Model: The plot illustrates the moderation effect of SC on the relationship between CUSA and CUSL.
+Interpretation of the Plot:
+ - The slopes of the lines indicate how the relationship between CUSA and CUSL changes at different levels of the moderator SC.
+A steeper slope indicates a stronger relationship between CUSA and CUSL.
+SUMMARY:
+Significant Moderation:
+The interaction term CUSA*SC -> CUSL is significant with a negative effect, indicating that the relationship between CUSA and CUSL decreases as SC increases.
+Visual Analysis:
+ - The plot visually confirms this interaction effect, showing different slopes for the relationship between CUSA and CUSL at different levels of SC.
 
+This comprehensive analysis highlights the direct, indirect, and moderated effects within the model, providing valuable insights into how different variables interact to influence the dependent variable CUSL.
 
 
