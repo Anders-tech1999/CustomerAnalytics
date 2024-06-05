@@ -910,111 +910,447 @@ SUMMARU MORTEN
 o	Members of segment 3 (those seeing McDonald’s as tasty and yummy) are younger than the other segments
 
 
+Predict segment 3 membership using a classification tree
 
-```{r 21 segmentation}
-## Predict segment 3 membership using a classification tree
+```{r Predict segment 3 membership using a classification tree }
 # Prepare visit frequency variable
-mcdonalds$visitfrequency <- factor(mcdonalds$VisitFrequency,
-                                   levels=c("Never","Once a year","Every three months","Once a month","Once a week","More than once a week"))
-tree <- ctree(factor(k4==3) ~ like+Age+visitfrequency+factor(Gender),
+mcdonalds$visitfrequency <- factor(
+  mcdonalds$VisitFrequency,
+  levels=c("Never","Once a year","Every three months","Once a month","Once a week","More than once a week"))
+tree <- ctree(factor(k4==3) ~ #change this due the specific segment
+                like+Age+visitfrequency+factor(Gender),
               data=mcdonalds)
-plot(tree)
+plot(tree) #interpret
 ```
+Node 1: 
+ - The first split is based on the like variable (with p < 0.001). This variable measures the degree of liking for McDonald's on a scale from -5 (I hate it) to +5 (I love it).
+Node 2: 
+ - For customers with a positive liking (like > 0), the next split is based on Age (p < 0.001).
+Node 3: 
+ - For customers aged 47 or less, the next split is based on Gender (p = 0.007).
+ Terminal node (4, 5, 6, 9, 10, 11) 
+ - has a bar plot showing the proportion of TRUE (segment 3 members) and FALSE (non-segment 3 members) cases. 
+ - For example: Node 4: The bar plot shows the distribution of female customers aged 47 or less.
 
-BOOKMARK 4/6-24
 
-```{r 21 segmentation}
-## Selecting (the) target segment(s)
-# Visit frequency is scored as 1=Never,...,6=More than once a week, 
-# not strictly aligned with the ratio properties hidden in the scale
-visit <- tapply(as.numeric(mcdonalds$visitfrequency),mcdonalds$k4,mean)
+MORTEN: -	Based on the knock-out criteria and the segment attractiveness criteria we can develop a segment evaluation plot
+ - "knock-out criteria" refers to specific conditions or standards used to eliminate certain segments from consideration during the process of selecting target segments. These criteria act as a filter to ensure that only segments meeting minimum requirements are considered for further analysis and targeting. 
+ - The x-axis holds frequency of visiting McDonald’s
+
+```{r Visit - Selecting target segment(s)}
+visit <- tapply(as.numeric(mcdonalds$visitfrequency),mcdonalds$k4,mean) #calculates the mean visit frequency for each segment in the McDonald's dataset.
 visit
 ```
+"Visit" frequency is scored as 1=Never,...,6=More than once a week, not strictly aligned with the ratio properties hidden in the scale
+Segment 1: Mean visit frequency is approximately 3.082.
+Segment 2: Mean visit frequency is approximately 2.476.
+Segment 3: Mean visit frequency is approximately 3.879.
+Segment 4: Mean visit frequency is approximately 4.016
 
-
-```{r 21 segmentation}
+Morten: The y-axis holds the extent to which consumers love/hate McDonald’s
+```{r Like - Selecting target segment(s) }
 # Turn the current like scale upside down and recenter 
 # (1=I love it,...,11=I hate it -> 5=I love it,...,-5=I hate it)
 like <- tapply(-as.numeric(mcdonalds$like)+6,mcdonalds$k4,mean)
 like
 ```
+Segment 1: Mean LIKE frequency is approximately 0.002 (remember the scale from -5 to +5)
+Segment 2: Mean LIKE frequency is approximately -2.483
+Segment 3: Mean LIKE frequency is approximately 2.255
+Segment 4: Mean LIKE frequency is approximately 2.887
 
 
-```{r 21 segmentation}
+```{r Gender - Selecting target segment(s) }
 # Create the gender variable
 female <- tapply((mcdonalds$Gender=="Female")+0,mcdonalds$k4,mean)
 female
 ```
+Segment 1: Proportion of females is approximately 0.583
+Segment 2: Proportion of females is approximately 0.430
+Segment 3: Proportion of females is approximately 0.469
+Segment 4: Proportion of females is approximately 0.626
 
-
-```{r 21 segmentation}
-# Make segment evaluation plot
+Segment evaluation  scatter 
+ - evaluates segments based on 
+ - visit frequency and 
+ - liking scores, with the 
+ - size of the bubbles representing the proportion of females in each segment.
+```{r segment evaluation plot }
 plot(visit, like, cex = 10 * female,xlim = c(2, 4.5), ylim = c(-3, 3))
 text(visit, like, 1:4)
-
 ```
+Segment 1:
+ - Located around (3.1, 0.3).
+ - Moderate visit frequency and moderate liking score.
+ - The bubble size indicates a moderate proportion of females (~58.3%).
 
-#IV Segmentation
+Segment 4:
+ - Located around (4.0, 0.3).
+ - Highest visit frequency and positive liking score.
+ - The bubble size indicates the highest proportion of females (~62.6%).
+
+MORTEN SUMMARY:
+-	Each of the four P’s – Price, Product, Promotion, and Place will have to be adjusted according to the chosen target segment
+-	If segment 3 is chosen, McDonald’s will have to cater to young customers with a favourable perception of McDonald’s who see it’s products as expensive, but also tasty and yummy
+-	The authors suggest the MCSUPERBUDGET to address the Price dimension with appropriate adjustments to the remaining P’s
+-	The success of the chosen strategy must be evaluated and the market continuously monitored
+
+
+#IV Segmentation - Latent Class Analysis
 ## McD Example
+o	The relative position of latent class models and measures of interrelationships for categorical (binary) data
+o	The latent class model for binary data and estimation of such models
+o	Assessment and allocation to classes for such a model
 
-```{r}
+EXACT SAME AS III SEGMENTATION
+```{r dataload McDonalds}
 # R script for the analysis of the McDonald's example in LCA I lecture
 library("flexclust")
 library("flexmix")
 rm(list=ls())
-
-## Preparation
 # Read in data
-mcdonalds <- read.csv("c:/users/au78328/OneDrive - Aarhus Universitet/home/customer_analytics/s24/analysis/mcdonalds.csv")
+mcdonalds <- read_csv("Datasets/mcdonalds.csv")
+```
+
+EXACT SAME AS III SEGMENTATION
+```{r data insights}
 # Look into content
 names(mcdonalds)
 dim(mcdonalds)
 head(mcdonalds, 3)
-# Change Yes/No to 1/0
-MD.x <- as.matrix(mcdonalds[, 1:11])
-MD.x <- (MD.x == "Yes") + 0
+```
 
+EXACT SAME AS III SEGMENTATION
+```{r Discretize Yes:1 NO:0 }
+# Change Yes/No to 1/0
+MD.x <- as.matrix(mcdonalds[, 1:11]) #function converts this selected subset of the data frame into a matrix called MD.x. mcdonalds[, 1:11] selects all rows and the first 11 columns of the mcdonalds data frame.
+MD.x <- (MD.x == "Yes") + 0 # TRUE can be coerced to 1 and FALSE to 0. Therefore, adding 0 (+ 0) to the logical matrix effectively converts all TRUE values to 1s and all FALSE values to 0s.
+head(MD.x, 3)
+```
+
+EXACT SAME AS III SEGMENTATION
+```{r Column means }
 ## Exploring data
 # What fraction sees McDonald's possessing each of the attributes
-round(colMeans(MD.x), 2)
+round(colMeans(MD.x), 2) #rounding the column means to two decimals
+```
+Column Means:
+yummy convenient      spicy  fattening     greasy 
+0.55       0.91       0.09       0.87       0.53
+      
+fast      cheap      tasty  expensive    healthy  disgusting
+0.90       0.60       0.64       0.36       0.20    0.24
+
+EXACT SAME AS III SEGMENTATION
+```{r PCA}
 # PCA and perceptual map
 MD.pca <- prcomp(MD.x)
 summary(MD.pca)
-print(MD.pca, digits = 1)
+```
+PCA Principal Component analysis:
+- The idea behind PCA is to reduce the dimensionality of the dataset by transforming the original variables into a new set of variables (the principal components) which are uncorrelated, and which are ordered so that the first few retain most of the variation present in all of the original variables.
+- The greatest variance by any projection of the data comes to lie on the first coordinate (called the first principal component), the second greatest variance on the second coordinate, and so on.
+Standard Deviation:
+- This indicates how much variance is captured by each principal component. A higher standard deviation means that component accounts for a larger variance within the dataset.
+Proportion of Variance:
+- squared standard deviation for each component divided by the sum of squared standard deviations of all components. It tells us the proportion of the dataset’s total variance that is captured by each principal component.
+
+EXACT SAME AS III SEGMENTATION
+```{r Rotation/Loadings PCA}
+print(MD.pca, digits = 2)
+```
+Rotation matrix:
+- Each row corresponds to one of the original variables (attributes like "yummy", "convenient", "spicy", etc.), and each column corresponds to a principal component (PC1 to PC11). The values in the matrix show how each attribute contributes to each principal component.
+Example (original variable yummy on PC1):
+- The attribute "yummy" has a strong positive loading on PC1 (0.4769) and a strong negative loading on PC9 (-0.5724), which means "yummy" is an important attribute that defines the direction of PC1 and PC9.
+
+EXACT SAME AS III SEGMENTATION
+```{r PCA loading-plot}
 plot(predict(MD.pca), col = "grey")
 projAxes(MD.pca)
+```
+- dots represent the data points projected onto the first two principal components, PC1 and PC2. This provides a two-dimensional summary of the data, where similar data points are clustered together, and different ones are farther apart.
+- arrows (or vectors) represent the loadings of each attribute (like "yummy", "cheap", "expensive", etc.), which point in the direction of the maximum variance for that attribute. The length of an arrow indicates the strength of the attribute's contribution to the two principal components displayed.
+- Attributes that are close together are positively correlated, while those that are on opposite ends of the plot are negatively correlated.
+- Attributes that are close to the origin (center of the plot) have smaller effects on the variation explained by the first two principal components, while those further out are more influential.
 
-## Extracting segments
-# k-Means
+It is seen that "tasty" and "yummy" point in a similar direction, suggesting they contribute similarly to the dataset's variance and are likely correlated. Conversely, "expensive" points in a roughly opposite direction to "cheap", indicating they are negatively correlated. The plot also suggests that attributes like "disgusting" and "fattening" may not be strongly related to the primary variance within the data, as their vectors are shorter and closer to the center of the plot.
+
+EXACT SAME AS III SEGMENTATION
+Extracting segments
+```{r k-means Within-cluster distances Plot }
+# k-means
 set.seed(28)
-MD.km28 <- stepFlexclust(MD.x, 2:8, nrep = 10,verbose = FALSE)
+MD.km28 <- stepFlexclust(MD.x, 2:8, nrep = 10,verbose = FALSE) #compute k-means clustering on the matrix MD.x. The function is likely a stepwise routine that evaluates the optimal number of clusters ranging from 2 to 8.
+#nrep = 10 indicates that each k-means operation is repeated 10 times to avoid local minima. 
+#verbose = FALSE suppresses the printing of additional output during the computations
+
 plot(MD.km28, xlab = "number of segments")
+```
+Plot: 
+- bar chart that displays the sum of within-cluster distances for each number of clusters tested (from 2 to 8). Ideally, one looks for a "elbow" in the plot where the rate of decrease sharply changes, suggesting a natural grouping in the data. This "elbow" is often considered as an indicator of the optimal number of clusters to use.
+
+EXACT SAME AS III SEGMENTATION
+Rand Index
+ - Rand  index evaluates the similarity between the clustering results across multiple bootstrap samples. 
+ - The higher the adjusted Rand index, the more stable the clustering solution is.
+ - Bootstrapping method for evaluating k-means clustering along with a boxplot visualizing the results
+```{r Adj Rand index - bootstrap evaluating k-means}
 # Segment stability within the same number of segments
+#long computation time!
 set.seed(1234)
-MD.b28 <- bootFlexclust(MD.x, 2:8, nrep = 10,nboot = 100)
+MD.b28 <- bootFlexclust(MD.x, 2:8, nrep = 10,nboot = 100) #a bootstrapping method for k-means clustering on the dataset MD.x
+#nrep = 10 parameter indicates that the clustering should be repeated 10 times for stability, '
+#nboot = 100 indicates that 100 bootstrap resamples should be used to assess the stability of the clustering solution.
+
 plot(MD.b28, xlab = "number of segments",ylab = "adjusted Rand index")
-# Gorge plot
-MD.km28 <- relabel(MD.km28)
-histogram(MD.km28[["4"]], data = MD.x, xlim = 0:1)
+```
+Boxplot 
+- visualizes the distribution of the adjusted Rand index for each number of segments (2 through 8). 
+- This plot can help determine the number of clusters that yield the most stable and consistent partitioning of the data by looking for the number of segments that consistently show high adjusted Rand index values
+SUMMARY: 
+ - from this boxplot, a 4-cluster solution is evaluated as the most optimal amount of clusters
+
+EXACT SAME AS III SEGMENTATION
+Gorge plots -	For well-separated segments there should mainly be many low and many high similarity measures – hence the name (gorge/kløft)
+Morten: - the gorge plot indicates that none of the segments in the four-segment solution are very well separated
+```{r Gorge plot}
+MD.km28 <- relabel(MD.km28) #apply the reLabel function to the clustering object MD.km28. This function is typically used to reorder the labels of the clusters for clarity or based on some criteria, although the specific behavior depends on the implementation within the package being used
+
+histogram(MD.km28[["4"]], data = MD.x, xlim = 0:1) #using 4 clusters in this specific example
+#xlim = 0:1 sets the limits for the x-axis from 0 to 1, assuming the similarity scores are normalized to this range.
+```
+Morten: - the gorge plot indicates that none of the segments in the four-segment solution are very well separated.
+
+Gorge plots (histograms):
+- These histograms can help in interpreting the structure of the clusters. 
+ - For example, a cluster with many high similarity scores (bars towards the right of the histogram) contains data points that are very similar to each other, indicating a tight and well-defined cluster.
+ - Conversely, a cluster with scores spread across the range might be less well-defined or could contain subgroups.
+- the y-axis is labeled "Percent of Total", indicating that the histograms show the distribution of the similarity scores as a percentage of the total number of scores within each cluster. 
+- the x-axis is labeled "similarity", denoting the range of similarity scores from 0 to 1.
+
+EXACT SAME AS III SEGMENTATION
+SLS_A plot - Segment Level Stability Across solutions - plot
+```{r SLS_A plot - Segment Level Stability Across solutions}
 # Segment level stability across solutions
 slsaplot(MD.km28)
+```
+Goes from 2 cluster -> 3 cluster -> 4 cluster
+SLS_A plot:
+- The links (or bands) between the nodes show how many data points from each cluster in one solution correspond to clusters in another solution. In this case, it likely shows how segments in a lower number of clusters (on the left) are combined or split as the number of clusters increases (moving to the right).
+- thickness of the bands is proportional to the number of data points that follow that path, illustrating the size of the clusters and the movement of data points between them. A stable clustering will have stronger, more direct paths, while a less stable one will show a more complex network of paths, indicating that the data points are being reassigned to different clusters across solutions.
+- This visualization is valuable for assessing the robustness of clustering. If many data points maintain their cluster membership across different solutions, it indicates that the clustering is stable and likely meaningful. If there is a lot of reassignment across solutions, it suggests that the cluster structure is not as clear-cut.
+
+
+EXACT SAME AS III SEGMENTATION
+Specific X-cluster(4)
+```{r Specific X-cluster(4) - }
 # Save the four-segment solution
-MD.k4 <- MD.km28[["4"]]
-MD.r4 <- slswFlexclust(MD.x, MD.k4)
+MD.k4 <- MD.km28[["4"]] #defining the amount of clusters
+MD.r4 <- slswFlexclust(MD.x, MD.k4) #function slsWFlexclust is applied to the dataset MD.x and the four-cluster solution MD.k4.
+
 plot(MD.r4, ylim = 0:1, xlab = "segment number",ylab = "segment stability")
-# mixture distribution
+```
+Specific X(4)-cluster boxplot:
+- boxplot shows the distribution of stability values for each of the X(4) segments. 
+ - In a boxplot, the box represents the interquartile range (IQR), which contains the middle 50% of the data. The line inside the box represents the median value. The whiskers represent the range of the data within 1.5 times the IQR above and below the box. Points outside this range are considered outliers and are plotted as individual points.
+e.g.:
+- Segment 1 and 2 seems to have lower median stability and higher variability than the other segments, as shown by the narrow box and the presence of outliers.
+- Segment 4 and 3 shows a higher median stability and less variability in stability, as indicated by the wider box.
+EXACT SAME AS III SEGMENTATION
+
+FROM HERE MIXTURE MODELS///LATENT CLASS MODELS WHICH DIFFERS FROM^^^^
+
+###Mixture models /// Latent Class models discussion
+Latent Class Models (LCM)
+ - Definition: Latent class models are a specific type of mixture model used primarily for categorical data, where the goal is to identify unobservable (latent) subgroups within the population based on observed categorical variables.
+Mixture Models
+ - Definition: Mixture models are a probabilistic model for representing the presence of subpopulations within an overall population without requiring that an observed data point be explicitly labeled as belonging to a particular subpopulation.
+    Conclusion
+ - In principle, latent class models can be viewed as a type of mixture model specifically tailored for categorical data. Both approaches share the common goal of uncovering hidden structure in the data through the use of latent variables.
+
+Morten Latent Class Analysis
+-	The general idea is still to assess whether the presence of some strong pairwise associations can be attributed to a common latent factor
+
+Fit mixture model
+Morten: 
+-	In order to investigate the optimal number of segments we begin by estimating a mixture of binary distributions for all possible number of segments between two and eight
+Morten:
+-	Ten random restarts of the EM algorithm are used for each value of the number of clusters: nrep = 10
+Morten:
+- The decision regarding the number of segments is guided by the values of AIC, BIC, and ICL
+```{r mixture distribution }
 set.seed(1234)
-MD.m28 <- stepFlexmix(MD.x ~ 1, k = 2:8, nrep = 10, model = FLXMCmvbinary(), 
-                      verbose = FALSE)
+MD.m28 <- stepFlexmix(MD.x ~ 1, k = 2:8, nrep = 10, model = FLXMCmvbinary(),verbose = FALSE)
 MD.m28
+```
+iter: 
+ - Number of iterations performed to reach convergence for each model.
+
+k: 
+ - Number of clusters (components) in the mixture model.
+
+k0: 
+ - Number of non-empty clusters after convergence.
+ - Number of clusters including observations after convergence
+
+logLik: Log-likelihood of the fitted model. 
+ - log-likelihood is a measure of how well the model explains the data
+ - Higher values indicate a better fit.
+
+AIC Akaike Information Criterion. 
+ - A lower AIC indicates a better model fit.
+ - The model with 8 clusters (k=8) has the lowest AIC (13935.20) and BIC (14446.94), suggesting it might be the best model among those tried.
+
+BIC Bayesian Information Criterion. 
+ - is used for model selection. It balances model fit with model complexity, penalizing models with more parameters to prevent overfitting. 
+ - Lower BIC values indicate better models
+ - The model with 8 clusters (k=8) has the lowest AIC (13935.20) and BIC (14446.94), suggesting it might be the best model among those tried.
+
+ICL Integrated Complete Likelihood criterion
+ - another measure used for model selection, often in clustering. It incorporates both the BIC and an entropy term to account for the uncertainty in cluster assignments. Lower ICL values indicate better models. Here, the ICL is -1605.689.
+
+SUMMARY:
+ - output shows that the model with 8 clusters has the lowest AIC and BIC, suggesting it is the best fit according to these criteria. This information helps in understanding the underlying structure of the data and selecting an appropriate number of clusters for further analysis.
+MORTEN SUMMARY
+-	Adhering (fastholde) strictly to the information criteria BIC and ICL suggest a seven segment solution
+-	AIC suggests an eight segment solution (which could, in principle, also be a nine or ten segment solution)
+-	However, from the plot of the information criteria as a function of the number of segments not much is gained beyond a four segment solution
+
+
+BIC AIC InfoCriteria Plot
+```{r BIC AIC InfoCriteria Plot }
 plot(MD.m28,ylab = "value of information criteria (AIC, BIC, ICL)")
-MD.m4 <- getModel(MD.m28, which = "4")
-table(kmeans = clusters(MD.k4),mixture = clusters(MD.m4))
-MD.m4a <- flexmix(MD.x ~1, cluster = clusters(MD.k4),model = FLXMCmvbinary())
+```
+Plot
+ - shows that the model with 8 clusters has the lowest AIC and BIC, suggesting it is the best fit according to these criteria. This information helps in understanding the underlying structure of the data and selecting an appropriate number of clusters for further analysis.
+
+MORTEN SUMMARY
+-	Adhering (fastholde) strictly to the information criteria BIC and ICL suggest a seven segment solution
+-	AIC suggests an eight segment solution (which could, in principle, also be a nine or ten segment solution)
+-	However, from the plot of the information criteria as a function of the number of segments not much is gained beyond a four segment solution
+
+
+MORTEN:
+-	A cross table of the 4 segment solutions from the k-means and the mixture of distributions models can be used to assess the stability
+
+Compares the cluster assignments from two different clustering methods:  - k-means and  
+ - mixture model
+ - followed by a contingency table showing the cross-tabulation from the k-means and mixturemodel
+Choosing 4 clusters for mixture models in spite of BIC and AIC suggests 8...?
+```{r k-means and mixturemodel }
+MD.m4 <- getModel(MD.m28, which = "4") #retrieves the mixture model with 4 clusters CHOOSE BASED ON CRITERIA
+table(kmeans = clusters(MD.k4),mixture = clusters(MD.m4)) 
+#MD.k4 cluster assignments from k-means clustering stored 
+#MD.m4 object now holds the mixture model with 4 clusters.
+```
+Columns (mixture): 
+ - Represent the cluster assignments from the mixture model (1 to 4).
+Rows (kmeans): 
+ - Represent the cluster assignments from the k-means model (1 to 4).
+
+Cluster 1 (kmeans) vs. Clusters (mixture):
+245 observations 
+ - assigned to cluster 1 by both k-means and the mixture model.
+25 observations
+ - assigned to cluster 1 by k-means and to cluster 2 by the mixture model.
+228 observations 
+ - assigned to cluster 1 by k-means and to cluster 3 by the mixture model.
+1 observation 
+ - is assigned to cluster 1 by k-means and to cluster 4 by the mixture model.
+SUMMARY:
+contingency table provides a detailed comparison of how observations are assigned to clusters by two different methods: k-means and the mixture model. This comparison helps in understanding the similarities and differences between the clustering results of the two methods. For example, we can see that clusters from the k-means method correspond somewhat differently to clusters from the mixture model, indicating different clustering structures identified by the two methods.
+
+
+MORTEN:
+-	The stable segments in the k-means solution (segments 2 and 3) are very similar to segments 4 and 2 in the finite mixture model solution
+-	This is even more apparent (tydeligt) when we use the k-means solution as initialization values for the finite mixture model where segments 2,3, and 4 in the k-means solution are very similar to segments 2,3, and 4 in the finite mixture model
+-	Notice that the log-likelihood values for the two mixture solutions are very similar suggesting that we have indeed found a global solution for the maximization problem
+
+suggesting indeed found a global solution for the maximization problem
+
+Fitting multivariate binary mixture model
+fits a mixture model with predefined clusters from k-means and then compares the new cluster assignments with the original k-means clusters.
+```{r Fitting multivariate binary mixture model }
+MD.m4a <- flexmix(MD.x ~1, 
+                  cluster = clusters(MD.k4),
+                  model = FLXMCmvbinary()) #fitted model is a multivariate binary mixture model.
 table(kmeans = clusters(MD.k4),mixture = clusters(MD.m4a))
+#MD.k4 cluster assignments from k-means clustering stored 
+#MD.m4a finite mixture model to the data MD.x using the cluster assignments from the k-means clustering stored in MD.k4
+```
+Columns (mixture): 
+ - Represent the cluster assignments from the mixture model (1 to 4).
+Rows (kmeans): 
+ - Represent the cluster assignments from the k-means model (1 to 4).
+
+Cluster 1 (kmeans) vs. Clusters (mixture):
+269 observations 
+ - assigned to cluster 1 by both k-means and the mixture model.
+1 observation
+ - assigned to cluster 1 by k-means and to cluster 2 by the mixture model.
+
+25 observations 
+ - assigned to cluster 1 by k-means and to cluster 3 by the mixture model.
+204 observations 
+ - assigned to cluster 1 by k-means and to cluster 4 by the mixture model.
+SUMMARY: same as above
+
+
+
+Log-likelihood
+```{r }
 logLik(MD.m4a)
 logLik(MD.m4)
 ```
+logLik: Log-likelihood of the fitted models. 
+ - log-likelihood is a measure of how well the model explains the data
+ - Higher values indicate a better fit.
+LogLik - 7111.133 is the highest recommending the 
+ - MD.m4 micture model which object holds the mixture model with 4 clusters.
+
+Mixture models /// Latent Class models discussion
+Latent Class Models (LCM)
+ - Definition: Latent class models are a specific type of mixture model used primarily for categorical data, where the goal is to identify unobservable (latent) subgroups within the population based on observed categorical variables.
+Mixture Models
+ - Definition: Mixture models are a probabilistic model for representing the presence of subpopulations within an overall population without requiring that an observed data point be explicitly labeled as belonging to a particular subpopulation.
+    Conclusion
+ - In principle, latent class models can be viewed as a type of mixture model specifically tailored for categorical data. Both approaches share the common goal of uncovering hidden structure in the data through the use of latent variables.
+
+MORTEN:
+-	The stable segments in the k-means solution (segments 2 and 3) are very similar to segments 4 and 2 in the finite mixture model solution
+-	This is even more apparent (tydeligt) when we use the k-means solution as initialization values for the finite mixture model where segments 2,3, and 4 in the k-means solution are very similar to segments 2,3, and 4 in the finite mixture model
+-	Notice that the log-likelihood values for the two mixture solutions are very similar suggesting that we have indeed found a global solution for the maximization problem
+
+suggesting indeed found a global solution for the maximization problem
+
+WHICH NEEDS TO BE DONE FROM HERE:
+
+Specific X-cluster(4)
+```{r Specific X-cluster(4) - }
+# Save the four-segment solution
+MD.m4 <- MD.m28[["4"]] #retrieves the mixture model with 4 clusters CHOOSE BASED ON CRITERIA
+MD.rm4 <- slswFlexclust(MD.x, MD.k4) #function slsWFlexclust is applied to the dataset MD.x and the four-cluster solution MD.m4.
+
+plot(MD.rm4, ylim = 0:1, xlab = "segment number",ylab = "segment stability")
+```
+I HAVE TRIED TO CONVERT THIS CODE INTO A SUITABLE FORMAT - WITHOUT LUCK....
+SHOW the findings from SEGMENTATION III INSTEAD
+
+o	Profiling segments
+```{r Segment Profile Plot - Profiling segments}
+
+MD.vclust <- hclust(dist(t(MD.x))) #performs hierarchical clustering on the transpose of the matrix MD.x. Hierarchical clustering is a method of cluster analysis which seeks to build a hierarchy of clusters. The dist function calculates the distance matrix between the rows of MD.x (which become columns after the transpose operation), and hclust is then used to create a hierarchical clustering from that distance matrix. The result is stored in MD.vclust.
+
+barchart(MD.m4, shade = TRUE,which = rev(MD.vclust$order)) #generates a barchart using the object MD.k4, which likely contains the clustering output from a previous k-means analysis. 
+#shade = TRUE argument adds shading to the bars to give a visual indication of significance or magnitude. 
+#which = rev(MD.vclust$order) argument reorders the barchart to match the order of clusters determined by the hierarchical clustering object MD.vclust. This reordering is done in reverse (rev) to perhaps match a specific ordering convention or for better visual clarity.
+```
+o	Describing segments
+o	Selecting (the) target segment(s)
+o	Customising the marketing mix
+o	Evaluation and monitoring
+
 
 
 #V Segmentation
@@ -1025,50 +1361,211 @@ logLik(MD.m4)
 library(flexmix)
 library("flexclust")
 rm(list=ls())
+mcdonalds <- read_csv("Datasets/mcdonalds.csv")
+```
 
-## Preparation
-# Read in data
-mcdonalds <- read.csv("c:/users/au78328/OneDrive - Aarhus Universitet/home/customer_analytics/s24/analysis/mcdonalds.csv")
+
+EXACT SAME AS III SEGMENTATION
+```{r data insights}
 # Look into content
 names(mcdonalds)
 dim(mcdonalds)
 head(mcdonalds, 3)
-# Change Yes/No to 1/0
-MD.x <- as.matrix(mcdonalds[, 1:11])
-MD.x <- (MD.x == "Yes") + 0
+```
 
+EXACT SAME AS III SEGMENTATION
+```{r Discretize Yes:1 NO:0 }
+# Change Yes/No to 1/0
+MD.x <- as.matrix(mcdonalds[, 1:11]) #function converts this selected subset of the data frame into a matrix called MD.x. mcdonalds[, 1:11] selects all rows and the first 11 columns of the mcdonalds data frame.
+MD.x <- (MD.x == "Yes") + 0 # TRUE can be coerced to 1 and FALSE to 0. Therefore, adding 0 (+ 0) to the logical matrix effectively converts all TRUE values to 1s and all FALSE values to 0s.
+head(MD.x, 3)
+```
+
+EXACT SAME AS III SEGMENTATION
+```{r Column means }
 ## Exploring data
 # What fraction sees McDonald's possessing each of the attributes
-round(colMeans(MD.x), 2)
+round(colMeans(MD.x), 2) #rounding the column means to two decimals
+```
+Column Means:
+yummy convenient      spicy  fattening     greasy 
+0.55       0.91       0.09       0.87       0.53
+      
+fast      cheap      tasty  expensive    healthy  disgusting
+0.90       0.60       0.64       0.36       0.20    0.24
+
+EXACT SAME AS III SEGMENTATION
+```{r PCA}
 # PCA and perceptual map
 MD.pca <- prcomp(MD.x)
 summary(MD.pca)
-print(MD.pca, digits = 1)
+```
+PCA Principal Component analysis:
+- The idea behind PCA is to reduce the dimensionality of the dataset by transforming the original variables into a new set of variables (the principal components) which are uncorrelated, and which are ordered so that the first few retain most of the variation present in all of the original variables.
+- The greatest variance by any projection of the data comes to lie on the first coordinate (called the first principal component), the second greatest variance on the second coordinate, and so on.
+Standard Deviation:
+- This indicates how much variance is captured by each principal component. A higher standard deviation means that component accounts for a larger variance within the dataset.
+Proportion of Variance:
+- squared standard deviation for each component divided by the sum of squared standard deviations of all components. It tells us the proportion of the dataset’s total variance that is captured by each principal component.
+
+EXACT SAME AS III SEGMENTATION
+```{r Rotation/Loadings PCA}
+print(MD.pca, digits = 2)
+```
+Rotation matrix:
+- Each row corresponds to one of the original variables (attributes like "yummy", "convenient", "spicy", etc.), and each column corresponds to a principal component (PC1 to PC11). The values in the matrix show how each attribute contributes to each principal component.
+Example (original variable yummy on PC1):
+- The attribute "yummy" has a strong positive loading on PC1 (0.4769) and a strong negative loading on PC9 (-0.5724), which means "yummy" is an important attribute that defines the direction of PC1 and PC9.
+
+EXACT SAME AS III SEGMENTATION
+```{r PCA loading-plot}
 plot(predict(MD.pca), col = "grey")
 projAxes(MD.pca)
+```
+- dots represent the data points projected onto the first two principal components, PC1 and PC2. This provides a two-dimensional summary of the data, where similar data points are clustered together, and different ones are farther apart.
+- arrows (or vectors) represent the loadings of each attribute (like "yummy", "cheap", "expensive", etc.), which point in the direction of the maximum variance for that attribute. The length of an arrow indicates the strength of the attribute's contribution to the two principal components displayed.
+- Attributes that are close together are positively correlated, while those that are on opposite ends of the plot are negatively correlated.
+- Attributes that are close to the origin (center of the plot) have smaller effects on the variation explained by the first two principal components, while those further out are more influential.
 
-## Extracting segments
-# Mixture regression
-# Need to fix the representation of like and use "like" (not "Like") onwards
-mcdonalds$like <- factor(mcdonalds$Like,levels=c("I love it!+5","+4","+3","+2","+1","0","-1","-2","-3","-4","I hate it!-5"))
+It is seen that "tasty" and "yummy" point in a similar direction, suggesting they contribute similarly to the dataset's variance and are likely correlated. Conversely, "expensive" points in a roughly opposite direction to "cheap", indicating they are negatively correlated. The plot also suggests that attributes like "disgusting" and "fattening" may not be strongly related to the primary variance within the data, as their vectors are shorter and closer to the center of the plot.
+
+
+Extracting segments
+##Mixture REGRESSION
+This lecture will help you to understand
+-	Other finite mixture models
+-	Applications of mixture models
+
+   Morten on Finite Mixture models:
+o	The “classical” segmentation approach (hierarchical and nonhierarchical) resembles in many ways the latent class analysis/finite mixtures of distributions and result often in comparable solutions
+o	The same kind of input data can be used and the overall segmentation process is very similar
+o	A related set of methods, finite mixtures of regression models, takes a rather different approach
+As the name suggests, we have a dependent variable and a set of independent variables, but the functional relationship between them depends on which of a finite set of segments the object belongs to
+
+Morten McDonalds Case:
+o	Instead of finding market segments with similar perceptions we could consider finding segments with members whose love/hate for McDonald’s is driven by similar perceptions
+o	In this situation, McDonald’s could try to modify critical perceptions for certain segments with the purpose of improving love
+o	This idea can be operationalized using finite mixtures of linear regression models
+o	The dependent variable is the degree to which consumers love McDonald’s and the independent variables are the 11 perceptions
+The segmentation variables are unobserved and consist of the regression coefficients
+
+like Frequency table
+ - displays a frequency table of these levels.
+```{r like Frequency table}
+#Need to fix the representation of like and use "like" (not "Like") onwards
+mcdonalds$like <- factor(
+  mcdonalds$Like,levels=c("I love it!+5","+4","+3","+2","+1","0","-1","-2","-3","-4","I hate it!-5")) #modifies the factor levels of a variable (like) in the mcdonalds dataset and then
 rev(table(mcdonalds$like))
---
+```
+"I love it!+5": 143 observations.
+"+4":           160 observations.
+"+3":           229 observations.
+"+2":           187 observations.
+"+1":           152 observations.
+"0":            169 observations.
+"-1":           152 observations.
+"-2":           59 observations.
+"-3":           73 observations.
+"-4":           71 observations.
+"I hate it!-5": 152 observations.
+
+Morten on McDonalds - Numeric transformation
+o	The ordinal nature of the dependent variable causes problems – the larger number of segments we investigate the more likely we end up in a situation where a segment is made up of consumers with identical rating on the dependent variable
+o	Such a group can be perfectly predicted and would lead to an infinite log-likelihood – a degenerate solution
+For this reason we will have to settle with a 2 segment solution
+
+Numeric like frquency table
+ - transforms the like variable from a factor to a numeric variable and then adjusts the numeric values. 
+ - displays a frequency table of the transformed like variable.
+```{r Numeric like frquency table }
 mcdonalds$like.n <- 6 - as.numeric(mcdonalds$like)
 table(mcdonalds$like.n)
---
-# Prepare the regression function for the finite mixture of linear regression models
+```
+This is done in preparation of the flowwing Regression
+
+Prepares a regression formula for use in finite mixture of linear regression model
+```{r}
 f <- paste(names(mcdonalds)[1:11], collapse = "+")
+#names(mcdonalds)[1:11] Retrieves the names of the first 11 columns in the mcdonalds dataset. These columns are presumably predictors for the regression model.
+#collapse = "+"): Combines these column names into a single string, with each name separated by a + sign. This string represents the right-hand side of the regression formula.
 f <- paste("like.n ~ ", f, collapse = "")
+# collapse = "" ensures there are no extra spaces added.
 f <- as.formula(f)
 f
---
+```
+Dependent Variable (like.n):
+ - transformed like variable, now numeric, which represents the level of liking for McDonald's.
+Independent Variables: 
+ - The predictors in the model are the first 11 columns from the mcdonalds dataset:
+ 
+Finite mixture linear regression model
+ - performs a finite mixture of linear regression models using the stepFlexmix function
+```{r Fit Finite mixture linear regression model}
 set.seed(1234)
-MD.reg2 <- stepFlexmix(f, data = mcdonalds, k = 2,nrep = 10, verbose = FALSE)
+MD.reg2 <- stepFlexmix(f, 
+                       data = mcdonalds, 
+                       k = 2, #number of clusters
+                       nrep = 10, 
+                       verbose = FALSE)
 MD.reg2
---
+```
+Cluster 1: 630 observations.
+Cluster 2: 823 observations.
+SUMMARY:
+ - clusters represent groups of observations that have similar relationships between the predictor variables and the response variable (like.n).
+
+Refitting the finite mixture of linear regression models and summarizing the results for each component
+```{r Refit finite mixture of linear regression model }
 MD.ref2 <- refit(MD.reg2)
 summary(MD.ref2)
+```
+Output 
+ - provides the regression coefficients for each component of the mixture model. The output is divided into two components, 
+Comp.1
+ - yummyYes, tastyYes, cheapYes, and disgustingYes are significant predictors for like.n with high significance levels.
+ - Positive coefficients (e.g., yummyYes, tastyYes) suggest that these attributes positively influence the like.n score.
+ - Negative coefficients (e.g., fatteningYes, greasyYes, disgustingYes) indicate a negative influence on the like.n score.
+
+Comp.2
+ - yummyYes, convenientYes, fatteningYes, greasyYes, healthyYes, and disgustingYes are significant predictors for like.n.
+ - Similar to Comp.1, positive coefficients (e.g., yummyYes, convenientYes, healthyYes) indicate a positive influence on like.n.
+ - Negative coefficients (e.g., fatteningYes, greasyYes, disgustingYes) indicate a negative influence on like.n.
+SUMMARY:
+ - the refitted model MD.ref2 shows the estimated coefficients for each predictor variable in both components of the mixture model. 
+ - These coefficients indicate the direction and magnitude of the influence of each predictor on the like.n score. 
+ - Significant predictors can be identified by their low p-values, marked with ***, **, or *, indicating strong evidence against the null hypothesis that the coefficient is zero. 
+ - This detailed information helps in understanding the different segments within the data and their distinct relationships between the predictors and the response variable (like.n)
+
+
+Plot Refit finite mixture of linear regression model
+ - visualizes the coefficients for each predictor variable in the two components of the mixture model, indicating their significance.
+```{r Plot Refit finite mixture of linear regression model  }
 plot(MD.ref2, significance = TRUE)
 ```
+ - x-axis represents the coefficient values, ranging from -4 to 6.
+
+Bars:
+ - each bar represents the estimated coefficient for a predictor variable.
+ - length and direction (positive or negative) of the bar indicate the magnitude and direction of the effect of the predictor on the response variable (like.n).
+ - darker bars indicate statistically significant coefficients, while lighter bars represent non-significant coefficients.
+SUMMARY
+ - plot provides a clear visual representation of the coefficients for each predictor variable in the two components of the mixture model. 
+ - highlights which predictors have a significant effect on the response variable (like.n) in each component. 
+ - visualization helps in understanding the different influences of the predictors across the identified segments and can guide targeted strategies based on these insights
+
+Morten SUMMARY:
+o	Group 1 like McDonald’s if they perceive it as YUMMY, not FATTENING, FAST, CHEAP, TASTY, and not DISGUSTING
+o	Group 2 like McDonald’s if they perceive it as YUMMY, CONVENIENT, not GREASY, HEALTHY, and not DISGUSTING
+o	So if segment 2 is targeted it is important to stress that McDonald’s serves some healthy food – this is not necessary in order to target segment 1
+To target segment 1, McDonald’s should stress how tasty, fast and cheap the food is
+
+
+THE REMAINING STEPS
+-	See previous slide set for considerations regarding
+o	Profiling segments
+o	Describing segments
+o	Selecting (the) target segment(s)
+o	Customising the marketing mix
+o	Evaluation and monitoring
 
 
