@@ -2009,107 +2009,18 @@ summary_corp_rep_ext$descriptives$statistics
 ```
 not deleting missings yet - dont know the procedure
 
-```{r Iterations + Loadings }
+```{r Iterations }
 # Iterations to converge
 summary_corp_rep_ext$iterations
 
 ## Evaluation of the reflective measurement model
 # Inspect the indicator loadings
-summary_corp_rep_ext$loadings
+#summary_corp_rep_ext$loadings
 # Inspect the indicator reliability
-summary_corp_rep_ext$loadings^2
+#summary_corp_rep_ext$loadings^2
 ```
 Iterations
 - 8 means that the algorithm converged after 8 iterations.
-
-Loadings
-- Loadings represent the correlation between the observed variables (indicators) and the latent variables (constructs).
-- Higher loadings indicate that the indicator is a good measure of the latent construct.
--	As a rule of thumb, we would like that a construct explains more than 50% of an indicators variance: loading > 0.708	(0.708^2 = 0.5)
-
-Indicator Reliability (Loadings Squared):
- - summary_corp_rep$loadings^2 computes the squared loadings for each indicator.
- - Squared loadings represent the proportion of variance in each indicator that is explained by its corresponding latent construct.
--	As a rule of thumb, we would like that a construct explains more than 50% of an indicators variance: loading^2 > 0.5)
-
-comp_1: 0.679 
-comp_2: 0.673 
-comp_3: 0.712 
- - indicate that 67.9%, 67.3%, and 71.2% of the variance in comp_1, comp_2, and comp_3 are explained by COMP, respectively.
-
-```{r Reliability + cronbachAlpha }
-# Inspect the internal consistency reliability
-summary_corp_rep_ext$reliability
-```
-Reliability:
-     alpha  rhoC   AVE  rhoA
-QUAL 0.878 0.894 0.518 1.000
-PERF 0.747 0.824 0.488 1.000
-CSOR 0.816 0.854 0.545 1.000
-ATTR 0.600 0.770 0.540 1.000
-COMP 0.776 0.869 0.688 0.786
-LIKE 0.831 0.899 0.747 0.836
-CUSA 1.000 1.000 1.000 1.000(singleitem construct: perfect reliabily)
-CUSL 0.831 0.899 0.748 0.839
-
-alpha
- - Cronbach’s Alpha, measures internal consistency.
-rhoC
- - Composite Reliability, measures the construct’s reliability.
-AVE
- - Average Variance Extracted, measures the amount of variance captured by the construct in relation to the amount of variance due to measurement error.
-rhoA
- - Another measure of composite reliability.
-
-Alpha, rhoC, and rhoA should exceed 0.7 
-AVE should exceed 0.5
-These tresholds are met by the measures, which is also seen in the plot.
-
-
-Validity of constructs in a Partial Least Squares (PLS) structural equation model (SEM): 
-Fornell-Larcker criterion
- - Discriminant validity ensures that a construct is truly distinct from other constructs in the model.
- - table shows the square root of the Average Variance Extracted (AVE) on the diagonal and the correlations between constructs on the lower triangle.
- - For discriminant validity to be established, the square root of the AVE of each construct (diagonal values) should be greater than the correlations with other constructs (off-diagonal values).
-```{r Validity FL }
-# Table of the FL criteria
-summary_corp_rep_ext$validity$fl_criteria
-```
-Fornell-Larcker criterion
- - QUAL: diagonal 0.719 is NOT higher than lower traingle 0.788 0.763 
- - indicates a lack of discriminant validity between QUAL and these constructs PERF COMP.
- - The diagonal values (square root of AVE) are higher than the off-diagonal values (construct correlations), 
- SUMMARY: NOT indicating good discriminant validity between QUAL and PERF+COMP
-
-Things to do when lacking dicriminant validity:
-- Re-evaluate the items used to measure each construct. Ensure that the items are uniquely related to their respective constructs.
- - Consider whether the constructs are conceptually distinct. Overlapping constructs might indicate the need to redefine them.
-
-
-Validity of constructs in a Partial Least Squares (PLS) structural equation model (SEM):
-Heterotrait-Monotrait (HTMT) ratio
- - HTMT ratio is another method to assess discriminant validity. It is considered more reliable than the Fornell-Larcker criterion.
-```{r Validity HTMT }
-# HTMT criterion
-summary_corp_rep_ext$validity$htmt
-```
-HTMT 
- - values close to 1 indicate a lack of discriminant validity, whereas values below 0.85 (or 0.90 in cases where constructs are conceptually similar) indicate good discriminant validity.
- - QUAL///PERF: 0.918 lack of discriminant validity
- - ATTR///PERF: 0.911 lack of discriminant validity
- - COMP///PERF: 0.946 lack of discriminant validity
- - indicates dicriminant validity issues between PERF and QUAL+ATTR+COMP
-
-SUMMARY: NOT all HTMT values are below 0.85, not indicating good discriminant validity between all the constructs.
- - PERF is object for discriminant valilidity problems across several constructs
- - Discriminant validity: means that each construct is distinct and measures a unique aspect of the data.
-
-Things to do when lacking dicriminant validity:
-- Re-evaluate the items used to measure each construct. Ensure that the items are uniquely related to their respective constructs.
- - Consider whether the constructs are conceptually distinct. Overlapping constructs might indicate the need to redefine them.
-From lecture:
- - Remove indicators which are highly correlated with indicators from the opposing construct
- - Reassign indicators to other constructs
 
 
 Bootstrap HTMT output
@@ -2131,6 +2042,7 @@ Bootstrap SD:
 95% Confidence Intervals (CI):
  - confidence intervals (2.5% CI and 97.5% CI) do not include zero for any of the loadings, reinforcing the significance of these loadings.
 - Lecture: if 1 is included in CI, indicates lack of discriminant validity
+
 
 ## 10.PLS_IIIa: Redundancy analysis
 
@@ -2345,11 +2257,10 @@ If high multicollinearity
  - Possible treatment of collinearity issues:	Remove indicator
 
 
-NOT WORKING
 ```{r Bootstrap }
 # Summarize the results of the bootstrap
 # alpha sets the specified level for significance, i.e. 0.05
-sum_boot_corp_rep_ext <- summary(boot_corp_rep_ext, alpha = 0.05)
+#sum_boot_corp_rep_ext <- summary(boot_corp_rep_ext, alpha = 0.05)
 # Inspect the bootstrapping results for indicator weights
 sum_boot_corp_rep_ext$bootstrapped_weights
 # Inspect the bootstrapping results for indicator loadings
@@ -3125,5 +3036,82 @@ Visual Analysis:
  - The plot visually confirms this interaction effect, showing different slopes for the relationship between CUSA and CUSL at different levels of SC.
 
 This comprehensive analysis highlights the direct, indirect, and moderated effects within the model, providing valuable insights into how different variables interact to influence the dependent variable CUSL.
+
+
+##Influencer model PLS-SEM
+
+```{r}
+#REFLECTIVE MEASUREMENTS MODELS HTMT
+# R script for the illustrations in chapter 4
+rm(list=ls())
+library(seminr)
+library(readxl)
+
+## Preparation
+# Load data and inspect the first few observations
+#influencer_data <- read.csv("PLS_data_exam.csv")
+library(readr)
+influencer_data <- read_csv("C:/Users/Bruger/OneDrive - Aarhus universitet/8. semester - BI/CA - Customer Analytics/PrevExams/2023/PLS_data_exam - Copy.csv")
+
+head(influencer_data)
+# Create measurement model
+set.seed(123)
+simple_mm <- constructs(
+  composite("SIC",multi_items("sic_",1:6),weights = mode_B),
+  composite("PL",multi_items("pl_",1:4),weights = mode_A),
+  composite("PQ",multi_items("pq_",1:4),weights = mode_A),
+  composite("WTP",single_item("wtp")),
+  composite("PI",multi_items("pi_",1:5),weights = mode_A))
+# Create structural model
+simple_sm <- relationships(
+  paths(from = c("SIC"), to = c("PL","PQ","PI")),
+  paths(from = c("PL","PQ"), to = c("PI")),
+  paths(from = c("PI"), to = c("WTP")))
+
+## Estimation
+# Estimate the model
+influencer_pls_model <- estimate_pls(data = influencer_data,
+                                     measurement_model = simple_mm,
+                                     structural_model = simple_sm,
+                                     inner_weights = path_weighting,
+                                     missing = mean_replacement,
+                                     missing_value = "-99")
+
+plot(influencer_pls_model)
+
+## Summarizing the results
+# Summarize the model results
+summary_influencer_pls_model <- summary(influencer_pls_model)
+# Iterations to converge
+summary_influencer_pls_model$iterations
+
+## Evaluation of reflective measurement model
+# Inspect the indicator loadings
+summary_influencer_pls_model$loadings
+# Inspect the indicator reliability
+summary_influencer_pls_model$loadings^2
+# Inspect the composite reliability
+summary_influencer_pls_model$reliability
+# Plot the reliabilities of constructs
+plot(summary_influencer_pls_model$reliability)
+# Table of the FL criteria
+summary_influencer_pls_model$validity$fl_criteria
+# HTMT criterion
+summary_influencer_pls_model$validity$htmt
+# Bootstrap the model
+boot_influencer_pls_model <- bootstrap_model(seminr_model =influencer_pls_model,
+                                 nboot = 1000,cores = NULL,seed = 123)
+sum_boot_influencer_pls_model <- summary(boot_influencer_pls_model, alpha = 0.10)
+# Extract the bootstrapped HTMT
+sum_boot_influencer_pls_model$bootstrapped_HTMT
+??RMSEA
+
+```
+
+
+
+
+
+
 
 
