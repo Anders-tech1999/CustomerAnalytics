@@ -5,127 +5,389 @@ date: "2024-04-26"
 ---
 
 #Association rules mining
-## a
-```{r}
-#install.packages("arules")
-```
 
-```{r a }
+-	This lecture will help you to understand
+o	Advantages of market basket analysis and key concepts hereof
+o	Association analysis and association rules
+o	Algorithms (frequent itemset generation and rule generation) and interpretation from market basket analysis
+
+## a - Grocery data
+
+-	We have information from 9,835 transactions comprising 169 unique items
+-	Approximately half of the transactions involve one, two, or three items, the largest transaction involves 32 items
+-	‘The most frequently bought item is “whole milk” followed by “other vegetables”
+-	The data is provided as a “transactions” class
+-	We extract association rules with support above 0.01 and with a confidence above 0.3 – this will result in a modest number of rules and involve a suitable number of items
+ANSWERS:
+-	We see that the rules found involve 88 items (out of the 169)
+-	A total of 125 rules were found
+-	If we filter by requiring that the rules should have a lift above 3 we see that for rule 1
+o	If a transaction contains {beef} then it is also relatively more likely to contain {root vegetables}
+o	The combination appears in 1.7 % of the transactions – support = 0.017
+o	The combination is more than 3 times more likely to occur together than would be expected from the individual rates of incidence
+o	The unconditional probability for {root vegetables} equals 0.109 whereas the conditional probability equals 0.331
+-	A store might exploit this by creating a display for root vegetables near the beef counter or put a coupon for beef in the root vegetable area
+
+```{r dataload + summary}
+#install.packages("arules")
 library(arules)
 rm(list=ls())
 
-# Load the grocery data
-data(Groceries)
-# Have a look at the data set/container
-summary(Groceries)
+data(Groceries) # Load the grocery data
+
+summary(Groceries) # Have a look at the data set/container
 ```
+Groceries:
+ - consists of 9835 rows (transactions) and 169 columns (items).
+Most Frequent Items:
+ - whole milk:                  2513 occurrences
+ - other vegetables:            1903 occurrences
+ - rolls/buns:                  1809 occurrences
+ - soda:                        1715 occurrences
+ - yogurt:                      1372 occurrences
+ - other (less frequent items): 34055 occurrences
+Length Distribution of Transactions:
+ - shows how many items are in each transaction.
+ - 2159 transactions with 1 item
+ - 1643 transactions with 2 items
+ - 1299 transactions with 3 items...
+Descriptive Stats of Transaction Lengths:
+ - min number of items in a transaction: 1
+ - 1st Quartile (25th percentile): 2 items
+ - Median (50th percentile): 3 items
+ - Mean: 4.409 items
+ - 3rd Quartile (75th percentile): 6 items
+ - Maximum number of items in a transaction: 32
+ 
 
-
-```{r a }
+```{r quick item inspection }
 # Have a look at the transactions
-inspect(head(Groceries,3))
+groceriesdf <- as(Groceries, "data.frame")
+inspect(head(Groceries,5))
 ```
-
-
-```{r a }
-# Look at the more frequent items
+Frequent items
+ - sorts the item frequencies in the Groceries dataset and displays the 30 most frequently occurring items
+```{r 30 Frequent items }
 tail(sort(itemFrequency(Groceries)),30)
 ```
+ - whole milk:         25.55% appearance in ALL transactions
+ - other vegetables:   19.35% ...
+ - rolls/buns:         18.39% 
+ - soda:               17.44% 
+ - yogurt:             13.95%
+SUMMARY:
+ - whole milk is the most frequently purchased item, 
+ - followed by other vegetables, rolls/buns, and soda.
+ - frequencies can be used to identify the most popular items in the grocery dataset, which can be useful for various types of analysis, such as market basket analysis,
 
-
-```{r a }
-itemFrequencyPlot(Groceries,support=0.01,cex.names=1.0)
+Plot Item Frequency
+```{r Plot Item Frequency }
+itemFrequencyPlot(Groceries,
+                  support=0.05, #morten=0.01
+                  cex.names=1.0)
 ```
+Plot Item Frequency
+ - displays the items that are most frequently purchased, with their relative frequencies (proportions of transactions in which they appear):
+ - Whole milk is the most frequently purchased item, appearing in around 25% of the transactions.
+ - Other frequently purchased items include other vegetables, rolls/buns, soda, yogurt, bottled water, and tropical fruit.
 
 
-```{r a }
-# Extract association rules
-groc.rules <- apriori(Groceries, parameter=list(supp=0.01, conf=0.3,
-                                                target="rules"))
+Extract association rules
+-	Extracting association rules with support above 0.01 and with a confidence above 0.3 – this will result in a modest number of rules and involve a suitable number of items
+```{r Association rules }
+groc.rules <- apriori(Groceries, 
+                      parameter=list(supp=0.01, 
+                                     conf=0.3,
+                                     target="rules"))
 ```
+This output is redundant???^^^^
 
-
-```{r a }
+Associatin Rules incl. lift > 3
+ - filters and inspects association rules from a set of rules groc.rules  - rules being inspected have a lift greater than 3.
+```{r Rules: lift > 3 }
 # Filter the rules such that they have a lift above 3
 inspect(subset(groc.rules, lift > 3))
-#WHY is it above 3 and not 1?
 ```
+LHS (left-hand side): 
+ - antecedent of the rule (items that appear before =>).
+
+RHS (right-hand side): 
+ - consequent of the rule (items that appear after =>)
+
+Support: 
+ - proportion of transactions that contain both the antecedent and the consequent.
+
+     LHS                   RHS                support
+[1] {beef}             => {root vegetables}   0.01738688
+[2] {citrus fruit,     
+     root vegetables}  => {other vegetables}  0.01037112
+
+[3] {citrus fruit,
+     other vegetables} => {root vegetables}   0.01037112
+
+[4] {tropical fruit,
+      root vegetables}  => {other vegetables} 0.01230300
+
+[5] {tropical fruit,
+      other vegetables} => {root vegetables}  0.01230300
+
+Confidence:
+ - proportion of transactions containing the antecedent that also contain the consequent.
+
+Coverage: 
+ - proportion of transactions that contain the antecedent.
+ 
+Lift: 
+ - ratio of the observed support to that expected if the items were independent.
+ - Definition: Lift is a measure of how much more likely the consequent (rhs) is given the antecedent (lhs) compared to its baseline likelihood.
+ - Choosing Lift > 3: A lift greater than 3 indicates a strong association between the items in the rule. It means the presence of the antecedent makes the consequent three times more likely compared to if they were independent. This threshold ensures that only the most significant and interesting rules are selected.
+ - Lift > 1: The items in the antecedent and consequent appear together more often than expected if they were independent.
+ - Lift = 1: The items appear together exactly as often as expected if they were independent.
+ - Lift < 1: The items appear together less often than expected if they were independent.
+
+Count: 
+- number of transactions that contain both the antecedent and the consequent.
+
+     LHS                  confidence    coverage    lift      count
+[1] {beef}                0.3313953     0.05246568  3.040367  171
+
+[2] {citrus fruit,        0.5862069     0.01769192  3.029608  102
+      root vegetables}
+      
+[3] {citrus fruit,        0.3591549     0.02887646  3.295045  102
+      other vegetables}
+[4] {tropical fruit       0.5845411     0.02104728  3.020999  121
+      ,root vegetables}
+
+[5] {tropical fruit       0.3427762     0.03589222  3.144780  121
+      ,other vegetables}
+
+By using a lift threshold of 3, the analysis focuses on the most impactful associations, filtering out weaker and potentially less interesting rules.
+
+-	We see that the rules found involve 88 items (out of the 169)
+-	A total of 125 rules were found
+-	If we filter by requiring that the rules should have a lift above 3 we see that for rule 1
+o	If a transaction contains {beef} then it is also relatively more likely to contain {root vegetables}
+o	The combination appears in 1.7 % of the transactions – support = 0.017
+o	The combination is more than 3 times more likely to occur together than would be expected from the individual rates of incidence
+o	The unconditional probability for {root vegetables} equals 0.109 whereas the conditional probability equals 0.331
+-	A store might exploit this by creating a display for root vegetables near the beef counter or put a coupon for beef in the root vegetable area
 
 
-## b
+
+## b - Supermarket data
 ```{r}
 #install.packages("car")
 #install.packages("arulesViz")
-```
-
-```{r b }
+library(car)
 library(arules)
 rm(list=ls())
 
-## Load, inspect, and prepare data for mining
-# Load the supermarket data
-retail.raw <- readLines("http://goo.gl/FfjDAO")
+retail.raw <- readLines("http://goo.gl/FfjDAO") # Load the supermarket data
 
-# Have a look at the data set/container
-head(retail.raw);tail(retail.raw)
+head(retail.raw);tail(retail.raw) # Have a look at the data set/container
 summary(retail.raw)
-```
 
-
-```{r b }
 # Prepare for mining
 retail.list <- strsplit(retail.raw, " ")
+
 # And check the result
 str(retail.list)
+
 # Assign a name to each row/transaction
 names(retail.list) <- paste("Trans", 1:length(retail.list), sep="")
+
 # Look at a randomly chosen element
 library(car)
 set.seed(1234)
 some(retail.list)
+
 # Remove original data
 rm(retail.raw)
-# Transform the data to a transactions object
+```
+Stupid numbers^^^^
+
+Transform data to a transactions object
+```{r Transform data }
 retail.trans <- as(retail.list, "transactions") # takes a few seconds
 summary(retail.trans)
+```
+Output:
+ - contains 88,162 rows (transactions) and 16,470 columns (items).
+Item 39:        50,675 occurrences
+Item 48:        42,135 occurrences
+Item 38:        15,596 occurrences
+Item 32:        15,167 occurrences
+Item 41:        14,945 occurrences
+Other items:    770,058 occurrences
+
+Length Distribution of Transactions:
+ - shows how many items are in each transaction.
+ - 3,016 transactions with 1 item, 
+ - 5,516 transactions with 2 items, and so on.
+
+Descriptive Stats of Transaction Lengths:
+ - Minimum number of items in a transaction: 1
+ - 1st Quartile (25th percentile): 4 items
+ - Median (50th percentile): 8 items
+ - Mean: 10.31 items
+ - 3rd Quartile (75th percentile): 14 items
+ - Maximum number of items in a transaction: 76
+
+
+```{r b }
 # Remove data in list format
 rm(retail.list)
+```
 
-## Find and visualize association rules
-# Extract association rules
-retail.rules <- apriori(retail.trans, parameter=list(supp=0.001, conf=0.4))
+Extract association rules
+```{r Association rules }
+#Find and visualize association rules
 library(arulesViz)
-# Plot the resulting rules
+retail.rules <- apriori(retail.trans, parameter=list(supp=0.001, conf=0.4))
+```
+This output is redundant???^^^^
+
+Plot Rules
+```{r Plot Rules }
 plot(retail.rules)
+```
+Terrible plot^^^^
+
+NOT WORKING - JITTER
+```{r b }
 # Interactive plot - select area by marking two opposite corners of a rectangle
-#plot(retail.rules, engine="interactive")
+plot(retail.rules, engine="interactive")
+```
+
+Associatin Rules incl. lift > 50
+ - filters and inspects association rules from a set of rules retail.hi  - rules being inspected have a lift greater than 50.
+```{r b }
 # Find the subset of rules with highest lift
-retail.hi <- head(sort(retail.rules, by="lift"), 50)
-inspect(retail.hi)
+retail.hi <- head(sort(retail.rules, by="lift"), 50) # printing 50 
+inspect(subset(retail.hi, lift > 100))
+```
+LHS (left-hand side): 
+ - antecedent of the rule (items that appear before =>).
+
+RHS (right-hand side): 
+ - consequent of the rule (items that appear after =>)
+
+Support: 
+ - proportion of transactions that contain both the antecedent and the consequent.
+
+Confidence:
+ - proportion of transactions containing the antecedent that also contain the consequent.
+
+Coverage: 
+ - proportion of transactions that contain the antecedent.
+ 
+Lift: 
+ - ratio of the observed support to that expected if the items were independent.
+ - Definition: Lift is a measure of how much more likely the consequent (rhs) is given the antecedent (lhs) compared to its baseline likelihood.
+ - Choosing Lift > 3: A lift greater than 3 indicates a strong association between the items in the rule. It means the presence of the antecedent makes the consequent three times more likely compared to if they were independent. This threshold ensures that only the most significant and interesting rules are selected.
+ - Lift > 1: The items in the antecedent and consequent appear together more often than expected if they were independent.
+ - Lift = 1: The items appear together exactly as often as expected if they were independent.
+ - Lift < 1: The items appear together less often than expected if they were independent.
+
+Count: 
+- number of transactions that contain both the antecedent and the consequent.
+
+By using a lift threshold of 3, the analysis focuses on the most impactful associations, filtering out weaker and potentially less interesting rules.
+
+Plot Association Rules
+ - visualization helps in understanding the relationships and interactions between different rules.
+```{r Plot Association Rules }
 # Plot this subset
 plot(retail.hi, method="graph",engine = "htmlwidget")
+```
+Explanation of the Visualization:
+Graph Visualization:
+- The plot is a network graph where nodes represent items or itemsets, and edges represent the association rules between them.
+- Nodes can represent either single items or groups of items involved in the rules.
 
+Node and Edge Details:
+- Nodes: Circular nodes represent rules, with each node labeled (e.g., "rule 8", "rule 19").
+- Edges: Arrows between nodes indicate the direction of the rules, from antecedent to consequent.
+- The size and color of the nodes can represent different metrics, such as support, confidence, or lift. Typically, larger and darker nodes indicate higher values of the chosen metric.
+
+Interactivity:
+- The graph is interactive, allowing the user to explore the relationships by selecting specific rules or nodes. The dropdown menu (e.g., "Select by id") allows filtering or highlighting specific parts of the graph.
+
+
+```{r Item "names" }
 ## Prepare the introduction of item profitability (margin)
 # First get item names
 retail.itemnames <- sort(unique(unlist(as(retail.trans, "list"))))
 head(retail.itemnames); tail(retail.itemnames)
-# Simulate per-item margin data
+```
+
+Simulate per-item margin data
+ - creates a simulated dataset of profit margins for items in a retail dataset and inspects the distribution of these margins.
+```{r Per-item margin data }
 set.seed(03870)
-retail.margin <- data.frame(margin=rnorm(length(retail.itemnames),
-                                         mean=0.30, sd=0.30))
+retail.margin <- data.frame(
+  margin=rnorm(length(retail.itemnames),
+               mean=0.30, 
+               sd=0.30))
+
 # Inspect margin data
 quantile(retail.margin$margin)
+```
+Output displays the quantiles of the margin data:
+0% (Minimum):       -1.1090452
+25% (1st Quartile): 0.1045897
+50% (Median):       0.3026245
+75% (3rd Quartile): 0.5050533
+100% (Maximum):     1.5542344
+
+Distribution of Margins:
+ - The margins are normally distributed around a mean of 0.30 with a standard deviation of 0.30.
+ - The minimum margin observed is approximately -1.109, and the maximum is approximately 1.554.
+ - The median margin is approximately 0.303, which is close to the mean, indicating a symmetric distribution around the mean.
+SUMMARY
+ - simulated margin data can be used for further analysis, such as assessing profitability,
+
+Displaying some rows with related margins...?
+```{r Adjust rownames }
 # Adjust rownames
 rownames(retail.margin) <- retail.itemnames
 head(retail.margin); tail(retail.margin)
 some(retail.margin)
+```
+
+Profit margin of 2 goods
+```{r Profit margin of 2 goods }
 # Find the margin for the items in basket {39,48} and their sum
 retail.margin[c("39", "48"), ]
 sum(retail.margin[c("39", "48"), ])
+```
+Item "39" has a profit margin of approximately 0.1218, indicating profitability.
+Item "48" has a profit margin of approximately -0.2125, indicating a loss.
+- The sum of the margins for items "39" and "48" is -0.0907. This indicates that, on average, these two items together result in a slight loss.
+
+
+Extracting 3. transaction
+```{r Extracting 3. transaction }
 # Get items in third transaction and calculate sum of their margins
 (basket.items <- as(retail.trans[3], "list")[[1]])
 retail.margin[basket.items, ]
 sum(retail.margin[basket.items, ])
+```
+First output: 
+ - shows the item labels from the third transaction:
+ - Items: "33", "34", "35"
+Second output:
+ - shows the profit margins for these items:
+Item "33": 0.3817115
+Item "34": 0.6131403
+Item "35": 0.1979879
+Third output:
+ - shows the sum of the profit margins for the items in the basket:
+ - Sum: 1.19284
+ 
+
+```{r b }
 # Make a more generic function to do the calculations
 retail.margsum <- function(items, itemMargins) {
   # Input: 
@@ -133,10 +395,10 @@ retail.margsum <- function(items, itemMargins) {
   #     "itemMargins" == a data frame of profit margin indexed by name
   # Output: 
   #     look up the item margins, and return the sum
-  library(arules)
-  # check the class of "items" and coerce appropriately to an item list
-  if (class(items) == "rules") {
-    tmp.items <- as(items(items), "list") # rules ==> item list
+library(arules)
+# check the class of "items" and coerce appropriately to an item list
+if (class(items) == "rules") {
+  tmp.items <- as(items(items), "list") # rules ==> item list
   } else if (class(items) == "transactions") {
     tmp.items <- as(items, "list") # transactions ==> item list
   } else if (class(items) == "list") {
@@ -146,9 +408,10 @@ retail.margsum <- function(items, itemMargins) {
   } else {
     stop("Don’t know how to handle margin for class ", class(items))
   }
-  # make sure the items we found are all present in itemMargins
-  good.items <- unlist(lapply(tmp.items, function (x)
-    all(unlist(x) %in% rownames(itemMargins))))
+  
+# make sure the items we found are all present in itemMargins
+good.items <- unlist(lapply(tmp.items, function (x)
+  all(unlist(x) %in% rownames(itemMargins))))
   if (!all(good.items)) {
     warning("Some items not found in rownames of itemMargins. ",
             "Lookup failed for element(s):\n",
@@ -158,17 +421,46 @@ retail.margsum <- function(items, itemMargins) {
   # and add them up
   return(unlist(lapply(tmp.items, function(x) sum(itemMargins[x, ]))))
 }
+```
+
+
+```{r Sum Margin for 2 goods }
 # Test the new function supplying the items in various formats
 retail.margsum(c("39", "48"), retail.margin)
-retail.margsum(list(t1=c("39", "45"), t2=c("31", "32")), retail.margin)
+```
+
+
+```{r Margin for 2 different pairs of goods }
+retail.margsum(list(t1=c("39", "48"), 
+                    t2=c("31", "32")), 
+               retail.margin)
+```
+
+
+```{r  }
 retail.margsum(retail.trans[101:103], retail.margin)
+```
+Trans101: 0.7171411
+Trans102: 4.8989272
+Trans103: 4.9470372
+Each value represents the sum of the profit margins for all items in the respective transaction.
+
+
+```{r  }
 retail.margsum(retail.hi, retail.margin)
-retail.margsum(c("hello", "world"), retail.margin) # error!
-retail.margsum(list(a=c("39", "45"), b=c("hello", "world"), c=c("31", "32")),
+```
+
+
+```{r b }
+#retail.margsum(c("hello", "world"), retail.margin) # error! WHAT IS THIS???
+retail.margsum(list(a=c("39", "48"), 
+                    #b=c("hello", "world"), WHAT IS THIS???
+                    c=c("31", "32")),
                retail.margin) # only the first and third are OK
 ```
 
-## c
+
+## c - Retail
 
 ```{r}
 #install.packages("readxl")
@@ -178,7 +470,7 @@ retail.margsum(list(a=c("39", "45"), b=c("hello", "world"), c=c("31", "32")),
 ```
 
 Morten are not sutre if the websute is reliable - therefore the code is modified by morten compared to the website code
-```{r c }
+```{r Dataload }
 # https://www.datacamp.com/community/tutorials/market-basket-analysis-r
 library(readxl)
 library(plyr)
@@ -188,7 +480,6 @@ library(arulesViz)
 library(RColorBrewer)
 rm(list=ls())
 
-#### READ IN THE DATA AND PREPARE IT ######
 # Read excel into R dataframe.
 #retail <- read_excel('Online_Retail.xlsx') first not working dataload
 library(readxl)
@@ -201,10 +492,8 @@ retail <- read_excel("C:/Users/Bruger/OneDrive - Aarhus universitet/8. semester 
 # no missing values. Then use the vector to get only rows that are complete 
 # using retail[,].
 retail <- retail[complete.cases(retail), ]
-# Mutate function is from dplyr package. It is used to edit or add new columns 
-# to dataframe. Here Description column is being converted to factor column. 
-# as.factor converts column to factor column. %>% is an operator with which you 
-# may pipe values to another function or expression.
+# Mutate function is from dplyr package. It is used to edit or add new columns to dataframe. Here Description column is being converted to factor column.
+# as.factor converts column to factor column. %>% is an operator with which you may pipe values to another function or expression.
 retail <- retail %>% 
   mutate(Description = as.factor(Description)) %>%
   mutate(Country = as.factor(Country)) %>%
@@ -212,22 +501,25 @@ retail <- retail %>%
   mutate(TransTime = format(InvoiceDate,"%H:%M:%S")) #%>% 
 #  mutate(InvoiceNo = as.numeric(as.character(InvoiceNo))) 
 # Get a glimpse of your data.
-glimpse(retail) 
+glimpse(retail)
+```
 
-# What you need to do is group data in the retail dataframe either by 
-# CustomerID, CustomerID, and Date or you can also group data using InvoiceNo 
-# and Date. We need this grouping and apply a function on it and store the 
-# output in another dataframe.
-# This can be done by ddply.
-# The following lines of code will combine all products from one InvoiceNo and 
-# date and combine all products from that InvoiceNo and date as one row, with 
-# each item, separated by ','.
-# ddply(dataframe, variables_to_be_used_to_split_data_frame, function_to_be_applied)
-# The R function paste() concatenates vectors to character and separated 
-# results using collapse=[any optional character string ]. Here ',' is used.
-transactionData <- plyr::ddply(retail,c("InvoiceNo","Date"),
-                         function(df1)paste(df1$Description,collapse = ","))
+Morten:
+ - What you need to do is group data in the retail dataframe either by CustomerID, CustomerID and Date or you can also group data using InvoiceNo  and Date. We need this grouping and apply a function on it and store the output in another dataframe.
+ - This can be done by ddply.
+ - The following lines of code will combine all products from one InvoiceNo and date and combine all products from that InvoiceNo and date as one row, with each item, separated by ','.
+ - ddply(dataframe, variables_to_be_used_to_split_data_frame, function_to_be_applied)
+ - The R function paste() concatenates vectors to character and separated results using collapse=[any optional character string ]. Here ',' is used.
+```{r c }
+transactionData <- plyr::ddply(
+  retail,
+  c("InvoiceNo","Date"),
+  function(df1)paste(df1$Description,collapse = ","))
 head(transactionData)
+```
+
+
+```{r Rename columns into Items }
 # Set column InvoiceNo of dataframe transactionData.
 transactionData$InvoiceNo <- NULL 
 # Set column Date of dataframe transactionData.
@@ -235,102 +527,355 @@ transactionData$Date <- NULL
 # Rename column to items.
 colnames(transactionData) <- c("items") 
 head(transactionData)
-# TransactionData: Data to be written
-# "market_basket.csv": location of file with file name to be written to.
-# quote: If TRUE it will surround character or factor column with double 
-# quotes. If FALSE nothing will be quoted.
-# row.names: either a logical value indicating whether the row names of x are 
-# to be written along with x, or a character vector of row names to be written.
-write.csv(transactionData,"market_basket_transactions.csv", quote = FALSE, 
+```
+
+
+TransactionData: Data to be written
+"market_basket.csv": location of file with file name to be written to. quote: If TRUE it will surround character or factor column with double quotes. If FALSE nothing will be quoted.
+row.names: either a logical value indicating whether the row names of x are to be written along with x, or a character vector of row names to be written.
+```{r c }
+write.csv(transactionData,
+          "market_basket_transactions.csv", 
+          quote = FALSE, 
           row.names = FALSE)
+```
 
 
-#### READ IN THE DATA TO ARULES ######
-# sep tell how items are separated. In this case you have separated using ','
-# tr #is the result of reading the data into Arules)
-tr <- read.transactions('market_basket_transactions.csv', format = 'basket', 
-                        sep=',')
+tr is the result of reading the data into Arules)
+```{r c }
+tr <- read.transactions(
+  'market_basket_transactions.csv', 
+  format = 'basket',
+  sep=',') # sep tell how items are separated. In this case you have separated using ','
+```
 
 
-##### SUMMARY ######
+```{r c }
 summary(tr)
+```
+Output:
+ - contains 88,162 rows (transactions) and 16,470 columns (items).
+ - contains 22191 rows (itemsets/transactions) and 7876 columns (items)
+Item WHITE HANGING HEART T-LIGHT HOLDER:    1803 occurrences
+Item REGENCY CAKESTAND 3 TIER:              1709 occurrences
+Item JUMBO BAG RED RETROSPOT:               1460 occurrences
+Item PARTY BUNTING:                         1285 occurrences
+Item ASSORTED COLOUR BIRD ORNAMENT:         1250 occurrences
+Other items:                                329938 occurrences
+
+Length Distribution of Transactions:
+ - shows how many items are in each transaction.
+ - 3598 transactions with 1 item, 
+ - 1594 transactions with 2 items, and so on.
+
+Descriptive Stats of Transaction Lengths:
+ - Minimum number of items in a transaction: 1
+ - 1st Quartile (25th percentile): 3 items
+ - Median (50th percentile): 10 items
+ - Mean: 15.21 items
+ - 3rd Quartile (75th percentile): 21 items
+ - Maximum number of items in a transaction: 419
 
 
-##### ITEM FREQUENCY ######
-# Create an item frequency plot for the top 20 items
-if (!require("RColorBrewer")) {
-  # install color package of R
-  #install.packages("RColorBrewer")
-  #include library RColorBrewer
-#  library(RColorBrewer)
-}
-itemFrequencyPlot(tr,topN=20,type="absolute",col=brewer.pal(8,'Pastel2'), 
-                  main="Absolute Item Frequency Plot")
-itemFrequencyPlot(tr,topN=20,type="relative",col=brewer.pal(8,'Pastel2'),
-                  main="Relative Item Frequency Plot")
+Create an item frequency plot for the top 20 items
+```{r Item Frequency }
+itemFrequencyPlot(
+  tr, #transactions object containing the dataset.
+  topN=15, #Morten=20
+  type="absolute",
+  col=brewer.pal(8,'Pastel2'),
+  main="Absolute Item Frequency Plot")
 
+itemFrequencyPlot(
+  tr,
+  topN=15, #Morten=20
+  type="relative",
+  col=brewer.pal(8,'Pastel2'),
+  main="Relative Item Frequency Plot")
+```
+Terrible plot^^^^
 
-##### LOOK FOR ASSOCIATION RULES ######
+Extract Association Rules
+```{r Association Rules }
 # Min Support as 0.001, confidence as 0.8.
 # We will maximum look at 10 items, so maximum length of a set is 10.
-association.rules <- apriori(tr, 
-                             parameter = list(supp=0.001, conf=0.8,maxlen=10))
-summary(association.rules)
+association.rules <- apriori(
+  tr,
+  parameter = list(supp=0.001, 
+                   conf=0.8,
+                   maxlen=10))
+#summary(association.rules)
+```
+This output is redundant???^^^^
+
+
+```{r Association Rules }
 #inspect the 10 first association rules
-inspect(association.rules[1:10]) 
+inspect(association.rules[1:10])
+```
+LHS (left-hand side): 
+ - antecedent of the rule (items that appear before =>).
+
+RHS (right-hand side): 
+ - consequent of the rule (items that appear after =>)
+
+Support: 
+ - proportion of transactions that contain both the antecedent and the consequent.
+
+     LHS                   RHS            support
+[1] {WOBBLY CHICKEN}    => {DECORATION}   0.001261773
+
+Confidence:
+ - proportion of transactions containing the antecedent that also contain the consequent.
+
+Coverage: 
+ - proportion of transactions that contain the antecedent.
+ 
+Lift: 
+ - ratio of the observed support to that expected if the items were independent.
+ - Definition: Lift is a measure of how much more likely the consequent (rhs) is given the antecedent (lhs) compared to its baseline likelihood.
+ - Choosing Lift > 3: A lift greater than 3 indicates a strong association between the items in the rule. It means the presence of the antecedent makes the consequent three times more likely compared to if they were independent. This threshold ensures that only the most significant and interesting rules are selected.
+ - Lift > 1: The items in the antecedent and consequent appear together more often than expected if they were independent.
+ - Lift = 1: The items appear together exactly as often as expected if they were independent.
+ - Lift < 1: The items appear together less often than expected if they were independent.
+
+Count: 
+- number of transactions that contain both the antecedent and the consequent.
+
+     LHS              confidence    coverage    lift      count
+[1] {WOBBLY CHICKEN}  1.0000000     0.001261773 443.8200    28     
+
+By using a lift threshold of 3, the analysis focuses on the most impactful associations, filtering out weaker and potentially less interesting rules.
+
+
+Shortening Association Rules
+```{r Shortening Association Rules }
 # Limiting the number and size of rules
-shorter.association.rules <- apriori(tr, 
-                                     parameter = list(supp=0.001, conf=0.8,maxlen=3))
+shorter.association.rules <- apriori(
+  tr,
+  parameter = list(supp=0.001, 
+                   conf=0.8,
+                   maxlen=3))
+```
+This output is redundant???^^^^
+
+
+```{r Shortening Association Rules }
 # Removing redundant rules - get subset rules in vector
 subset.rules <- which(colSums(is.subset(association.rules,association.rules))>1) 
+#colSums(...) > 1: Identifies columns (rules) that are subsets of more than one rule.
 length(subset.rules)  #> 3913
+```
+44014:
+ - the number of redundant rules identified in the previous step.
+ - identifies and counts redundant association rules within a set of rules. This step is crucial in refining the rule set, ensuring that only the most informative and non-redundant rules are retained for further analysis or decision-making.
+
+
+Association rules having Lift = 715
+```{r Shortening Association Rules }
 # Remove subset rules.
 subset.association.rules. <- association.rules[-subset.rules] 
 # We can sort the rules by lift.
 sortedRules <- sort(association.rules,by="lift",decreasing=TRUE)
-inspect(sortedRules[1:10]) 
+inspect(sortedRules[1:10])
+```
+LHS (left-hand side): 
+ - antecedent of the rule (items that appear before =>).
+
+RHS (right-hand side): 
+ - consequent of the rule (items that appear after =>)
+
+Support: 
+ - proportion of transactions that contain both the antecedent and the consequent.
+
+     LHS                          RHS     support
+[1] {BILLBOARD FONTS DESIGN}  => {WRAP}   0.001306836
+
+Confidence:
+ - proportion of transactions containing the antecedent that also contain the consequent.
+
+Coverage: 
+ - proportion of transactions that contain the antecedent.
+ 
+Lift: 
+ - ratio of the observed support to that expected if the items were independent.
+ - Definition: Lift is a measure of how much more likely the consequent (rhs) is given the antecedent (lhs) compared to its baseline likelihood.
+ - Choosing Lift > 3: A lift greater than 3 indicates a strong association between the items in the rule. It means the presence of the antecedent makes the consequent three times more likely compared to if they were independent. This threshold ensures that only the most significant and interesting rules are selected.
+ - Lift > 1: The items in the antecedent and consequent appear together more often than expected if they were independent.
+ - Lift = 1: The items appear together exactly as often as expected if they were independent.
+ - Lift < 1: The items appear together less often than expected if they were independent.
+
+Count: 
+- number of transactions that contain both the antecedent and the consequent.
+
+     LHS              confidence    coverage    lift      count
+[1] {WOBBLY CHICKEN}  1.0000000     0.001306836 715.8387    29     
+
+By using a lift threshold of 3, the analysis focuses on the most impactful associations, filtering out weaker and potentially less interesting rules.
 
 
-##### MORE SPECIFIC SEARCH OF RULES ######
-# For example, to find what customers buy before buying 'METAL' run the 
-# following line of code
-# lhs = antecedents of metal the left hand side is the unknown
-metal.association.rules <- apriori(tr, parameter = list(supp=0.001, conf=0.8),
-                                   appearance = list(default="lhs",rhs="METAL"))
-# We get five association rules telling us what customers buy, that might lead 
-# to buying metal as well.
+###More specific search of RULES
+
+ - For example, to find what customers buy before buying 'METAL' run the following line of code
+ - lhs = antecedents of metal the left hand side is the unknown
+```{r Specific search of RULES }
+metal.association.rules <- apriori(
+  tr, 
+  parameter = list(supp=0.001, 
+                   conf=0.8),
+  appearance = list(rhs="METAL", default="lhs"))
+#get five association rules telling us what customers buy, that might lead to buying metal as well.
+```
+This output is redundant???^^^^
+
+Obtaining the "Antecedent" to buying METAL.
+```{r Association Rules }
 inspect(metal.association.rules)
-# Similarly, to find the answer to the question Customers who bought METAL 
-# also bought.... you will keep METAL on lhs:
-# rhs = consequence (decendent)
-metal.association.rules <- apriori(tr, parameter = list(supp=0.001, conf=0.8),
-                                   appearance = list(lhs="METAL",default="rhs"))
-# Decoration -> Metal and Metal -> Decoration have the same support, lift, 
-# and confidence. 
+```
+LHS (left-hand side): 
+ - antecedent of the rule (items that appear before =>).
+
+RHS (right-hand side): 
+ - consequent of the rule (items that appear after =>)
+
+Support: 
+ - proportion of transactions that contain both the antecedent and the consequent.
+
+     LHS                   RHS       support
+[1] {WOBBLY CHICKEN}    => {METAL}   0.001261773
+
+Confidence:
+ - proportion of transactions containing the antecedent that also contain the consequent.
+
+Coverage: 
+ - proportion of transactions that contain the antecedent.
+ 
+Lift: 
+ - ratio of the observed support to that expected if the items were independent.
+ - Definition: Lift is a measure of how much more likely the consequent (rhs) is given the antecedent (lhs) compared to its baseline likelihood.
+ - Choosing Lift > 3: A lift greater than 3 indicates a strong association between the items in the rule. It means the presence of the antecedent makes the consequent three times more likely compared to if they were independent. This threshold ensures that only the most significant and interesting rules are selected.
+ - Lift > 1: The items in the antecedent and consequent appear together more often than expected if they were independent.
+ - Lift = 1: The items appear together exactly as often as expected if they were independent.
+ - Lift < 1: The items appear together less often than expected if they were independent.
+
+Count: 
+- number of transactions that contain both the antecedent and the consequent.
+
+     LHS              confidence    coverage    lift      count
+[1] {WOBBLY CHICKEN}  1	            0.001261773	443.82	  28     
+
+By using a lift threshold of 3, the analysis focuses on the most impactful associations, filtering out weaker and potentially less interesting rules.
+
+
+Similarly, to find the answer to the question Customers who bought METAL also bought.... you will keep METAL on lhs:
+RHS = consequence (decendent)
+```{r Association Rules }
+metal.association.rules <- apriori(
+  tr, 
+  parameter = list(supp=0.001, 
+                   conf=0.8),
+  appearance = list(lhs="METAL", default="rhs"))
+```
+This output is redundant???^^^^
+
+Obtaining the "Decedent"/Consequent to buying METAL.
+```{r}
+# Decoration -> Metal and Metal -> Decoration have the same support, lift, and confidence.
 inspect(head(metal.association.rules))
+```
+LHS (left-hand side): 
+ - antecedent of the rule (items that appear before =>).
 
+RHS (right-hand side): 
+ - consequent of the rule (items that appear after =>)
 
-##### VISUALIZING ASSOCIATION RULES #####
-# Filter rules with confidence greater than 0.4 or 40%.
-# The plot shows that rules with high lift have low support. You can use the 
-# following options for the plot.
+Support: 
+ - proportion of transactions that contain both the antecedent and the consequent.
+ - an association rule with very low support may occur by chance
+ - support is often used to eliminate uninteresting rules via a minimum support threshold
+
+     LHS               RHS           support
+[1] {METAL}        => {DECORATION}   0.002253166	
+
+Confidence:
+ - proportion of transactions containing the antecedent that also contain the consequent.
+ -	Confidence thus measures the reliability of the inference made by a rule 
+ – the higher the confidence the more likely it is for antecedent to be present in transactions that contain decendent
+
+Coverage: 
+ - proportion of transactions that contain the antecedent.
+ 
+Lift: 
+ - ratio of the observed support to that expected if the items were independent.
+ - Definition: Lift is a measure of how much more likely the consequent (rhs) is given the antecedent (lhs) compared to its baseline likelihood.
+ - Choosing Lift > 3: A lift greater than 3 indicates a strong association between the items in the rule. It means the presence of the antecedent makes the consequent three times more likely compared to if they were independent. This threshold ensures that only the most significant and interesting rules are selected.
+ - Lift > 1: The items in the antecedent and consequent appear together more often than expected if they were independent.
+ - Lift = 1: The items appear together exactly as often as expected if they were independent.
+ - Lift < 1: The items appear together less often than expected if they were independent.
+
+Count: (support count in Lecture)
+- number of transactions that contain both the antecedent and the consequent.
+
+     LHS              confidence    coverage    lift      count
+[1] {WOBBLY CHICKEN}  1	            0.002253166	443.82	  50     
+
+By using a lift threshold of 3, the analysis focuses on the most impactful associations, filtering out weaker and potentially less interesting rules.
+
+Filter Association Rules
+ - Filter rules with confidence greater than 0.4 or 40%.
+ - The plot shows that rules with high lift have low support. You can use the following options for the plot.
+```{r Plot - Filter Association Rules }
 subRules<-association.rules[quality(association.rules)$confidence>0.4]
+# confidence>0.4 measure can be tweaked to make the Rules stronger
 #Plot SubRules the more red color, the higher is the lift.
 plot(subRules)
+```
+Filtering by Confidence:
+ - plot displays only those rules with a confidence greater than 0.4.  - this filtering ensures that only relatively reliable rules are included in the visualization.
+ - after filtering, there are 49,122 rules that meet the confidence criterion.
+
+```{r Filter Association Rules }
 # Interactive plots. The order is the number of items in the rule
 plot(subRules,method="two-key plot")
+```
+
+
+```{r Filter Top 10 Association Rules }
 # Plot the top 10 (n=10)
 top10subRules <- head(subRules, n = 10, by = "confidence")
 plot(top10subRules, method = "graph",  engine = "htmlwidget")
 ```
 
-#25 Recommendation models (Collaborating filtering)
 
-```{r 25}
+
+
+#25 (Collaborating filtering) Recommendation models 
+
+•	USER-BASED COLLABORATIVE FILTERING UBCF
+1 Identify set of items rated by the target user
+2 Identify which other users rated 1+ items in this set (neighborhood formation)
+3 Compute how similar each neighbor is to target user (similarity function)
+4 In case, select k most similar neighbors
+
+•	ITEM-BASED COLLABORATIVE FILTERING IBCF
+1	Find the ratings across items for the target user
+2	Find the similarity matrix between items
+3	Select k most similar neighbor items to the target item
+4	Predict ratings for the target item (prediction function) for the ”target” user
+
+
+The most prominent approach to generate recommendations
+•	used by large, commercial e-commerce sites
+•	well-understood, various algorithms and variations exist
+•	applicable in many domains (book, movies, ..)
+Approach
+•	use the preferences of a community to recommend items
+
+100k MovieLense ratings data set. The data was collected through the MovieLens web site (movielens.umn.edu) during the seven-month period from September 19th, 1997 through April 22nd, 1998. The data set contains about 100,000 ratings (1-5) from 943 users on 1664 movies. Movie and user metadata is also provided in MovieLenseMeta and MovieLenseUser.
+
+```{r dataload}
 library(recommenderlab)
 library(tidyverse)
-
-
 ### Step 1 - storage
 data(MovieLense)
 help(MovieLense)
@@ -341,50 +886,95 @@ str(MovieLense,vec.len=2) #not as we normally reference list elements by \\$ but
 methods(class=class(MovieLense)) # methods applicable to this class
 ```
 
+```{r Data overview }
+glimpse(MovieLenseMeta)
+glimpse(MovieLenseUser)
+```
 
-```{r 25}
-### Step 2 - explore data
-## Loading the metadata that gets loaded with main dataset
+Step 2 - Explore data
+
+```{r Explore data }
+#Loading the metadata that gets loaded with main dataset
 moviemeta <- MovieLenseMeta
 class(moviemeta)
 colnames(moviemeta)
+```
 
-## What do we know about the films?
+What do we know about the films?
+```{r moviemeta Explore data }
 library(pander)
 pander(head(moviemeta,2),caption = "First few Rows within Movie Meta Data ")
+```
+How is this usefull?^^^^
+
+
+```{r MovieLense Explore data }
 # Look at the first few ratings of the first user
 head(as(MovieLense[1,], "list")[[1]])
+```
+
+
+```{r Explore data }
 # Number of ratings per user
 hist(rowCounts(MovieLense))
 # Number of ratings per movie
 hist(colCounts(MovieLense))
+```
+Rowcount: Number of ratings per user
+ - counts the number of ratings each user has given. Each row represents a user, and the function counts the non-zero entries (ratings) in each row.
+ - Many users have committed 1 rating
+ - few users have committed 400 ratings
+
+Columncount: Number of ratings per movie
+ -  counts the number of ratings each movie has received. Each column represents a movie, and the function counts the non-zero entries (ratings) in each column.
+ - Many movies have obtained 1-50 ratings
+ - few movies have obtained 400 ratings
+
+Top-10 movies
+```{r Top-10 movies }
 # Top 10 movies
 movie_watched <- data.frame(
   movie_name = names(colCounts(MovieLense)),
   watched_times = colCounts(MovieLense)
 )
 top_ten_movies <- movie_watched[order(movie_watched$watched_times, decreasing = TRUE), ][1:10, ]
-```
 
-
-```{r 25}
 # Plot top 10
 ggplot(top_ten_movies) + aes(x=movie_name, y=watched_times) + 
   geom_bar(stat = "identity",fill = "firebrick4", color = "dodgerblue2") + xlab("Movie Tile") + ylab("Count") +
-  theme(axis.text = element_text(angle = 40, hjust = 1)) 
+  theme(axis.text = element_text(angle = 40, hjust = 1))
+summary(top_ten_movies)
+```
+watched_times is not the right explanation: RATED_TIMES instead^^^^
+Min.   :429.0  
+1st Qu.:458.5  
+Median :483.0  
+Mean   :486.3
+3rd Qu.:507.8
+Max.   :583.0
 
+
+```{r Plot movie ratings overall}
 ## What do we know about the ratings
 summary(getRatings(MovieLense))
 # Plot the ratings
 data.frame(ratings=getRatings(MovieLense)) %>%
   ggplot(aes(ratings)) + geom_bar(width=0.75)+
   labs(title='MovieLense Ratings Distribution')
+```
+Descriptive Stats movieRatings
+Min.    1st Qu.  Median   Mean    3rd Qu.   Max. 
+1.00    3.00     4.00     3.53    4.00      5.00
 
 
-### Step 3 - split in training and test
-# Training and test set: At least 30 items evaluated or at least 100 users for each item
-rates <- MovieLense[rowCounts(MovieLense) > 30, colCounts(MovieLense) > 100]
+Step 3 - split in training and test
+```{r Datasplit }
+#Training and test set: 
+#At least 30 items evaluated or at least 100 users for each item
+rates <- MovieLense[rowCounts(MovieLense) > 30, 
+                    colCounts(MovieLense) > 100]
 rates1 <- rates[rowCounts(rates) > 30,]
+
 # We randomly define the which_train vector that is True for users in the training set and FALSE for the others.
 # We will set the probability in the training set as 80%
 set.seed(1234)
@@ -392,135 +982,337 @@ which_train <- sample(x = c(TRUE, FALSE), size = nrow(rates1), replace = TRUE, p
 # Define the training and the test sets
 recc_data_train <- rates1[which_train, ]
 recc_data_test <- rates1[!which_train, ]
+```
 
-
-### step 4 - recommendations
+step 4 - recommendations
+```{r Recommendations }
 ## Get an overview of different recommender models
 recommenderRegistry$get_entries(dataType="realRatingMatrix")
+
 recommender_models <- recommenderRegistry$get_entries(dataType="realRatingMatrix")
+
 names(recommender_models)
 lapply(recommender_models,"[[","description")
 recommender_models$IBCF_realRatingMatrix$parameters
+```
+Which takewaways here^^^^
 
-## Item-based CF
-# IBCF: Item-based collaborative filtering
+
+## Item-based CF - IBCF: Item-based collaborative filtering
+
+Item-Based CF model generates recommendations by identifying items similar to those the user has already interacted with, based on the preferences of similar users.
+```{r Item-based CF Recommendations }
 # Let's build the recommender IBCF - cosine:
-recc_model <- Recommender(data = recc_data_train, method = "IBCF", parameter = list(k = 30)) 
+recc_model <- Recommender(
+  data = recc_data_train, method = "IBCF", parameter = list(k = 30)) 
 # We have now created a IBCF Recommender Model
-# We will define n_recommended that defines the number of items to recommend to 
-# each user and with the predict function, create prediction(recommendations) for the test set.
-n_recommended <- 5
-recc_predicted <- predict(object = recc_model, newdata = recc_data_test, n = n_recommended)
+recc_model
+```
+
+Defining n_recommended that defines the number of items to recommend to each user and with the predict function, 
+ - create prediction(recommendations) for the test set.
+```{r Item-based CF Recommendations }
+n_recommended <- 5 #number of items to recommend to each user
+recc_predicted <- predict(
+  object = recc_model, 
+  newdata = recc_data_test, 
+  n = n_recommended)
 # This is the recommendation for the first user
 recc_predicted@items[[1]]
+```
+Output: 217 318 198 70 173 
+ - shows the item IDs recommended for the first user. 
+ - These are the top 5 items recommended by the model based on the user’s preferences and the collaborative filtering algorithm.
+
+
+
+```{r Item-based CF Recommendations }
 # Now let's define a list with the recommendations for each user
-recc_matrix <- lapply(recc_predicted@items, function(x){
+recc_matrix <- lapply(
+  recc_predicted@items, 
+  function(x){
   colnames(rates)[x]
 })
 # Let's take a look the recommendations for the first four users:
 recc_matrix[1:4]
+```
+Recommendations for the first user with Item-Based Collaborative Filtering
+ - $`0`
+[1] "Wag the Dog (1997)"       
+[2] "Amistad (1997)"          
+[3] "Apt Pupil (1998)"         
+[4] "Bound (1996)"            
+[5] "Good Will Hunting (1997)"
 
-## User-based CF
-# UBCF = User-based collaborative filtering
-# The method computes the similarity between users with cosine
-# Let's build a recommender model leaving the parameters to their defaults. 
-recc_model <- Recommender(data = recc_data_train, method = "UBCF")
+
+## User-based CF - UBCF: User-based collaborative filtering
+
+The method computes the similarity between users with cosine
+ - building a recommender model leaving the parameters to their defaults.
+```{r User-based CF Recommendations }
+# Let's build the recommender UBCF - cosine:
+recc_modelUBCF <- Recommender(
+  data = recc_data_train, 
+  method = "UBCF")
 # A UBCF recommender has now been created
-recc_predicted <- predict(object = recc_model, newdata = recc_data_test, n = n_recommended)
+recc_modelUBCF
+```
+
+Defining n_recommended that defines the number of items to recommend to each user and with the predict function, 
+ - create prediction(recommendations) for the test set.
+```{r User-based CF Recommendations }
+n_recommended <- 5 #number of items to recommend to each user
+recc_predictedUBCF <- predict(
+  object = recc_modelUBCF, 
+  newdata = recc_data_test, 
+  n = n_recommended)
+# This is the recommendation for the first user
+recc_predictedUBCF@items[[1]]
+```
+Output:173 311 230 199 158
+ - shows the item IDs recommended for the first user. 
+ - These are the top 5 items recommended by the model based on the user’s preferences and the collaborative filtering algorithm.
+
+
+```{r User-based CF Recommendations }
 # Let's define a list with the recommendations to the test set users.
-recc_matrix <- sapply(recc_predicted@items, function(x) {
+recc_matrixUBCF <- sapply(recc_predictedUBCF@items, function(x) {
   colnames(rates)[x]
 })
-# Again, let's look at the first four users
-recc_matrix[,1:4]
+#let's look at the first four users
+recc_matrixUBCF[,1:4]
+```
+Recommendations for the first user with User-Based Collaborative Filtering
+ - $`0`
+[1,] "Good Will Hunting (1997)" 
+[2,] "Dave (1993)"              
+[3,] "Close Shave, A (1995)"    
+[4,] "As Good As It Gets (1997)"
+[5,] "Chasing Amy (1997)"
 
 
-### step 5 - evaluation
-## Evaluation of IBCF ratings
-# Cross validation
-# We can split the data into some chunks, take a chunk out as the test set, and evaluate the accuracy. Then we can 
-# do the same with each other chunk and compute the average accuracy. Here we construct the evaluation model
+##Evaluation of Item-Based CF (IBCF) ratings
+Cross validation
+ - splitting the data into some chunks, take a chunk out as the test set, and evaluate the accuracy. Then we can do the same with each other chunk and compute the average accuracy. Here we construct the evaluation model
+```{r Evaluation of IBCF ratings }
 n_fold <- 4 
-rating_threshold <- 4 # threshold at which we consider the item to be good
-items_to_keep <- 20 # given=20 means that while testing the model use only 20 randomly picked ratings from every 
-# user to predict the unknown ratings in the test set the known data set has the ratings specified by given and the 
-# unknown data set the remaining ratings used for validation
-eval_sets <- evaluationScheme(data = rates1, method = "cross-validation", k = n_fold, 
-                              given = items_to_keep, goodRating = rating_threshold)
+rating_threshold <- 4 #threshold for the item to be good
+items_to_keep <- 20 # given=20 means that while testing the model use only 20 randomly picked ratings from every user to predict the unknown ratings in the test set the known data set has the ratings specified by given and the unknown data set the remaining ratings used for validation
+eval_sets <- evaluationScheme(
+  data = rates1, 
+  method = "cross-validation", 
+  k = n_fold,
+  given = items_to_keep,#number of ratings to keep for each user.
+  goodRating = rating_threshold)
 size_sets <-sapply(eval_sets@runsTrain, length)
 size_sets
-#IBCF
-model_to_evaluate <- "IBCF"
+```
+Output: 459 459 459 459 
+ - indicates that each training set in the cross-validation has 459 ratings. 
+ - means that the dataset was divided into four equal parts, each containing 459 ratings, for cross-validation
+
+
+Evaluation models: IBCF
+```{r Evaluation of IBCF ratings }
+model_to_evaluate <- "IBCF" #IBCF
 model_parameters <- NULL  #   we use the standard settings
 eval_recommender <-Recommender(data = getData(eval_sets, "train"), method = model_to_evaluate, parameter = model_parameters)
-# The IBCF can recommend new items and predict their ratings. In order to build 
-# the model, we need to specify how many items we want to recommend, for example, 5.
+# The IBCF can recommend new items and predict their ratings. In order to build the model, we need to specify how many items we want to recommend, for example, 5.
 items_to_recommend <- 5
-# We can build the matrix with the predicted ratings using the predict function:
-eval_prediction <- predict(object = eval_recommender, newdata = getData(eval_sets, "known"), n = items_to_recommend, type = "ratings")
-# By using the calcPredictionAccuracy, we can calculate the Root mean square 
-# error (RMSE), Mean squared error (MSE), and the Mean absolute error (MAE).
+
+#Predicted rating: building the matrix with the predicted ratings using the predict function:
+eval_prediction <- predict(
+  object = eval_recommender, 
+  newdata = getData(eval_sets, "known"), 
+  n = items_to_recommend, 
+  type = "ratings")
+# By using the calcPredictionAccuracy, we can calculate the Root mean square error (RMSE), Mean squared error (MSE), and the Mean absolute error (MAE).
+```
+
+
+```{r RMSE MSE MAE Evaluation of IBCF ratings }
 eval_accuracy <- calcPredictionAccuracy(
-  x = eval_prediction, data = getData(eval_sets, "unknown"), byUser = TRUE
+  x = eval_prediction, 
+  data = getData(eval_sets, "unknown"), 
+  byUser = TRUE #Calculates the accuracy for each user individually
   )
 # This is a small sample of the results for the Prediction and Accuracy
 head(eval_accuracy)
-# Now, let's take a look at the RMSE by each user
-ggplot(data=as.data.frame(eval_accuracy),aes(x=RMSE)) + geom_histogram(binwidth = 0.1) +
-  ggtitle("Distribution of the RMSE by user")
-# However, we need to evaluate the model as a whole, so we will set the byUser to False
-eval_accuracy <- calcPredictionAccuracy(
-  x = eval_prediction, data = getData(eval_sets, "unknown"), byUser = FALSE
-)
-eval_accuracy #for IBCF
+```
+RMSE, MSE, and MAE for several users:
+ - User 1:  RMSE = 1.0928, MSE = 1.1942, MAE = 0.8041
+ - User 5:  RMSE = 1.6479, MSE = 2.7159, MAE = 1.3159
+ - User 9:  RMSE = 1.4665, MSE = 2.1518, MAE = 0.9407
+ - User 11: RMSE = 1.0931, MSE = 1.1973, MAE = 0.7618
+ - User 13: RMSE = 1.4473, MSE = 2.0945, MAE = 0.8156
+ - User 16: RMSE = 1.0074, MSE = 1.0149, MAE = 0.5245
 
-## Evaluation of IBCF top-N
-# Confusion matrix good threshold =4
-results <- evaluate(x = eval_sets, method = model_to_evaluate, n = seq(10, 100, 10)) #n number top-n recommendations
-# results object is an evaluationResults object containing the results of the evaluation.
-# Each element of the list corresponds to a different split of the k-fold.
+RMSE for each user
+```{r indicidual RMSE - Evaluation of IBCF ratings }
+# Now, let's take a look at the RMSE by each user
+ggplot(data = as.data.frame(eval_accuracy), aes(x = RMSE)) +
+  geom_histogram(binwidth = 0.1) +
+  ggtitle("Distribution of the RMSE by user")
+```
+Individual RMSE Histogram
+ - shows how the RMSE values are distributed among users. 
+ - A narrower distribution centered around a lower RMSE value would indicate better model performance. 
+ - The plot helps identify if there are any users for whom the model performs particularly poorly.
+
+
+```{r individual RMSE - Evaluation of IBCF ratings }
+# However, we need to evaluate the model as a whole, so we will set the byUser to False
+eval_accuracyModel <- calcPredictionAccuracy(
+  x = eval_prediction, 
+  data = getData(eval_sets, "unknown"), 
+  byUser = FALSE #Calculates overall accuracy for the model, not individually by user.
+)
+eval_accuracyModel #for IBCF
+```
+Error measures for the "whole" model^^^
+
+
+Evaluation of IBCF top-N ratings
+ - "results" object is an evaluationResults object containing the results of the evaluation. Each element of the list corresponds to a different split of the k-fold.
+```{r Evaluation of IBCF top-N ratings }
+# Confusion matrix good threshold = 4
+results <- evaluate(
+  x = eval_sets, 
+  method = model_to_evaluate, 
+  n = seq(10, 100, 10)) #the range of top-N recommendations to evaluate (from 10 to 100 in increments of 10)
+
 # Let's look at the first element
 head(getConfusionMatrix(results)[[1]])
-# In this case, look at the first four columns
-# True Positives (TP): These are recommended items that have been purchased.
-# False Positives (FP): These are recommended items that haven't been purchased
-# False Negatives (FN): These are not recommended items that have been purchased.
-# True Negatives (TN): These are not recommended items that haven't been purchased.
+```
+True Positives (TP): 
+ - recommended items that actually have been purchased.
+
+False Positives (FP): 
+ - recommended items that actually have NOT been purchased
+ 
+False Negatives (FN): 
+ - NOT recommended items that actually have been purchased.
+
+True Negatives (TN): 
+ - NOT recommended items that have NOT been purchased.
+
+            TP        FP       FN       TN
+[1,]  2.371795  7.628205 43.01282 259.2179
+
+Confusion matrix helps evaluate how well the model distinguishes between 
+ - relevant (purchased) and 
+ - irrelevant (not purchased) items.
+
+      N         precision  recall      FPR         n
+[1,]  312.2308  0.2371795  0.05084429  0.02836862  10
+
+n: Number of recommendations.
+
+Precision: Precision of the recommendations (TP / (TP + FP)).
+ - accuracy of the recommendations. 
+ - Higher precision indicates that more recommended items are relevant.
+
+Recall/TPR (True Positive Rate): Recall of the recommendations (TP / (TP + FN)).
+ - coverage of the recommendations. 
+ - Higher recall indicates that more relevant items are recommended.
+
+Is often a trade-off between precision and recall. Increasing the number of recommendations (n) might increase recall but decrease precision, and vice versa.
+ - Tune the parameters to meet requirements of the desired measure
+
+
+All splits - summing indices
+ - evaluating the top-N recommendations of an Item-Based Collaborative Filtering (IBCF) model by summing the confusion matrix indices across all splits of the cross-validation.
+```{r All splits - Evaluation of IBCF top-N ratings }
 # If we want to take account of all the splits at the same time, we can just sum up the indices:
 columns_to_sum <- c("TP", "FP", "FN", "TN")
 indices_summed <- Reduce("+", getConfusionMatrix(results))[, columns_to_sum]
 head(indices_summed)
+```
+Summing the indices across all splits provides an overall view of the model’s performance across the entire cross-validation process
+ - The model performs relativly bad on prdeicting Positives...
 
-## Building an ROC curve. Will need these factors
-# 1. True Positive Rate (TPR): Percentage of purchased items that have been recommended. TP/(TP + FN)
-# 2. False Positive Rate (FPR): Percentage of not purchased items that have been recommended. FP/(FP + TN)
+
+ROC curve 
+ - Will need these factors
+1. True Positive Rate (TPR): TP/(TP + FN)
+ - Percentage of purchased items that have been recommended.
+2. False Positive Rate (FPR):  FP/(FP + TN)
+ - Percentage of not purchased items that have been recommended.
+```{r ROC Curve - IBCF top-N ratings }
 plot(results, annotate = TRUE, main = "ROC curve")
+```
+The ideal ROC curve would rise steeply to the top left corner, indicating a high TPR and low FPR
+ - meaning the model is correctly recommending purchased items while  - minimizing recommendations for non-purchased items.
 
-## We can also look at the accuracy metrics as well
-# precision: Percentage of recommended items that have been purchased. FP/(TP + FP)
-# recall: Percentage of purchased items that have been recommended. TP/(TP + FN) = True Positive Rate
+The closer the curve is to the diagonal line (45-degree line), the worse the model performance. 
+ - A model with no discrimination ability (random guessing) would have a ROC curve along the diagonal.
+AUC - The area under the ROC curve (AUC) gives a single scalar value to summarize the model performance. 
+ - An AUC of 0.5 suggests no discrimination (random performance), while an AUC closer to 1 indicates excellent performance.
+
+Accuracy - IBCF top-N ratings
+looking at accuracy metrics
+Precision: FP/(TP + FP)
+ - Percentage of recommended items that have been purchased. 
+Recall: TP/(TP + FN) = True Positive Rate
+ - Percentage of purchased items that have been recommended.
+
+Precision-Recall curve to evaluate the performance of the Item-Based Collaborative Filtering (IBCF) recommendation model.
+```{r Accuracy - IBCF top-N ratings }
 plot(results, "prec/rec", annotate = TRUE, main = "Precision-Recall")
+```
+Precision-Recall curve demonstrates the trade-off between precision and recall for different numbers of top-N recommendations.
+ - Generally, as recall increases, precision tends to decrease. 
+ - This is because recommending more items (increasing recall) usually results in more false positives (decreasing precision).
 
+This Plot:
+ - for lower values of N(10), precision is higher but recall is lower.  - This indicates that the model is more accurate (higher precision) but covers fewer relevant items (lower recall).
+ - As N increases (e.g., 100), recall increases but precision decreases. This means the model covers more relevant items but also includes more false positives.
+ SUMMARY
+ - quite bad values for both precision and recall, but the tendency follows the generic rule for the relationship among the measures.
+
+
+
+```{r Accuracy - IBCF top-N ratings }
 ## Comparing models
-models_to_evaluate <- list(IBCF_cos = list(name = "IBCF", param = list(method = "cosine")), 
-                           IBCF_cor = list(name = "IBCF", param = list(method = "pearson")), 
-                           UBCF_cos = list(name = "UBCF", param = list(method = "cosine")), 
-                           UBCF_cor = list(name = "UBCF", param = list(method = "pearson")), 
-                           random = list(name = "RANDOM", param = NULL))
+models_to_evaluate <- list(
+  IBCF_cos = list(name = "IBCF", 
+                  param = list(method = "cosine")),
+  IBCF_cor = list(name = "IBCF", 
+                  param = list(method = "pearson")),
+  UBCF_cos = list(name = "UBCF", 
+                  param = list(method = "cosine")),
+  UBCF_cor = list(name = "UBCF", 
+                  param = list(method = "pearson")),
+  random = list(name = "RANDOM", param = NULL))
+
 # In order to evaluate the models, we need to test them, varying the number of items.
 n_recommendations <- c(1,5,seq(10,100,10))
+
 # Now let's run and evaluate the models
 list_results <- evaluate(x = eval_sets, method = models_to_evaluate, n = n_recommendations)
+
 # Plot the ROC curve
 plot(list_results, annotate = 1, legend = "topleft")
 title("ROC curve")
+```
+The plot shows the comparison among the different Collaborative Filtering models.
+ - Item-Based Collaborative Filtering outperforms the other models having the highest AUC value and the best fitting ROC-Curve.
+ 
+
+```{r Accuracy - IBCF top-N ratings }
 # Plot precision-recall
 plot(list_results, "prec/rec", annotate = 1, legend = "bottomright", ylim = c(0,0.4))
 title("Precision-recall")
 ```
+The plot shows the comparison among the different Collaborative Filtering models.
+ - Item-Based Collaborative Filtering outperforms the other models
 
 
-```{r 26 }
+#26 (Collaborating filtering) Recommendation models 
+
+100k MovieLense ratings data set. The data was collected through the MovieLens web site (movielens.umn.edu) during the seven-month period from September 19th, 1997 through April 22nd, 1998. The data set contains about 100,000 ratings (1-5) from 943 users on 1664 movies. Movie and user metadata is also provided in MovieLenseMeta and MovieLenseUser.
+
+```{r users rated > 50 + movies being rated > 100 }
 library(recommenderlab)
 library(tidyverse)
 
@@ -528,30 +1320,55 @@ data(MovieLense)
 class(MovieLense)
 help(MovieLense)
 dim(MovieLense)
-
 #select only the users who have rated at least 50 movies or movies that had been rated more than 100 times
 (ratings_movies <- MovieLense[rowCounts(MovieLense) > 50,
                               colCounts(MovieLense) > 100])
 ```
 
+```{r Data overview }
+glimpse(MovieLenseMeta)
+glimpse(MovieLenseUser)
+```
 
-```{r 26 }
+Minimum number of items purchased by any user
+```{r minimum number of items purchased by any user }
 # use the minimum number of items purchased by any user to decide item number to keep
 (min(rowCounts(ratings_movies)))
+```
+minimum number of items purchased by any user: 18 items
 
+
+Cross validation
+ - splitting the data into some chunks, take a chunk out as the test set, and evaluate the accuracy. Then we can do the same with each other chunk and compute the average accuracy. Here we construct the evaluation model
+```{r k-fold Crossvalidation }
 n_fold <- 4
-items_to_keep <- 15
-rating_threshold <- 3
-
+rating_threshold <- 3 #threshold for the item to be good
+items_to_keep <- 15 # given=20 means that while testing the model use only 20 randomly picked ratings from every user to predict the unknown ratings in the test set the known data set has the ratings specified by given and the unknown data set the remaining ratings used for validation
 
 # Use k-fold to validate models
 set.seed(1234)
-eval_sets <- evaluationScheme(data = ratings_movies, method = "cross-validation",k = n_fold, given = items_to_keep, 
-                              goodRating = rating_threshold)
+eval_sets <- evaluationScheme(
+  data = ratings_movies, 
+  method = "cross-validation",
+  k = n_fold, 
+  given = items_to_keep,
+  goodRating = rating_threshold)
+size_sets <-sapply(eval_sets@runsTrain, length)
+size_sets
+```
+Output: 420 420 420 420 
+ - indicates that each training set in the cross-validation has 420 ratings. 
+ - means that the dataset was divided into four equal parts, each containing 420 ratings, for cross-validation
 
-
-models  <- list(
+IBCF + UBCF + SVD + SVDF recommender models
+ - IBCF Item-based Collaborative Filtering 
+ - UBCF User-based Collaborative Filtering 
+ - SVD Singular Value Decomposition 
+ - SVDF Singular Value Decomposition FUNK (Steepest Decent)
  
+LONG COMPUTATION TIME
+```{r IBCF + UBCF + SVD + SVDF - kfold Crossvalidation }
+models  <- list(
   IBCF=list(name="IBCF",param=list(method = "cosine")),
   UBCF=list(name="UBCF", param=list(method = "pearson")),
   SVD = list(name="SVD", param=list(k = 50)),
@@ -563,106 +1380,179 @@ n_rec <- c(1, 5, seq(10, 100, 10))
 
 # evaluating the recommendations
 results <- evaluate(x = eval_sets, method = models, n= n_rec)
-```
 
-
-```{r 26 }
 # extract the related average confusion matrices
 (avg_matrices <- lapply(results, avg))
 ```
+LONG COMPUTATION TIME
 
-
-```{r 26 }
+IBCF + UBCF + SVD + SVDF recommender models
+ - IBCF Item-based Collaborative Filtering 
+ - UBCF User-based Collaborative Filtering 
+ - SVD Singular Value Decomposition 
+ - SVDF Singular Value Decomposition FUNK (Steepest Decent)
+```{r Recommender models }
 plot(results, annotate=TRUE)
 plot(results, "prec/rec", annotate = TRUE, main = "Precision-Recall")
 
-recommender_ibcf <- Recommender(data = getData(eval_sets, "train"),
-                                method = "IBCF",parameter = list(method = "cosine"))
+recommender_ibcf <- Recommender(
+  data = getData(eval_sets, "train"),
+  method = "IBCF",
+  parameter = list(method = "cosine"))
 
-recommender_ubcf <- Recommender(data = getData(eval_sets, "train"),
-                                method = "UBCF",parameter = list(method = "pearson"))
+recommender_ubcf <- Recommender(
+  data = getData(eval_sets, "train"),
+  method = "UBCF",
+  parameter = list(method = "pearson"))
 
-recommender_svd <- Recommender(data = getData(eval_sets, "train"),
-                                method = "SVD",parameter = list(k=50))
+recommender_svd <- Recommender(
+  data = getData(eval_sets, "train"),
+  method = "SVD",
+  parameter = list(k=50))
 
-recommender_svdf <- Recommender(data = getData(eval_sets, "train"),
-                               method = "SVDF",parameter = list(k=50))
+recommender_svdf <- Recommender(
+  data = getData(eval_sets, "train"),
+  method = "SVDF",
+  parameter = list(k=50))
+```
+The plots show the comparison among the different Collaborative Filtering models.
+ - SVDF outperforms the other models having the highest AUC value and the best fitting ROC-Curve.
+ - IBCF and SVDF shares good performance in relation to the ROC curves, where SVDF is best for small Ns and IBCF is best for bigger Ns.
 
+
+Prediction Extraction IBCF + UBCF + SVD + SVDF
+
+IBCF + UBCF + SVD + SVDF recommender models
+ - IBCF Item-based Collaborative Filtering 
+ - UBCF User-based Collaborative Filtering 
+ - SVD Singular Value Decomposition 
+ - SVDF Singular Value Decomposition FUNK (Steepest Decent)
+
+```{r Prediction Extraction IBCF + UBCF + SVD + SVDF }
 items_to_recommend <- 10
 
+eval_prediction_ibcf <- predict(
+  object = recommender_ibcf, 
+  newdata = getData(eval_sets, "known"), 
+  n = items_to_recommend, 
+  type = "ratings")
 
+eval_prediction_ubcf <- predict(
+  object = recommender_ubcf, 
+  newdata = getData(eval_sets, "known"), 
+  n = items_to_recommend, 
+  type = "ratings")
 
-eval_prediction_ibcf <- predict(object = recommender_ibcf, newdata = getData(eval_sets, "known"), n = items_to_recommend, type = "ratings")
+eval_prediction_svd <- predict(
+  object = recommender_svd, 
+  newdata = getData(eval_sets, "known"), 
+  n = items_to_recommend, 
+  type = "ratings")
 
-eval_prediction_ubcf <- predict(object = recommender_ubcf, newdata = getData(eval_sets, "known"), n = items_to_recommend, type = "ratings")
-
-eval_prediction_svd <- predict(object = recommender_svd, newdata = getData(eval_sets, "known"), n = items_to_recommend, type = "ratings")
-
-eval_prediction_svdf <- predict(object = recommender_svdf, newdata = getData(eval_sets, "known"), n = items_to_recommend, type = "ratings")
+eval_prediction_svdf <- predict(
+  object = recommender_svdf, 
+  newdata = getData(eval_sets, "known"), 
+  n = items_to_recommend, 
+  type = "ratings")
 ```
 
 
-```{r 26 }
-# compare RMSE for different models
-######################RANDOM######################
-
-#UBCF
-
+UBCF User-Based Collaborative Filtering
+```{r UBCF User-Based Collaborative Filtering }
 eval_accuracy_ubcf <- calcPredictionAccuracy(
-  x = eval_prediction_ubcf, data = getData(eval_sets, "unknown"), byUser = F)
+  x = eval_prediction_ubcf, 
+  data = getData(eval_sets, "unknown"), 
+  byUser = F)
 
 eval_accuracy_ubcf_user <- calcPredictionAccuracy(
-  x = eval_prediction_ubcf, data = getData(eval_sets, "unknown"), byUser = TRUE)
-
+  x = eval_prediction_ubcf, 
+  data = getData(eval_sets, "unknown"), 
+  byUser = TRUE)
 
 head(eval_accuracy_ubcf_user)
 ```
 
 
-```{r 26 }
-#IBCF
+IBCF Item-Based Collaborative Filtering
+```{r IBCF Item-Based Collaborative Filtering }
 eval_accuracy_ibcf <- calcPredictionAccuracy(
-  x = eval_prediction_ibcf, data = getData(eval_sets, "unknown"), byUser = F)
+  x = eval_prediction_ibcf, 
+  data = getData(eval_sets, "unknown"), 
+  byUser = F)
 
 eval_accuracy_ibcf_user <- calcPredictionAccuracy(
-  x = eval_prediction_ibcf, data = getData(eval_sets, "unknown"), byUser = TRUE)
-
+  x = eval_prediction_ibcf, 
+  data = getData(eval_sets, "unknown"), 
+  byUser = TRUE)
 
 head(eval_accuracy_ibcf_user)
 ```
 
-
-```{r 26 }
-#SVD
+SVD - SVD Singular Value Decomposition
+ - matrix factorization technique used in collaborative filtering for recommendation systems.
+It decomposes the user-item interaction matrix into three matrices: 
+𝑈 Σ 𝑉^T  where:
+U is the user matrix.
+Σ is a diagonal matrix of singular values.
+V^T is the item matrix.
+ - goal is to reduce the dimensionality of the user-item matrix while retaining its significant features.
+ - helps in identifying latent factors that explain the observed interactions between users and items.
+```{r SVD  }
 eval_accuracy_svd <- calcPredictionAccuracy(
-  x = eval_prediction_svd, data = getData(eval_sets, "unknown"), byUser = F)
+  x = eval_prediction_svd, 
+  data = getData(eval_sets, "unknown"), 
+  byUser = F)
 
 eval_accuracy_svd_user <- calcPredictionAccuracy(
-  x = eval_prediction_svd, data = getData(eval_sets, "unknown"), byUser = TRUE)
-
+  x = eval_prediction_svd, 
+  data = getData(eval_sets, "unknown"), 
+  byUser = TRUE)
 
 head(eval_accuracy_svd_user)
 ```
 
 
-```{r 26 }
-#SVDF
+SVDF - SVDF Singular Value Decomposition FUNK (Steepest Decent)
+ - variant of SVD that uses gradient descent to optimize the matrix factorization.
+ - Instead of directly computing the matrices, it iteratively updates them to minimize the error between the predicted and actual interactions.
+ - It is more scalable and efficient for large datasets compared to traditional SVD.
+```{r SVDF }
 eval_accuracy_svdf <- calcPredictionAccuracy(
-  x = eval_prediction_svdf, data = getData(eval_sets, "unknown"), byUser = F)
+  x = eval_prediction_svdf, 
+  data = getData(eval_sets, "unknown"), 
+  byUser = F)
 
 eval_accuracy_svdf_user <- calcPredictionAccuracy(
-  x = eval_prediction_svdf, data = getData(eval_sets, "unknown"), byUser = TRUE)
-
+  x = eval_prediction_svdf, 
+  data = getData(eval_sets, "unknown"), 
+  byUser = TRUE)
 
 head(eval_accuracy_svdf_user)
 ```
+SVD / SVD FUNK Similarities
+ - Both SVD and FUNK SVD aim to reduce the dimensionality of the user-item interaction matrix.
+ - Both techniques decompose the matrix into user and item factors to identify latent features.
+ - They are used to improve the recommendation accuracy by capturing the underlying patterns in user behavior.
 
+ - SVD provides a more precise decomposition but may struggle with scalability in large datasets.
+ - FUNK SVD (SVDF) is more suitable for large-scale recommendation tasks due to its optimization approach, although it may show slightly higher error metrics compared to SVD.
 
-```{r 26 }
+```{r  }
 eval_accuracy_ubcf
 eval_accuracy_ibcf
 eval_accuracy_svd
 eval_accuracy_svdf
 ```
+                    RMSE       MSE       MAE 
+accuracy_ubcf       1.0696169 1.1440803 0.8405173 
+accuracy_ibcf       1.1199620 1.2543149 0.8339064 
+accuracy_svd        0.9548811 0.9117980 0.7501331 
+accuracy_svdf       0.9410858 0.8856424 0.7334548
+                    RMSE       MSE       MAE 
+best_accuracy_svdf  0.9410858
+best_accuracy_svdf            0.8856424
+best_accuracy_svdf                      0.7334548
 
+Comparison SUMMARY:
+SVDF is outperforming on all performance error measures.
 
