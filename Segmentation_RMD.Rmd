@@ -137,7 +137,7 @@ pct <- H.fit[[2]]/denominator #calculates the percentage increase in the height 
 
 tail(pct,n=10) #displays the last 10 values of the pct vector. These values are the percentage increases for the final 10 steps in the hierarchical clustering process.
 ```
-NOT understand how we assess that 4 clusters is optimal from this percentage vector?
+
 from 1 -> 2: 0.07366355 - 0.07841626 = 0.0048 diff
 from 2 -> 3: 0.07841626 - 0.08764102 = 0.0092 diff
 from 3 -> 4: 0.08764102 - 0.09618998 = 0.0086 diff
@@ -442,16 +442,24 @@ X-squared = 3.326, df = 3, p-value = 0.344
 ### Toy Example which is STUPID
 
 ```{r  }
-#Toy example
-inc <- c(5,6,15,16,25,30) 
-edu <- c(5,6,14,15,20,19)
-toy <- data.frame(inc,edu)
+var1 <- c(5,6,15,16,25) 
+var2 <- c(5,6,14,15,20)
+toy <- data.frame(var1,var2)
 toy.dist <- dist(toy,method="euclidean") #toy.dist computes the Euclidean distance matrix for the data in toy.
+```
 
+
+```{r  }
 toy.dist2 <- toy.dist^2 #toy.dist2 squares the distances, which is not a typical step for hierarchical clustering but may be done here for illustrative purposes.
+```
 
+
+```{r  }
 toy.H.single <- hclust(toy.dist2,method="single") #toy.H.single performs hierarchical clustering using the single linkage method on the squared distance matrix
+```
 
+
+```{r  }
 # the actual amalgamation (sammenlægning)
 toy.H.single$merge
 ```
@@ -997,6 +1005,7 @@ MORTEN SUMMARY:
 
 
 #IV Segmentation - Latent Class Analysis
+
 ## McD Example
 o	The relative position of latent class models and measures of interrelationships for categorical (binary) data
 o	The latent class model for binary data and estimation of such models

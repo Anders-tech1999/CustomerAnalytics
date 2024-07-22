@@ -6,6 +6,8 @@ date: "2024-05-07"
 
 #FACTOR ANALYSIS (+SEM) Alina
 
+
+
 ## chapter_13-FactorAnalysis (1).R
 
 ###WORKOUT Exercise
@@ -47,7 +49,7 @@ Parallel analysis suggests that the number of factors =  2
 
 eigen values of factorsc[1]  2.34  2.28  0.00 -0.07 -0.08 -0.12
 - The first two eigenvalues (2.34 and 2.28) are greater than 1, which is another criterion often used to determine the number of factors to retain.
- - -	Eigenvalue represents the variance in all of the observed variables which is accounted for by that principal component (Slide5.2)
+ - Eigenvalue represents the variance in all of the observed variables which is accounted for by that principal component (Slide5.2)
 
 Scree plot
  - Evaluated from FA Actual data (blue triangle) that 2 factors are above eigenvalue 1
@@ -203,7 +205,7 @@ scoreitems <- scoreItems(itemlist, workout3_comp,
 #scoreitems # - Print for standard errors alpha, Average item correlation  Guttman 6* reliability, etctectetc
 
 scoreitems$alpha
-factordata <- as.data.frame(summateds$scores)
+factordata <- as.data.frame(scoreitems$scores)
 factordata
 ```
 Cronbach's Alpha: 
@@ -227,6 +229,8 @@ workout3_comp <- cbind(workout3_comp, factordata)
 names(workout3_comp)
 as.data.frame(workout3_comp)
 ```
+
+
 
 #SEM ANALYSIS (+Factor Analysis) Alina
 
@@ -304,9 +308,8 @@ est.meas.lpa.mod2 <- cfa(meas.lpa.mod2, data=workout2)
 summary(est.meas.lpa.mod2, fit.measures=TRUE, standardized=TRUE)
 # acceptable fit
 ```
-RMSEA (modified model): 0.107
-- in reality the threshold is RMSEA < 0.1, but accepting this RMSEA Root Mean Square Error Approximation
-- Lecture 6.4 commands the threshhold being RMSEA < 0.08???
+RMSEA (modified model): 0.107 which is adequate
+- Lecture 6.4 commands the threshhold being RMSEA < 0.08
 - when having adequate level of RMSEA, the model proceeds to validity and reliability properties
 
      Further Metrics threshold from Lecture 6.4
@@ -344,6 +347,7 @@ Latent Variables:
     calories          0.995    0.060   16.463    0.000    1.482
     cweight           0.977    0.062   15.875    0.000    1.454
 
+
 Convergent and Discriminant validity
  - Construct validity: is the extent to which the measured items actually reflect the theoretical latent construct they are designed to measure
 ```{r Convergent + Discriminant validity}
@@ -373,8 +377,10 @@ Discriminant validity:
  - all AVEs Average Variance Extracted must be considerely larger than $Squared_Factor_Correlations among latent variables
  - This is the case for all correlations^^^
 
+
 ##Structural Part - LPA Latent Part Analysis
--	Once a satisfactory measurement model is obtained, the 2nd step is to test the structural model (stages 5-6). The structural model tests a theory and relates the constructs to other constructs
+-	Once a satisfactory measurement model is obtained, the 2nd step is to test the structural model (stages 5-6). 
+ - The structural model tests a theory and relates the constructs to other constructs
 ```{r Structural Model - LPA Latent Part Analysis}
 # structural part
 full.lpa.mod <- '
@@ -396,8 +402,7 @@ summary(est.full.lpa.mod, fit.measures=TRUE, standardized=TRUE)
 # check fit
 ```
 RMSEA (structural part - Latent Part Analysis): 0.104
-- in reality the threshold is RMSEA < 0.1, but accepting this RMSEA Root Mean Square Error Approximation
-- Lecture 6.4 commands the threshhold being RMSEA < 0.08???
+- Lecture 6.4 commands the threshhold being RMSEA < 0.08
 
 Tucker-Lewis Index (TLI)      : 0.911
  - threshold TLI > 0.95 (CH14 Mehmetoglu having 0.9 as threshold???)
@@ -435,7 +440,7 @@ Regressions: (standardized beta coefficients)
   - standardized beta coeff > 0.2 indicate large effect
   - standardized beta coeff must be significant (pvalue < 0.01)
 SUMMARY
-these findings provide support for the 3 first hypothesis that
+these findings provide support for the 3 first HYPOTHESIS that
  - the more attractive -> the more desire workout improve appearance
 Attractive -> Appearance
 
@@ -489,8 +494,8 @@ Nodes:
  - Observed Variables (Boxes): These represent directly measured variables. Examples include face, sexy, body, appear, attract, lweight, cweight, calories, muscle, strength, endur.
 
 Edges (Arrows):
- - Single-headed Arrows: Indicate causal relationships or regressions. An arrow from Appearance to Attractive suggests that Appearance is predicted by Attractive.
- - Double-headed Arrows: Represent covariances or correlations between variables. For example, the double-headed arrow between muscle and endur indicates a covariance between these variables.      
+ - Single-headed Arrows: Indicate causal relationships or regressions. An arrow to Appearance from Attractive suggests that Appearance is predicted by Attractive.
+ - Double-headed Arrows: Represent covariances or correlations between variables. For example, the double-headed arrow between muscle and endur indicates a covariance between these variables.
 
 Path Coefficients:
  - the numbers on the arrows, representing standardized regression weights or factor loadings - indicate the strength and direction of the relationship.
@@ -573,6 +578,7 @@ Regressions: (standardized beta coefficients)
     Appearanc (b1)    0.575    0.092    6.275    0.000    0.466
   Weight ~                                                     
     Appearanc (b2)    0.559    0.106    5.274    0.000    0.461
+
  - standardized coefficients range typically between +-1
  - the closer a path coeff is to +-1, the stronger the relationship (pos/neg) is
   - standardized beta coeff < 0.09 indicate small effect
@@ -802,6 +808,7 @@ print(cortest.bartlett(cor(data[, c(7:19)]), nrow(data[, c(7:19)])))
 $p.value: 8.81589e-150
  - is close to 0.000->: we reject the H0
 
+
 Kaiser-Meyer-Oklin Test (KMO). 
  - MSA overall should be .60 or higher to proceed with factor analysis
 ```{r Kaiser-Meyer-Oklin Test (KMO) }
@@ -810,6 +817,7 @@ KMO(data[, c(7:19)])
 ```
 x15 does not share much with the other variables. x6 does share 87% with other variables. 
  - Go primarily with overall MSA = 0.61
+
 
 ##3. Apply EFA Exploratory Factor Analysis with Common Factor Analysis
 ```{r EFA Exploratory Factor Analysis }
@@ -984,12 +992,8 @@ summary(fit, fit.measures=TRUE, standardized = TRUE, modindices = FALSE)
 ```
 fit is acceptable^^^
 RMSEA (modified model): 0.079
-- the threshold is RMSEA < 0.1
+- the threshold is RMSEA < 0.8
 - The measurement model is a good fit!
-
-NOTE: we get "lavaan WARNING: some estimated ov variances are negative". 
-This is called in the literature "Heywood case". Heywood cases or negative variance estimates, are a common occurrence in factor analysis and latent variable structural equation models.
-There are several potential causes (https://journals.sagepub.com/doi/10.1177/0049124112442138). Here,eliminating the problematic item x11, will solve the problem.
 
 Chi-Square Distribution:
  - chi-square distribution is used in many statistical tests, including those related to goodness-of-fit and modification indices in SEM.
@@ -1022,7 +1026,6 @@ fit <- cfa(CFA.model, data = data)
 summary(fit, fit.measures=TRUE, standardized = TRUE, modindices = FALSE)
 ```
 RMSEA (modified model): 0.000
-- in reality the threshold is RMSEA < 0.1, but accepting this RMSEA Root Mean Square Error Approximation
 - Lecture 6.4 commands the threshhold being RMSEA < 0.08
 - when having adequate level of RMSEA, the model proceeds to validity and reliability properties
 
@@ -1170,7 +1173,7 @@ Structural Model:
  - Weight is predicted by Appearance with a path coefficient of 0.47****, indicating a highly significant relationship.
 
 
-5. SEM
+##STEP 5. SEM
 
 Dependent variable: 
  - x19-Customer Satisfaction. Build a model to explain x19;
@@ -1190,6 +1193,8 @@ SEM.model1 <- '
 fitSEM1 <- sem(SEM.model1, data=data, se ="robust", estimator = "ML") 
 summary(fitSEM1, fit.measures=TRUE, standardized = TRUE, rsquare=TRUE)
 ```
+THIS IS AN ADEQUATE SEM OUTPUT IF ASKED
+
 The message "lavaan WARNING: some estimated ov variances are negative" shows up. 
  - In this case, the problematic items are x12 and x14. It reflects that we would need more items per construct to run a good model. 
  - We set se="robust" to produce robust standard errors; 
@@ -1325,7 +1330,7 @@ lavaanPlot(model = fitSEM2,
 ## 8.PLS_Ia_solution_estimation_exercise: PLS_SEM Intro
 
 ```{r dataload satisfaction }
-rm(list=ls())
+#rm(list=ls())
 #install.packages("seminr")
 library(seminr)
 # Load data
@@ -1527,12 +1532,13 @@ simple_mm <- constructs(
 simple_sm <- relationships(paths(from = c("COMP","LIKE"), to = c("CUSA","CUSL")),
   paths(from = c("CUSA"), to = c("CUSL")))
 # Estimate the model
-corp_rep_simple_model <- estimate_pls(data = corp_rep_data,
-                                      measurement_model = simple_mm,
-                                      structural_model = simple_sm,
-                                      inner_weights = path_weighting,
-                                      missing = mean_replacement,
-                                      missing_value = "-99")
+corp_rep_simple_model <- estimate_pls(
+  data = corp_rep_data,
+  measurement_model = simple_mm,
+  structural_model = simple_sm,
+  inner_weights = path_weighting,
+  missing = mean_replacement,
+  missing_value = "-99")
 # Estimate the model with default settings
 corp_rep_simple_model <- estimate_pls(data = corp_rep_data,
                                       measurement_model = simple_mm,
@@ -1573,6 +1579,11 @@ rhoA
 Alpha, rhoC, and rhoA should exceed 0.7 
 AVE should exceed 0.5
 SUMMARY: the model appears to have good reliability and validity, as all constructs meet the required thresholds for alpha, rhoC, rhoA, and AVE.
+
+```{r}
+plot(corp_rep_simple_model)
+```
+
 
 ```{r Iterations + Loadings}
 # Iterations to converge
@@ -1832,6 +1843,10 @@ SUMMARY: the model appears to have good reliability and validity, as all constru
 
 COMMENT ON RELIABILITY BELOW!
 
+```{r}
+plot(corp_rep_pls_model)
+```
+
 
 ```{r Iterations + Loadings }
 # Iterations to converge
@@ -1937,6 +1952,11 @@ Bootstrap SD:
 
 
 ## 10.PLS_IIIa: Formative Measurement model
+The necessary steps for an assessment of the formative measurement model
+-	Convergent validity
+-	Collinearity issues
+-	Significance and relevance
+
 Formative Measurement model
 ```{r dataload Corporate Reputation }
 # R script for the illustrations in chapter 4
@@ -2217,6 +2237,14 @@ Reliability:
 QUAL_F 0.878 0.894 0.516 1.000
 QUAL_G 1.000 1.000 1.000 1.000
 
+
+Convergent Validity:
+Convergent validity is the extent to which a formatively measured construct correlates positively with other (reflective) measures of the same construct
+ - Path coefficient between Y1 and Y2 at least above 0.7
+ - Reflective measures must also be included in the data collection (use scale handbooks to assist in selecting reflective measures)
+ - Alternatively use global single item that summarize essence of construct
+
+
 SUMMARY for the 4 anove models^^^^ 
 ```{r Path coef: convergent validity }
 # Check the path coefficients for convergent validity
@@ -2257,6 +2285,7 @@ If high multicollinearity
  - Possible treatment of collinearity issues:	Remove indicator
 
 
+Bootstrapping analysis of a structural equation model (SEM) with formative indicators.
 ```{r Bootstrap }
 # Summarize the results of the bootstrap
 # alpha sets the specified level for significance, i.e. 0.05
@@ -2266,10 +2295,34 @@ sum_boot_corp_rep_ext$bootstrapped_weights
 # Inspect the bootstrapping results for indicator loadings
 sum_boot_corp_rep_ext$bootstrapped_loadings
 ```
+Original Est.: 
+These are the original estimated loadings for each indicator on their respective latent constructs (e.g., QUAL, PERF, CSOR).
 
+Bootstrap Mean: 
+This is the mean of the bootstrap sample estimates. Bootstrapping involves repeatedly resampling from the data and estimating the parameters for each sample. The Bootstrap Mean is the average of these estimates.
+
+Bootstrap SD: 
+This is the standard deviation of the bootstrap sample estimates, indicating the variability of the estimates across the bootstrap samples.
+
+Significant Loadings:
+Loadings with high t-statistics and confidence intervals that do not include zero indicate that the indicators are significant contributors to their respective latent constructs.
+For example, qual_6 -> QUAL has a high t-statistic of 6.224 and a 95% CI of [0.283, 0.496], indicating a significant and reliable loading.
+
+Non-significant Loadings:
+Loadings with low t-statistics and confidence intervals that include zero indicate that the indicators are not significant contributors to their respective latent constructs.
+For example, qual_2 -> QUAL has a t-statistic of 0.808 and a 95% CI of [-0.047, 0.124], indicating a non-significant loading.
+
+SUMMARY
+Stable and Significant Indicators: qual_6, perf_1, attr_3, etc.
+Potentially Non-significant Indicators: qual_2, qual_4, csor_2, etc.
+Bootstrapping: Provides robust estimates and confidence in the model by resampling and re-estimating the parameters multiple times.
 
 
 ## 10.PLS_IIIb: Structural Model
+o	The necessary steps for an assessment of the structural model
+	Assessment of collinearity issues and model relationships
+	Assessment of explanatory and predictive power
+	(Model comparisons)
 
 ```{r dataload Corporate Reputation }
 # R script for the illustrations in chapter 4
@@ -3078,7 +3131,10 @@ influencer_pls_model <- estimate_pls(data = influencer_data,
                                      missing_value = "-99")
 
 plot(influencer_pls_model)
+```
 
+
+```{r}
 ## Summarizing the results
 # Summarize the model results
 summary_influencer_pls_model <- summary(influencer_pls_model)

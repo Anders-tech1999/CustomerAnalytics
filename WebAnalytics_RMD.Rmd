@@ -73,7 +73,7 @@ we read the list of cliskstreams from a file using "readClickstreams()" function
 it is a comma-separated file and each line is exactly one clicktream
 
 ```{r}
-#install.packages("clickstream")
+install.packages("clickstream")
 library("clickstream")
 
 cls <- readClickstreams(file = "C:/8. semester - BI/CA - Customer Analytics/Web Analytics/sample.csv", sep = ",", header = TRUE) 

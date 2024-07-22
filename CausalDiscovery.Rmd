@@ -123,6 +123,7 @@ all.equal(dag, dag3)
 ```
 All models are equal as expected. 
 
+THE MANUAL SETUP IS NOT NECESSARY FOR EXAM!
 
 Fuse: Functional Usefullness
 ```{r Manual parameters Functional Usefulness }
@@ -244,7 +245,7 @@ str(retention$Fuse)
 library(bnlearn)
 # Constrained-based alg. do not work with missing data
 par(mfrow = c(1, 1))
-bn.gs <- gs (retention, alpha = 0.05, test ="x2") #alternative test ="mi"
+bn.gs <- gs(retention, alpha = 0.05, test ="x2") #alternative test ="mi"
 plot(bn.gs, main = "Grow shrink_X2")
 graphviz.plot (bn.gs, main = "Grow shrink_X2")
 ```
@@ -511,6 +512,7 @@ SUMMARY:
  - The extracted marginal distributions are useful for understanding the likely states of the nodes and 
   - can inform decision-making or further analysis within the context of the Bayesian network.
 
+
 Predict with Evidence
  - Imagine a new customer joins the VC reporting a Low (Medium or High) Functional Usefulness perception. 
   - This information can be fed to the network as evidence in order to predict the conditional probability of his/her attitude and commitment to VC. 
@@ -762,7 +764,7 @@ junctionTA <- compile(as.grain(bnTA.mle))
 Med_male_yes <- setEvidence (
   junctionTA, 
   nodes = c("Income", "Sex", "Mailed"),
-  states = c("medium", "male", "yes"))
+  states = c("high", "female", "yes"))
 
 querygrain(
   Med_male_yes, 
@@ -771,7 +773,7 @@ querygrain(
 Med_male_no <- setEvidence (
   junctionTA, 
   nodes = c("Income", "Sex", "Mailed"),
-  states = c("medium", "male", "no"))
+  states = c("high", "female", "no"))
 
 querygrain(
   Med_male_no, 
@@ -986,6 +988,60 @@ we mail to this population
 
 
 # PRODUCT_RECOMMENDATION_2024_REVISED
+
+Main Purpose
+The main purpose of this code is to develop a product recommendation system by leveraging latent class analysis and Bayesian networks. This involves identifying latent user classes that are not directly observable but inferred from the data, and then using these classes to predict user preferences for various products. The steps are divided into two main parts:
+
+Latent Class Analysis (LCA): To identify latent classes among users based on their preferences.
+
+Bayesian Network (BN) Construction and Inference: To build a Bayesian Network model based on the latent classes and use it to make product recommendations.
+
+Key Takeaways
+
+Data Preparation: The variables are defined for the latent class model.
+
+2. Latent Class Analysis (LCA)
+ - Model Testing: Several LCA models with different numbers of latent classes (ranging from 2 to 6) are tested.
+ - Model Selection: The Bayesian Information Criterion (BIC) is used to select the best model, with the lowest BIC value indicating the best fit.
+Output of Best Model: The best model’s details, including posterior class membership probabilities and class-conditional response probabilities, are extracted and saved.
+
+3. Bayesian Network (BN) Construction
+ - Structure Learning: A Tree-Augmented Naive Bayes (TAN) structure is learned using the latent classes as the root node.
+ - Parameter Learning: Parameters of the BN are learned using  - Maximum Likelihood Estimation (MLE).
+ - Visualization: The learned BN structure is visualized.
+
+4. Inference with Bayesian Networks
+ - Evidence Setting: The BN is used to make predictions based on given evidence (known user preferences).
+ - Product Recommendation: The probability distribution for an unknown preference (product recommendation) is calculated given known preferences.
+
+5. Batch Processing for Recommendations
+ - Loop through Data: The code loops through each row in the dataset to predict and save the most probable product recommendations.
+ - Saving Predictions: The predictions are saved to a CSV file.
+Detailed Explanation of Code Sections
+Data Loading:
+
+Latent Class Analysis (LCA):
+
+The model formula f specifies the observed variables.
+The loop tests models with 2 to 6 classes, calculating and storing BIC values.
+The model with the lowest BIC is chosen, and its details are printed and saved.
+
+Bayesian Network Construction:
+ - The dataset with latent class labels (data_copy) is used to construct the BN.
+ - A TAN structure is learned, and parameters are fitted using MLE.
+ - The BN is visualized and prepared for inference.
+
+Inference with BN:
+ - Evidence is set for known preferences, and predictions are made for unknown preferences.
+ - The probability distribution for a specified node (e.g., V4) is queried.
+
+Batch Processing:
+The code loops through the dataset to set evidence and predict unknown preferences.
+Predictions are stored in a DataFrame and written to a CSV file.
+
+Conclusion
+The code effectively demonstrates how to use latent class analysis combined with Bayesian networks for making product recommendations. It highlights the importance of selecting the appropriate number of latent classes and constructing a probabilistic model that can infer user preferences based on both user and item similarities. This method offers a comprehensive approach to recommendation systems by considering latent user classes and their interactions with different products.
+
 
 ```{r}
 #______________________________________________________________________________
