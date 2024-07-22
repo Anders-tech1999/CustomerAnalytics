@@ -1,29 +1,624 @@
+
 ---
-title: "NewAndersExam"
+title: "CA_EXAM"
 output: html_document
-date: "2024-07-22"
+date: "2024-06-07"
 ---
 
-```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
+Read data into R making sure all variables are factors. Using the bnlearn package in R, 
+learn a Bayesian Network structure with the grow-shrink (GS) algorithm and using a significance level of 0.05 with the chi-squared conditional independence test. (5p)
+```{r}
+library(bnlearn)
+library(Rgraphviz) 
+dataCA2024 <- read.csv("C:/Users/Bruger/OneDrive - Aarhus universitet/8. semester - BI/CA - Customer Analytics/dataCA2024.csv",header = T, colClasses = "factor")#delim = ";",)
+library(readr)
+dataCA2024 <- read_delim("C:/Users/Bruger/OneDrive - Aarhus universitet/8. semester - BI/CA - Customer Analytics/Causal Discovery - Production Recommendation og Targeting/dataCA2024.csv", 
+    delim = ";", escape_double = FALSE, trim_ws = TRUE)
+dataCA2024 <- dataCA2024 %>%
+  mutate(across(where(is.character), factor))
+glimpse(dataCA2024)
 ```
 
-## R Markdown
-
-This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
-
-When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
-
-```{r cars}
-summary(cars)
+```{r}
+dataCA2024 <- read.csv("C:/Users/Bruger/OneDrive - Aarhus universitet/8. semester - BI/CA - Customer Analytics/dataCA2024.csv",header = T, colClasses = "factor", sep= ";")
 ```
 
-## Including Plots
 
-You can also embed plots, for example:
-
-```{r pressure, echo=FALSE}
-plot(pressure)
+```{r}
+bn.gs <- gs(dataCA2024, alpha = 0.05, test ="x2") 
+#plot(bn.gs, main = "Grow shrink_X2")
+graphviz.plot (bn.gs, main = "Grow shrink_X2")
 ```
 
-Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
+```{r}
+ci.test("Occupation", "Income", "Shopping.Preferences", test = "x2", data = dataCA2024)
+```
+
+
+Read data into R making sure all variables are factors. Using the bnlearn package in R, 
+learn a Bayesian Network structure with the grow-shrink (GS) algorithm and using a significance level of 0.05 with the chi-squared conditional independence test. (5p)
+
+```{r}
+library(bnlearn)
+library(Rgraphviz) 
+library(readr)
+#dataCA2024 <- read.csv("C:/Users/Bruger/OneDrive - Aarhus universitet/8. semester - BI/CA - Customer Analytics/targeted.adv.csv",header = T, colClasses = "factor")
+library(readr)
+targeted_adv <- read.csv("C:/Users/Bruger/OneDrive - Aarhus universitet/8. semester - BI/CA - Customer Analytics/Causal Discovery - Production Recommendation og Targeting/targeted.adv.csv",header = T, colClasses = "factor")
+#dataCA2024 <- read_delim("C:/Users/Bruger/OneDrive - Aarhus universitet/8. semester - BI/CA - Customer Analytics/Causal Discovery - Production Recommendation og Targeting/dataCA2024.csv", 
+ #   delim = ";", escape_double = FALSE, trim_ws = TRUE)
+#dataCA2024 <- dataCA2024 %>%
+#  mutate(across(where(is.character), factor))
+glimpse(targeted_adv)
+```
+
+```{r}
+bn.gs <- gs(targeted_adv, alpha = 0.05, test ="x2") 
+#plot(bn.gs, main = "Grow shrink_X2")
+graphviz.plot (bn.gs, main = "Grow shrink_X2")
+```
+
+
+2. Given the Bayesian Network structure learned, manually set the direction of arcs from "Occupation" to "Income", from "Income" to "Shopping.Preferences", and from "Occupation" to
+"Shopping.Preferences". Plot the updated graph (all arcs should be directed). (5p.)
+
+Occupation is in the new dataformat replaced into the Sex variable
+Shopping.Preferences is in the new dataformat replaced into the Buy variable
+
+
+```{r}
+bn.gs1 <- set.arc (bn.gs, from = "Sex", to = "Income")
+bn.gs2 <- set.arc (bn.gs1, from = "Income", to = "Buy")
+bn.gs2 <- set.arc (bn.gs1, from = "Sex", to = "Buy")
+
+#plot(bn.gs1, main = "Grow Shrink_") 
+graphviz.plot(bn.gs1, main = "Grow Shrink") 
+```
+I hope the conceptuallity of the arcs still is awarded as I have written the new columnsnames in replacement of the others.
+
+
+```{r}
+dataCA2024 <- read_delim("C:/Users/Bruger/OneDrive - Aarhus universitet/8. semester - BI/CA - Customer Analytics/Causal Discovery - Production Recommendation og Targeting/dataCA2024.csv", 
+    delim = ";", escape_double = FALSE, trim_ws = TRUE)
+dataCA2024 <- dataCA2024 %>%
+  mutate(across(where(is.character), factor))
+glimpse(dataCA2024)
+```
+```{r}
+dagTA <- model2network(
+  "[Occupation][Income][Buy][Shopping.Preferences][Income|Occupation])
+plot(dagTA)
+graphviz.plot(dagTA)
+```
+
+3. Assuming the directed arcs from Question 2, fit the Bayesian Network parameters using the
+Maximum Likelihood estimation method (5p.)
+```{r}
+bnTA.mle <- bn.fit(
+  dagTA, data = targeted.adv[, c(2:5)], method = "mle")
+bnTA.mle
+```
+
+
+
+4. Describe the role of d-separation tests and provide an example based on this case. (5p.)
+As I have problems producing the Bayesian Network, I cant quite explain a d-separation in this example.
+A d-separation in general is determinning wether sets of variables are conditionally independent from other sets of variables, beacuse of a third set of variables.
+There is gievn 3 kinds of d separtions which is serial connections, diverging connections and converging connections.
+A serial connection can happen in a connection on 3 variables, where the first variables influences both the second and the third varible.
+A diverging connection is where one variable in a network influences 2 or more other variables in the network.
+A converging connection is when 2 variables influences a third variable at the same time.
+
+
+5. What do the arc strength metrics indicate about the relationships within the network? (5p.)
+```{r}
+retention <- read.csv("C:/Users/Bruger/OneDrive - Aarhus universitet/8. semester - BI/CA - Customer Analytics/Causal Discovery - Production Recommendation og Targeting/retention.csv",header = T, colClasses = "factor")
+glimpse(retention)
+
+```
+```{r}
+bn.gs <- gs(retention, alpha = 0.05, test ="x2") #alternative test ="mi"
+plot(bn.gs, main = "Grow shrink_X2")
+graphviz.plot (bn.gs, main = "Grow shrink_X2")
+```
+```{r}
+bn.gs1 <- set.arc (bn.gs, from = "Atti", to = "Comm")
+#plot(bn.gs1, main = "Grow Shrink_") 
+graphviz.plot(bn.gs1, main = "Grow Shrink") 
+
+bn.mle <- bn.fit (bn.gs1, data = retention, method = "mle")
+bn.mle
+# print them
+bn.mle$Fuse
+bn.mle$Plea
+bn.mle$Atti
+bn.mle$Comm
+```
+```{r}
+nodes(bn.mle)
+arcs(bn.mle)
+bn.mle
+```
+```{r}
+library(dplyr)
+options(scipen = 0)
+arc.strength (bn.gs1, retention, criterion = "x2") %>%.[order(.$strength),]
+```
+All the Arcs are significant in the network as all of the p-values for each arch in the network are below 0.05.
+
+
+6. Perform a 5-fold cross-validation to assess the prediction accuracy for the node "Buy", using classification error as the loss function and give a short interpretation. (5p.)
+```{r}
+netcv = bn.cv(retention, 
+              bn.gs1, 
+              loss ="pred",
+              k = 5, 
+              loss.args = list(target = "Comm"), 
+              debug = TRUE)
+netcv 
+```
+Prediction accuracy of Comm based on 5-fold cross validation:
+1-0.18 = 0.82 
+
+
+7. How is new evidence integrated into the Bayesian Network to predict outcomes for new customers? 
+To demonstrate this aspect, predict the buying behaviour of a new customer who prefers in-store shopping and is a blue-collar worker. (5p.)
+I try to show this prediction with the customer retention data.
+
+```{r}
+library (gRain)
+junction <- compile (as.grain(bn.mle))
+
+AHigh <- setEvidence (junction, nodes = "Fuse", states = "Low")
+AHighCLow <- setEvidence (AHigh, nodes = "Plea", states = "Medium")
+querygrain(AHighCLow, nodes = "Comm")
+```
+In this network, having Functional Usefullness being Low and Pleasure being medium - meaning these variables are set with evidence, then the possibility for has the following distribution of probabilities
+Comm
+       High         Low         Med 
+0.009657778 0.157533333 0.832808889 
+
+
+
+8. Given the following parameters for a targeted advertising campaign:
+o Cost of Sending an Advertisement: $0.50,
+o Return from a Solicited Advertisement: $8.00,
+o Profit from an Unsolicited Advertisement: $10.00,
+
+analyze the segment of the population with the following characteristics:
+
+o Income: $100k-$119k
+o Occupation: Blue-collar,
+o Shopping Preference: In-store,
+
+Specifically, calculate the Expected Lift in Profit (ELP) for targeting this specific customer segment with an
+advertising campaign. Based on your calculation, should the company target this segment with
+advertisements? Explain your rationale briefly. (15 p.
+```{r}
+library(bnlearn)
+library(Rgraphviz) 
+library(readr)
+
+#targeted.adv <- read_csv("C:/8. semester - BI/CA - Customer Analytics/Causal Discovery - Production Recommendation og Targeting/targeted.adv.csv (1).zip")
+library(readr)
+targeted.adv <- read.csv("C:/Users/Bruger/OneDrive - Aarhus universitet/8. semester - BI/CA - Customer Analytics/Causal Discovery - Production Recommendation og Targeting/targeted.adv.csv",header = T, colClasses = "factor")
+
+#head (targeted.adv)
+#targeted.adv <- targeted.adv %>%
+#  mutate(across(where(is.character), factor))
+glimpse(targeted.adv)
+```
+```{r}
+# Build the structure
+dagTA <- model2network(
+  "[Income][Sex][Mailed][Buy|Income:Sex:Mailed]")
+#plot(dagTA)
+#graphviz.plot(dagTA)
+bnTA.mle <- bn.fit(
+  dagTA, data = targeted.adv[, c(2:5)], method = "mle")
+bnTA.mle
+c=0.5
+r_s = 8
+r_u = 10
+```
+c=0.5 Cost of sending advertisement
+r_s = 8 Return from solicited advertisement
+r_u = 10 Profit from unsolicited advertisement
+
+For my dataset the desired states of the variables:
+o Income: $100k-$119k
+o Occupation: Blue-collar,
+o Shopping Preference: In-store,
+
+Are substituted into 
+o Income: high
+o Sex: female,
+```{r}
+# set evidence and get the ctp 
+library (gRain)
+junctionTA <- compile(as.grain(bnTA.mle))
+Med_male_yes <- setEvidence (
+  junctionTA, 
+  nodes = c("Income", "Sex", "Mailed"),
+  states = c("high", "female", "yes"))
+
+querygrain(
+  Med_male_yes, 
+  nodes = "Buy")# p(buy) = 0.4
+
+Med_male_no <- setEvidence (
+  junctionTA, 
+  nodes = c("Income", "Sex", "Mailed"),
+  states = c("high", "female", "no"))
+
+querygrain(
+  Med_male_no, 
+  nodes = "Buy")# p(buy) = 0.2
+
+options(digits=2)
+ELP = querygrain(
+  Med_male_yes, nodes = "Buy")$Buy[[2]] * r_s -
+  querygrain(Med_male_no, nodes = "Buy")$Buy[[2]] * r_u - c
+
+ELP
+```
+ELP= -1.8
+Having a negative value of Expected Lift Profit, the Advertisments should not be sent out to the customer.
+
+
+
+PART B
+1) The wording for “pl_1” is opposite to the remaining questions associated with the construct “Product Liking”. 
+In the dataset “pl_1” has been reverse scored (respondents answering 1 are recorded as a 7 and respondents answering 7 are recorded as a 1, and similarly for the remaining
+categories). Briefly explain what would happen to the loading of pl_1 and Cronbach’s alpha for PL if the reverse scoring had not been done. (5p.)
+
+```{r}
+library(seminr)
+library(readxl)
+#influencer_data <- read_csv("C:/Users/Bruger/OneDrive - Aarhus universitet/8. semester - BI/CA - Customer Analytics/PrevExams/2023/PLS_data_exam - Copy.csv")
+library(readr)
+PLS_data_exam <- read_csv("C:/Users/Bruger/OneDrive - Aarhus universitet/8. semester - BI/CA - Customer Analytics/PLS_data_exam.csv")
+
+# Create measurement model
+set.seed(123)
+simple_mm <- constructs(
+  composite("SIC",multi_items("sic_",1:6),weights = mode_B),
+  composite("PL",multi_items("pl_",1:4),weights = mode_A),
+  composite("PQ",multi_items("pq_",1:4),weights = mode_A),
+  composite("WTP",single_item("wtp")),
+  composite("PI",multi_items("pi_",1:5),weights = mode_A))
+# Create structural model
+simple_sm <- relationships(
+  paths(from = c("SIC"), to = c("PL","PQ","PI")),
+  paths(from = c("PL","PQ"), to = c("PI")),
+  paths(from = c("PI"), to = c("WTP")))
+
+## Estimation
+# Estimate the model
+influencer_pls_model <- estimate_pls(data = PLS_data_exam,
+                                     measurement_model = simple_mm,
+                                     structural_model = simple_sm,
+                                     inner_weights = path_weighting,
+                                     missing = mean_replacement,
+                                     missing_value = "-999")
+summary_influencer_pls_model <- summary(influencer_pls_model)
+plot(influencer_pls_model)
+```
+
+
+
+
+
+```{r}
+# Inspect the indicator loadings
+summary_influencer_pls_model$loadings
+
+# Inspect the indicator reliability
+summary_influencer_pls_model$loadings^2
+```
+The loading of pl1 would internally be of opposite direction for each respondent, but the magnitude for the loading of pl is aprroximately the same, as this indicator still are describing the construct Product Liking as before
+
+
+```{r}
+# Inspect the composite reliability
+summary_influencer_pls_model$reliability
+# Plot the reliabilities of constructs
+plot(summary_influencer_pls_model$reliability)
+```
+From the Reliability measure table
+    alpha  rhoC   AVE  rhoA
+SIC 0.090 0.537 0.183 1.000
+PL  0.850 0.899 0.690 0.853
+PQ  0.818 0.881 0.652 0.829
+PI  0.767 0.848 0.551 0.846
+WTP 1.000 1.000 1.000 1.000
+The alpha value has to exceed 0.7 which is the case for Product Liking.
+
+```{r}
+summary(PLS_data_exam$pl_1)
+```
+Min.    1st Qu.     Median    Mean    3rd Qu. Max. 
+1.0     2.2         4.5       4.4     6.8     7.0 
+As seen in the summary of pl1, the mean is 4.4 of the indicator, whereas the loadings and cronvach alpha do not gets severily impacted by the error in the actual meaning of the answers from the respondents.
+
+2) Which variable(s) suffer from missingness and how many respondents are affected. (5p.)
+
+```{r}
+summary_influencer_pls_model$descriptives$statistics
+
+```
+      No.     Missing
+pq_3  13.000  10.000
+For the indicator pq3 "The product will have fewer problems" from the construct Product Quality, there is 10 missings.
+10 Respondents have not answered the question about "The product will have fewer problems".
+Having such a small amount of missing in an indicator would allow to delete these observatiions, as the amount of missing is quite below 5% of the observations as a whole.
+
+
+
+3) Evaluate the reflective measurement model part of the influencer model. Be specific: report your
+implementation and relevant results. Rectify the problem(s) you discover and redo the evaluation.
+(25p.)
+```{r}
+# Iterations to converge
+summary_influencer_pls_model$iterations
+
+# Inspect the indicator reliability
+summary_influencer_pls_model$loadings^2
+```
+8 iterations means that the algorithm converged after 8 iterations.
+Loadings
+- Loadings represent the correlation between the observed variables (indicators) and the latent variables (constructs).
+- Higher loadings indicate that the indicator is a good measure of the latent construct.
+-	As a rule of thumb, we would like that a construct explains more than 50% of an indicators variance: loading > 0.708	(0.708^2 = 0.5)
+It is seen that Sic 1 --> 6 obtains loadings below 0.5 for the squared loadings.
+This indicates that these indicators and furthermore the construct SIC should be removed from the model.
+The other loadings from the indicators of the other constructs are measuring the constructs with adequate loadings.
+
+```{r}
+# Inspect the composite reliability
+summary_influencer_pls_model$reliability
+# Plot the reliabilities of constructs
+plot(summary_influencer_pls_model$reliability)
+```
+As described earlier, the Alpha levels are adequate for all measures but SIC.
+Average Variance Extracted, rhoC Composite Reliability are not met as well by SIC. The reliability of SIC is not adequate and should be deleted.
+
+
+
+```{r}
+# Table of the FL criteria
+summary_influencer_pls_model$validity$fl_criteria
+```
+Fornell-Larcker criterion
+ - SIC: diagonal 0.428 value is NOT higher than lower traingle 0.433
+ - The diagonal value of SIC (square root of AVE) are NOT higher than the off-diagonal values (construct correlations)
+ This is a violation against the discriminant validity of the Construct SIC.
+ The requirements are met for the rest of the constructs PL, PQ, PI, WTP.
+
+- HTMT ratio is another method to assess discriminant validity. It is considered more reliable than the Fornell-Larcker criterion.
+```{r}
+# HTMT criterion
+summary_influencer_pls_model$validity$htmt
+# Bootstrap the model
+boot_influencer_pls_model <- bootstrap_model(seminr_model =influencer_pls_model,
+                                 nboot = 1000,cores = NULL,seed = 123)
+sum_boot_influencer_pls_model <- summary(boot_influencer_pls_model, alpha = 0.10)
+# Extract the bootstrapped HTMT
+sum_boot_influencer_pls_model$bootstrapped_HTMT
+```
+HTMT 
+ - values close to 1 indicate a lack of discriminant validity, whereas values below 0.85 (or 0.90 in some cases) indicate good discriminant validity.
+       SIC    PL    PQ    PI WTP
+SIC     .     .     .     .   .
+PL  0.857     .     .     .   .
+PQ  0.602 0.302     .     .   .
+PI  0.936 0.683 0.337     .   .
+WTP 0.390 0.212 0.074 0.322   .
+
+ SUMMARY: All HTMT values, except for SIC -> PL and SIC ->PI, are below 0.85, indicating good discriminant validity between the constructs PL, PQ, PI and WTP.
+ - Discriminant validity means that each construct is distinct and measures a unique aspect of the data.
+ Another sign that SIC should be deleted.
+
+The bootstrap means differ quite significant from the original estimations. This is a sign of unstable loadings.
+
+```{r}
+# Create measurement model
+set.seed(123)
+simple_mm <- constructs(
+  composite("PL",multi_items("pl_",1:4),weights = mode_A),
+  composite("PQ",multi_items("pq_",1:4),weights = mode_A),
+  composite("WTP",single_item("wtp")),
+  composite("PI",multi_items("pi_",1:5),weights = mode_A))
+# Create structural model
+simple_sm <- relationships(
+  paths(from = c("PL","PQ"), to = c("PI")),
+  paths(from = c("PI"), to = c("WTP")))
+
+## Estimation
+# Estimate the model
+influencer_pls_model <- estimate_pls(data = PLS_data_exam,
+                                     measurement_model = simple_mm,
+                                     structural_model = simple_sm,
+                                     inner_weights = path_weighting,
+                                     missing = mean_replacement,
+                                     missing_value = "-999")
+summary_influencer_pls_model <- summary(influencer_pls_model)
+plot(influencer_pls_model)
+```
+
+
+```{r}
+# Iterations to converge
+summary_influencer_pls_model$iterations
+
+# Inspect the indicator reliability
+summary_influencer_pls_model$loadings^2
+```
+5 iterations instead of 8 from before the SIC-deletion means that the algorithm converged after 5 iterations.
+Loadings
+The loadings reach adquate levels across the model after SIC-deletion
+
+```{r}
+# Inspect the composite reliability
+summary_influencer_pls_model$reliability
+# Plot the reliabilities of constructs
+plot(summary_influencer_pls_model$reliability)
+```
+As described earlier, the Alpha levels are adequate for all measures after SIC-deletion
+
+
+```{r}
+# Table of the FL criteria
+summary_influencer_pls_model$validity$fl_criteria
+```
+Fornell-Larcker criterion
+The diagonal values exceeds all the values in the lower traingle supporting discriminant validity
+
+
+```{r}
+# HTMT criterion
+summary_influencer_pls_model$validity$htmt
+# Bootstrap the model
+boot_influencer_pls_model <- bootstrap_model(seminr_model =influencer_pls_model,
+                                 nboot = 1000,cores = NULL,seed = 123)
+sum_boot_influencer_pls_model <- summary(boot_influencer_pls_model, alpha = 0.10)
+# Extract the bootstrapped HTMT
+sum_boot_influencer_pls_model$bootstrapped_HTMT
+```
+HTMT 
+ - values close to 1 indicate a lack of discriminant validity, whereas values below 0.85 (or 0.90 in some cases) indicate good discriminant validity.
+       PL    PQ    PI WTP
+PL      .     .     .   .
+PQ  0.302     .     .   .
+PI  0.683 0.337     .   .
+WTP 0.212 0.074 0.322   .
+
+ SUMMARY: All HTMT values are below 0.85 after SIC-deletion, indicating good discriminant validity between the constructs PL, PQ, PI and WTP.
+
+
+The bootstrap means are quite close to the original estimations. This is a sign of stable loadings.
+
+
+###TOY
+
+```{r  }
+var1 <- c(5,6,15,16,25) 
+var2 <- c(5,6,13,15,20)
+toy <- data.frame(var1,var2)
+toy.dist <- dist(toy,method="euclidean") #toy.dist computes the Euclidean distance matrix for the data in toy.
+toy.dist
+```
+
+
+```{r  }
+toy.dist2 <- toy.dist^2 #toy.dist2 squares the distances
+toy.dist2
+```
+
+#Second merge
+```{r  }
+var1 <- c(5.5,15,16,25) 
+var2 <- c(5.5,14,15,20)
+toy <- data.frame(var1,var2)
+toy.dist <- dist(toy,method="euclidean") #toy.dist computes the Euclidean distance matrix for the data in toy.
+toy.dist
+```
+
+
+```{r  }
+toy.dist2 <- toy.dist^2 #toy.dist2 squares the distances
+toy.dist2
+```
+
+#Third merge
+```{r  }
+var1 <- c(8.7,16,25) 
+var2 <- c(8,15,20)
+toy <- data.frame(var1,var2)
+toy.dist <- dist(toy,method="euclidean") #toy.dist computes the Euclidean distance matrix for the data in toy.
+toy.dist
+```
+
+
+```{r  }
+toy.dist2 <- toy.dist^2 #toy.dist2 squares the distances
+toy.dist2
+```
+
+#Fourth merge
+```{r  }
+var1 <- c(10.5,25) 
+var2 <- c(9.75,20)
+toy <- data.frame(var1,var2)
+toy.dist <- dist(toy,method="euclidean") #toy.dist computes the Euclidean distance matrix for the data in toy.
+toy.dist
+```
+
+
+```{r  }
+toy.dist2 <- toy.dist^2 #toy.dist2 squares the distances
+toy.dist2
+```
+
+
+
+```{r  }
+toy.H.single <- hclust(toy.dist2,method="single") #toy.H.single performs hierarchical clustering using the single linkage method on the squared distance matrix
+```
+
+
+```{r  }
+# the actual amalgamation (sammenlægning)
+toy.H.single$merge
+```
+ - merge component of the hierarchical clustering object shows how clusters are merged at each step of the algorithm. The merge matrix has two columns, where each row represents a merge step:
+Negative values indicate merging an individual data point.
+Positive values indicate merging previously formed clusters.
+SUMMARY
+ - The code provides an example of how to perform hierarchical clustering using single linkage on a small dataset. The merge matrix helps to understand the sequence in which data points or clusters are combined at each step. The output suggests an iterative clustering process, where initially individual points are merged, followed by merging the resulting clusters.
+ 
+how to extract the heights (or distances) at which clusters are merged in a hierarchical clustering analysis using the single linkage method.
+```{r  }
+# the associated increase in distance/heterogeneity
+toy.H.single$height
+```
+
+
+```{r  }
+# a permutation of the original observations suitable for plotting
+toy.H.single$order
+```
+
+
+```{r  }
+# plot
+plot(toy.H.single)
+```
+
+
+```{r  }
+# other linkage possibilities
+toy.H.complete <- hclust(toy.dist,method="complete")
+toy.H.average <- hclust(toy.dist,method="average")
+toy.H.centroid <- hclust(toy.dist,method="centroid")
+
+# Wards method
+toy.H.ward <- hclust(toy.dist2,method="ward.D")
+
+## Distance vs shape
+scores<-matrix(c(21,34,17,42,62,75,58,85),nrow=4,byrow=F)
+matplot(scores,type="l")
+dist(t(scores),method="euclidean")
+cor(scores)
+```
+Plot:
+The plot helps in visualizing the score patterns across different categories, showing the relationship between them. The distance and correlation calculations provide quantitative measures of similarity and dissimilarity between the score patterns. This kind of analysis is useful for understanding how different data points or clusters compare in terms of their attributes or features.
+
+Output
+Distance Calculation:
+ - Euclidean distance (83.01807) suggests a significant difference in the absolute values of the scores between the two patterns.
+
+Correlation Matrix:
+ - Despite the large Euclidean distance, the high correlation (0.9987087) indicates that the two score patterns have a similar shape or trend. They rise and fall in almost the same manner, which is why the correlation is so high.
+
+

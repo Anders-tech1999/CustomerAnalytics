@@ -1,0 +1,220 @@
+
+```{r}
+#Exam 2024 customer analytics
+library(bnlearn)
+
+#Question 1:
+targeted.adv1 <- read.csv("dataCa2024.csv", header = T, colClasses = "factor", sep=";")
+dataCA2024 <- read.csv("C:/Users/Bruger/OneDrive - Aarhus universitet/8. semester - BI/CA - Customer Analytics/dataCA2024.csv",header = T, colClasses = "factor", sep=";")
+targeted.adv1 <- dataCA2024
+head (targeted.adv1)
+str (targeted.adv1) 
+
+# "grow-shrink (gs)", with conditional independence test chi-squared
+# Constrained-based alg. do not work with missing data
+bn.gs <- gs(targeted.adv1, alpha = 0.05, test ="x2") # alternative test ="mi"
+plot(bn.gs, main = "Grow shrink_X2")
+ci.test("Occupation", "Income", "Shopping.Preferences", test = "x2", data = targeted.adv1)
+```
+
+
+```{r}
+#data:  Occupation ~ Income | Shopping.Preferences
+#x2 = 927.82, df = 16, p-value < 2.2e-16
+#alternative hypothesis: true value is greater than 0
+
+# to easily identify undirected paths 
+undirected.arcs(bn.gs)
+# We need to set the direction of the undirected arcs to be able to learn the parameters from observational data 
+bn.gs1 <- set.arc (bn.gs, from = "Occupation", to = "Income")
+undirected.arcs(bn.gs1)
+bn.gs2 <- set.arc (bn.gs1, from = "Occupation", to = "Shopping.Preferences")
+undirected.arcs(bn.gs2)
+bn.gs3 <- set.arc (bn.gs2, from = "Income", to = "Shopping.Preferences")
+undirected.arcs(bn.gs3)
+plot(bn.gs3)
+```
+
+
+```{r}
+#Question 3:
+bnTA.mle <- bn.fit (bn.gs3, data = targeted.adv1, method = "mle")
+bnTA.mle
+```
+
+
+```{r}
+#Question 5:
+# III. Evaluate the arc.strength()
+# a) with criterion ="x2" or "mi", the output reports the p-value for the test. 
+#    The lower the p-value, the stronger the relationship. 
+# b) with criterion ="bic" reports the change in the BIC score of the net caused 
+#    by an arc removal.The more negative the change, means the BIC score will go 
+#    worse if we delete that arc (i.e. the arc is important for the model).
+library(dplyr)
+options(scipen = 0)
+arc.strength (bn.gs3, targeted.adv1, criterion = "x2") %>%.[order(.$strength),]
+#        from                   to      strength
+#2     Income Shopping.Preferences  0.000000e+00
+#3     Mailed                  Buy  0.000000e+00
+#1     Income                  Buy 2.770147e-267
+#4 Occupation               Income 1.887394e-266
+#5 Occupation Shopping.Preferences  1.991713e-02
+```
+
+
+```{r}
+arc.strength (bn.gs3, targeted.adv1, criterion = "bic") %>%.[order(.$strength),f
+# The output reveals that, if we remove Plea -> Comm, BIC will decrease with -668.211, 
+# which in bnlearn means the model will get worse.
+# The output reveals that, if we remove Atti -> Comm, BIC will increase with 40.48, 
+# which in bnlearn package means the model may improve based on this index.
+```
+
+
+```{r}
+# Repeating the analysis for the hill-climbing structure
+arc.strength (bn.hc, retention, criterion = "bic") %>%.[order(.$strength),]
+# As expected, all strengths are negative
+# this is expected as BIC was optimized when the hc algorithm has searched for this model
+```
+
+
+```{r}
+#Question 6
+library(gRain)
+library(gRbase)
+library (caTools)
+
+
+# using k-fold cross validation 
+# This function requires as one of its parameters only structure, not the full model
+# Here I use classification error ("pred") for the node Comm (our target) as a loss function. 
+netcv = bn.cv (targeted.adv1, bn.gs3, loss ="pred", k = 5, loss.args = list(target = "Buy"), debug = TRUE)
+netcv
+```
+
+
+```{r}
+#Question 7:
+# Transform the bn into a junction tree 
+# options(digits=1)
+library (gRain)
+bn.mle <- bn.fit (bn.gs3, data = targeted.adv1, method = "mle")
+junction <- compile (as.grain(bn.mle))
+
+querygrain(junction, nodes = "Buy")
+```
+
+
+```{r}
+# New ctp
+O_blue <- setEvidence (junction, nodes = "Occupation", states = "Blue-Collar")
+shop_instore <- setEvidence (O_blue, nodes = "Shopping.Preferences", states = "In-store")
+querygrain(shop_instore, nodes = "Buy")
+```
+
+
+```{r}
+#Question 8:
+# Asumming 
+c=0.5
+r_s = 8
+r_u = 10
+
+# set evidence and get the ctp 
+library (gRain)
+bn.mle <- bn.fit (bn.gs3, data = targeted.adv1, method = "mle")
+junction <- compile (as.grain(bn.mle))
+
+income_occ_shop_yes <- setEvidence (junction, nodes = c("Income", "Occupation", "Shopping.Preference", "Mailed"), 
+                                   states = c("100k-119k", "Blue-Collar", "In-Store", "Yes"))
+querygrain(income_occ_shop_yes, nodes = "Buy")
+# p(buy) = 0.58
+
+income_occ_shop_no <- setEvidence (junction, nodes = c("Income", "Occupation", "Shopping.Preference", "Mailed"), 
+                                  states = c("100k-119k", "Blue-Collar", "In-Store", "No"))
+querygrain(income_occ_shop_no, nodes = "Buy")
+#p(buy) = 0.21
+
+options(digits=2)
+ELP = querygrain(income_occ_shop_yes, nodes = "Buy")$Buy[[2]] * r_s -
+ querygrain(income_occ_shop_no, nodes = "Buy")$Buy[[2]] * r_u - c
+ELP
+# Since the ELP is positive, we may decide to mail to this population
+```
+
+
+```{r}
+library(seminr)
+library(readr)
+#Question 1:
+## Preparation
+# Read in data 
+df <- read.csv(file ="PLS_data_exam_2024.csv",header=TRUE,sep=",")
+df <- PLS_data_exam
+
+summary(df)
+## Preparation
+# Create measurement model
+simple_mm <- constructs(
+  composite("SIC",multi_items("sic_",1:7),weights = mode_B),
+  composite("PL",multi_items("pl_",1:4), weights = mode_A),
+  composite("PQ",multi_items("pq_",1:4), weights = mode_A),
+  composite("PI",multi_items("pi_",1:5), weights = mode_A),
+  composite("WTP",single_item("wtp")))
+
+# Create structural model
+simple_sm <- relationships(
+  paths(from = c("SIC"), to = c("PL","PQ", "PI")),
+  paths(from = c("PL", "PQ"), to = c("PI")),
+  paths(from = c("PI"), to = c("WTP")))
+
+# Estimate the model with default settings
+pls_model <- estimate_pls(data = df,
+                          measurement_model = simple_mm,
+                          structural_model = simple_sm,
+                          inner_weights = path_weighting,
+                          missing = mean_replacement,
+                          missing_value = "-999")
+
+summary_pls <- summary(pls_model)
+
+# Inspect the indicator loadings
+summary_pls$loadings
+# Inspect the indicator reliability
+summary_pls$loadings^2
+
+# Inspect the composite reliability
+summary_pls$reliability
+
+# Table of the FL criteria
+summary_pls$validity$fl_criteria
+
+# HTMT criterion
+summary_pls$validity$htmt
+
+# Bootstrap the model
+boot_pls <- bootstrap_model(seminr_model= pls_model,nboot= 1000,cores= parallel::detectCores(),seed= 123)
+# Summarize the results of the bootstrap
+summary_boot_pls <- summary(boot_pls,alpha= 0.05)
+# Extract the bootstrapped HTMT
+summary_boot_pls$bootstrapped_HTMT
+
+##########################################################################
+########################## Clustering ####################################
+##########################################################################
+#Queation 1:
+df <- data.frame(var1=c(5, 6, 15, 16, 25),
+                 var2=c(5, 6, 13, 15, 20))
+
+## Hierarchical clustering
+# first create distance matrix
+dist <- dist(df,method="euclidean")
+dist2 <- dist^2
+dist2
+```
+
+
+
+
