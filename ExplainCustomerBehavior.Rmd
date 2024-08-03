@@ -81,7 +81,7 @@ print(fmodel1$loadings, digits=4, cutoff=0)
 # for better interpretation play with cutoff
 ```
 194
- - obsersations in dataset
+ - observations in dataset
 
 Loadings:
      PA1     PA2    
@@ -289,11 +289,21 @@ modindices(est.meas.lpa.mod, minimum.value = 3.84) #From Chisquare distribution
 # high MI but not mentioned in the textbook
 ```
 MI Modification Indices:
+mi :
  - In SEM, modification indices indicate the expected drop in the overall chi-square statistic if a particular fixed parameter (such as a path or a covariance) were freely estimated.
  - a high modification index suggests that freeing this parameter would significantly improve the model fit.
+ - Higher values suggest more significant potential improvement.
+ 
+ epc:
+ - Represents the approximate estimate of how much the parameter would change if it were estimated rather than fixed to zero
+ - e.g. the epc value of 0.569 between "Appearance" and "muscle" indicates a substantial expected change.
+ - Positive epc values indicate the parameter being positive if it were estimated.
+ - Negative epc values indicate the parameter being negative if it were estimated.
+ - e.g. an epc of -0.284 for the covariance between "Attractive" and "lweight" suggests a negative relationship between these variables.
+
 
 ##Modified CFA Confirmatory Factor Analysis
-```{r Modified CDF Confirmatory Factor Analysis}
+```{r Modified CFA Confirmatory Factor Analysis}
 ## modified cfa (allowing correlations between the error variances - this is not considered good practice and it reveals the data is not good quality - but we keep to the case study for this demo)
 meas.lpa.mod2 <- '
                 Attractive =~ face + sexy
@@ -327,25 +337,26 @@ Comparative Fit Index (CFI)   : 0.938
 
 
 Loadings (standardized):
-- minimum accpetable level: 0.4 (look in Estimate column)
+- minimum accpetable level: 0.5 (look in Estimate column)
+    *below 0.50 are candidates for deletion
 - p-values significance (all has to be > 0.05)
 Latent Variables:
-                   Estimate  Std.Err  z-value  P(>|z|)   Std.lv
-  Attractive =~                                                
-    face              1.000                               0.710
-    sexy              1.418    0.376    3.769    0.000    1.007
-  Appearance =~                                                
-    body              1.000                               1.222
-    appear            1.322    0.078   16.924    0.000    1.615
-    attract           1.252    0.081   15.505    0.000    1.530
-  Muscle =~                                                    
-    muscle            1.000                               1.505
-    strength          0.530    0.093    5.673    0.000    0.798
-    endur             0.510    0.076    6.737    0.000    0.768
-  Weight =~                                                    
-    lweight           1.000                               1.489
-    calories          0.995    0.060   16.463    0.000    1.482
-    cweight           0.977    0.062   15.875    0.000    1.454
+                   Estimate  Std.Err  z-value  P(>|z|)
+  Attractive =~                                       
+    face              1.000                           
+    sexy              1.418    0.376    3.769    0.000
+  Appearance =~                                       
+    body              1.000                           
+    appear            1.322    0.078   16.924    0.000
+    attract           1.252    0.081   15.505    0.000
+  Muscle =~                                           
+    muscle            1.000                           
+    strength          0.530    0.093    5.673    0.000
+    endur             0.510    0.076    6.737    0.000
+  Weight =~                                           
+    lweight           1.000                           
+    calories          0.995    0.060   16.463    0.000
+    cweight           0.977    0.062   15.875    0.000
 
 
 Convergent and Discriminant validity
@@ -377,7 +388,7 @@ Discriminant validity:
  - all AVEs Average Variance Extracted must be considerely larger than $Squared_Factor_Correlations among latent variables
  - This is the case for all correlations^^^
 
-
+##Stage 5 + 6
 ##Structural Part - LPA Latent Part Analysis
 -	Once a satisfactory measurement model is obtained, the 2nd step is to test the structural model (stages 5-6). 
  - The structural model tests a theory and relates the constructs to other constructs
@@ -401,22 +412,24 @@ est.full.lpa.mod <- sem(full.lpa.mod, data=workout2)
 summary(est.full.lpa.mod, fit.measures=TRUE, standardized=TRUE)
 # check fit
 ```
+THE STRUCTURAL model fit is assessed as was the CFA model fit
+
 RMSEA (structural part - Latent Part Analysis): 0.104
 - Lecture 6.4 commands the threshhold being RMSEA < 0.08
 
 Tucker-Lewis Index (TLI)      : 0.911
- - threshold TLI > 0.95 (CH14 Mehmetoglu having 0.9 as threshold???)
+ - threshold TLI > 0.95 
  - NOT adequate measure in this case
 
 Comparative Fit Index (CFI)   : 0.937
- - threshold TLI > 0.95 (CH14 Mehmetoglu having 0.9 as threshold???)
+ - threshold TLI > 0.95 
  - NOT adequate measure in this case
 
 SRMR                          : 0.082
  - threshold SRMR < 0.1
  - adequate measure in this case
 
-- when having adequate level of RMSEA, Tucker-Lewis Index,  Comparative Fit Index and SRMR the model proceeds to interpretation of the Structural part LPA Latens Part Analysis estimates
+- when having adequate level of RMSEA, Tucker-Lewis Index,  Comparative Fit Index and SRMR the model proceeds : Aline Regression output
 
 Alina: Go to output Regressions: and interpret sign, significance and size of the path coefficients
  - here basically we assess our theoretical hypotheses
@@ -441,13 +454,13 @@ Regressions: (standardized beta coefficients)
   - standardized beta coeff must be significant (pvalue < 0.01)
 SUMMARY
 these findings provide support for the 3 first HYPOTHESIS that
- - the more attractive -> the more desire workout improve appearance
+ - the more Attractive -> the more desire workout improve Appearance
 Attractive -> Appearance
 
- - the more workout improve appearance -> the more desire to improve muscles
+ - the more workout improve Appearance -> the more desire to improve Muscles
 Appearance -> Muscle
 
- - the more workout improve appearance -> the more desire to lose weight
+ - the more workout improve Appearance -> the more desire to lose Weight
 Appearance -> Weight
 
 Rsquares for dependent/endogenous variable
@@ -817,6 +830,8 @@ KMO(data[, c(7:19)])
 ```
 x15 does not share much with the other variables. x6 does share 87% with other variables. 
  - Go primarily with overall MSA = 0.61
+ 
+ - MSA approx 0.3 is critical value (x15 - deletion material)
 
 
 ##3. Apply EFA Exploratory Factor Analysis with Common Factor Analysis
@@ -889,7 +904,7 @@ According to the guidelines:
  - factor loaadings should be high to retain the item in the analysis
  - and eigenvalues should be >=1 for factor selected
  - cummulative variance explained >0.60
- - The chi-square test is highly sigificant (p-value is 1.83e-19) meaning poor fit. But this test is not always reliable because it is highly influenced by the sample size analyzed. 
+ - The chi-square test is highly significant (p-value is 1.83e-19) meaning poor fit. But this test is not always reliable because it is highly influenced by the sample size analyzed. 
     
 Loadings
  - x11 and x17 load high simultaneusly on factor 1 and factor 2
@@ -900,7 +915,7 @@ Loadings
  - Does x15 represent a factor for which we do not have sufficient observable variables (measurements)?
         
 Near the bottom of the output, we also see a test of the hypothesis that 4 factors are sufficient.
- - the chi-square fit statistic is very small, indicating the hypothesis of perfect model fit is rejected. 
+ - the chi-square fit statistic is very small, indicating the hypothesis of perfect model fit is rejected.
 
 ```{r Uniqueness EFA factanal() output }
 # Uniquesness for each item are 1-communality
@@ -993,7 +1008,7 @@ summary(fit, fit.measures=TRUE, standardized = TRUE, modindices = FALSE)
 fit is acceptable^^^
 RMSEA (modified model): 0.079
 - the threshold is RMSEA < 0.8
-- The measurement model is a good fit!
+- The structural model is a good fit!
 
 Chi-Square Distribution:
  - chi-square distribution is used in many statistical tests, including those related to goodness-of-fit and modification indices in SEM.
@@ -1004,11 +1019,19 @@ modificationindices(fit, sort = T, minimum.value = 10, op = "~~")
 #The minimumvalue = 10 is really conservative and only shows the variables which impacts the model heavily.
 ```
 MI Modification Indices:
+mi:
  - In SEM, modification indices indicate the expected drop in the overall chi-square statistic if a particular fixed parameter (such as a path or a covariance) were freely estimated.
  - a high modification index suggests that freeing this parameter would significantly improve the model fit.
 - MI reveals that x11 is correlated with x16 and x18; it means that x11 has substantial cross-loading on two factors (as in EFA).
  - Cross-loading goes against one of the principles of unidimensionality in SEM. 
  - delete x11 from the analysis and re-run CFA.
+ 
+ epc:
+ - Represents the approximate estimate of how much the parameter would change if it were estimated rather than fixed to zero
+ - e.g. the epc value of 0.569 between "Appearance" and "muscle" indicates a substantial expected change.
+ - Positive epc values indicate the parameter being positive if it were estimated.
+ - Negative epc values indicate the parameter being negative if it were estimated.
+ - e.g. an epc of -0.284 for the covariance between "Attractive" and "lweight" suggests a negative relationship between these variables.
 
 
 Modified CFA Confirmatory Factor Analysis
@@ -1210,20 +1233,21 @@ Regressions:
     ProductValue      0.663    0.110    6.022    0.000    0.746
     MarKeting         0.518    0.078    6.671    0.000    0.595
     TechSupport      -0.039    0.045   -0.870    0.384   -0.042
-SUMMARY: 
- - Customers perceptions about CustomerServic, ProductValue and MarKeting are positively and significantly correlated with satisfaction. 
+SUMMARY:
+ - Customers perceptions about CustomerService, ProductValue and MarKeting are positively and significantly correlated with satisfaction. 
  - TechSupport perceptions is not significantly related to customer satisfaction. pvalue:0.384
 
 ```{r SEM modification indices } 
 # check modification indices if relevant
 summary(fitSEM1, fit.measures=TRUE, standardized = TRUE, rsquare=TRUE, modindices=TRUE)
-modificationindices(fitSEM1, sort = T, minimum.value = 10, op = "~~")
+modificationindices(fitSEM1, sort = T, minimum.value = 3.84, op = "~~")
 # no suggestion for improvement
 ```
 MI Modification Indices:
  - In SEM, modification indices indicate the expected drop in the overall chi-square statistic if a particular fixed parameter (such as a path or a covariance) were freely estimated.
  - a high modification index suggests that freeing this parameter would significantly improve the model fit.
 - The table is empty, whereas there is no variables which could create impactful model improvement by bveing deleted from the Structural model
+- the x19 could be accused of having a crossload on x6 and x13r
 
 
 ```{r IF bootstrap is asked}
@@ -1484,9 +1508,10 @@ head(corp_rep_data)
 ```
 Corporate Reputation
  - the simple corporate reputation model has two main theoretical
-components: (1) the target constructs of interest – namely, CUSA and CUSL (endogenous constructs) 
- – and (2) the two corporate reputation dimensions COMP
-and LIKE (exogenous constructs), 
+components: 
+(1) the target constructs of interest – namely, CUSA and CUSL (endogenous constructs) 
+ – and 
+ (2) the two corporate reputation dimensions COMP and LIKE (exogenous constructs), 
 
  - customer satisfaction (CUSA) 
  - customer loyalty (CUSL)
@@ -1523,10 +1548,12 @@ o	Corporate social responsibility (CSOR)
 ```{r Original model: measurement/structural/estimate model}
 # Create measurement model
 simple_mm <- constructs(
-  composite("COMP",multi_items("comp_",1:3),weights = mode_A),
-  composite("LIKE",multi_items("like_",1:3),weights = mode_A),
+  composite("COMP",multi_items("comp_",1:3),weights = mode_A), #reflective: modeA
+  composite("LIKE",multi_items("like_",1:3),weights = mode_A), #reflective: modeA
   composite("CUSA",single_item("cusa")), #constructed alone
-  composite("CUSL",multi_items("cusl_",1:3),weights = mode_A)) #Mode_A or correlation_weights for reflectively specified measurement models and mode_B or regression_weights for formatively specified measurement models. Mode_A is the default
+  composite("CUSL",multi_items("cusl_",1:3),weights = mode_A)) #reflective: modeA
+#Mode_A or correlation_weights for reflectively specified measurement models and mode_B or regression_weights for formatively specified measurement models. 
+#Mode_A is the default
 
 # Create structural model
 simple_sm <- relationships(paths(from = c("COMP","LIKE"), to = c("CUSA","CUSL")),
@@ -1599,6 +1626,16 @@ Loadings
 - Higher loadings indicate that the indicator is a good measure of the latent construct.
 
 PLS-SEM is a nonparametric method – thus, we need to perform bootstrapping to estimate standard errors and compute confidence intervals. 
+
+NON-Parametric method:
+non-parametric means that the method does not make strong assumptions about the distribution of the data. Specifically, it implies the following:
+ - No Assumption of Normality:
+PLS-SEM does not assume that the data are normally distributed. Many parametric methods, like covariance-based SEM (CB-SEM), rely on the assumption that the data follow a normal distribution, which is not required for PLS-SEM.
+ - Flexibility with Data Characteristics:
+Because it does not assume normality, PLS-SEM can be used with data that are non-normally distributed, skewed, or have outliers. This makes PLS-SEM particularly useful for real-world data that often violate parametric assumptions.
+ - Bootstrapping:
+Since PLS-SEM is non-parametric, it does not provide standard errors, t-values, or confidence intervals based on the assumption of a specific data distribution. Therefore, bootstrapping is used to estimate these statistics.
+
 ```{r Bootstrap model}
 # Bootstrap the model
 boot_simple_corp_rep <- bootstrap_model(seminr_model = corp_rep_simple_model,nboot = 1000,cores = NULL, seed = 123)
@@ -1823,22 +1860,27 @@ corp_rep_pls_model <- estimate_pls(data = corp_rep_data,
                                    missing_value = "-99")
 # Summarize the model results
 summary_corp_rep <- summary(corp_rep_pls_model)
-summary(corp_rep_pls_model)
+#summary(corp_rep_pls_model)
 ```
 EXACTLY AS IN 8.PLS_Ib:
-Path Coefficients:
+
+#summary(corp_rep_pls_model) hidden beacuse: NOT IMPORTANT IN REFLECTIVE MODEL
+
+Path Coefficients: NOT IMPORTANT IN REFLECTIVE MODEL
         CUSA  CUSL
 R^2    0.295 0.562
 AdjR^2 0.290 0.558
  - R^2: Indicates the proportion of variance in the dependent variables explained by the independent variables.
  - AdjR^2: Adjusted R-squared accounts for the number of predictors in the model.
 
+NOT IMPORTANT IN REFLECTIVE MODEL:
         CUSA  CUSL
 COMP   0.162 0.009
 LIKE   0.424 0.342
 CUSA       . 0.504
  - These coefficients indicate the strength and direction of the relationships between constructs.
 
+NOT IMPORTANT IN REFLECTIVE MODEL: 
 SUMMARY: the model appears to have good reliability and validity, as all constructs meet the required thresholds for alpha, rhoC, rhoA, and AVE.
 
 COMMENT ON RELIABILITY BELOW!
@@ -1858,19 +1900,45 @@ summary_corp_rep$loadings
 # Inspect the indicator reliability
 summary_corp_rep$loadings^2
 ```
-Iterations
+Iterations - NOT IMPORTANT IN REFLECTIVE MODEL
 - 4 means that the algorithm converged after 4 iterations.
 
-Loadings
+o	INDICATOR RELIABILITY
+ – where we assess if the construct explains more variance of the indicator compared to what is left in the error term
+-	High loadings indicate that different measures of a construct have much in common
+-	The squared loading of a standardized indicator tells us how much of the variance in an indicator is explained by the construct
+
+Loadings: Indicator Reliability
+        COMP  LIKE  CUSA  CUSL
+comp_1 0.858 0.000 0.000 0.000
+comp_2 0.798 0.000 0.000 0.000
+comp_3 0.818 0.000 0.000 0.000
+like_1 0.000 0.879 0.000 0.000
+like_2 0.000 0.870 0.000 0.000
+like_3 0.000 0.843 0.000 0.000
+cusa   0.000 0.000 1.000 0.000
+cusl_1 0.000 0.000 0.000 0.833
+cusl_2 0.000 0.000 0.000 0.917
+cusl_3 0.000 0.000 0.000 0.843
 - Loadings represent the correlation between the observed variables (indicators) and the latent variables (constructs).
 - Higher loadings indicate that the indicator is a good measure of the latent construct.
 -	As a rule of thumb, we would like that a construct explains more than 50% of an indicators variance: loading > 0.708	(0.708^2 = 0.5)
 
-Indicator Reliability (Loadings Squared):
+Loadings Squared: Indicator Reliability
+        COMP  LIKE  CUSA  CUSL
+comp_1 0.736 0.000 0.000 0.000
+comp_2 0.638 0.000 0.000 0.000
+comp_3 0.669 0.000 0.000 0.000
+like_1 0.000 0.773 0.000 0.000
+like_2 0.000 0.757 0.000 0.000
+like_3 0.000 0.711 0.000 0.000
+cusa   0.000 0.000 1.000 0.000
+cusl_1 0.000 0.000 0.000 0.694
+cusl_2 0.000 0.000 0.000 0.841
+cusl_3 0.000 0.000 0.000 0.710
  - summary_corp_rep$loadings^2 computes the squared loadings for each indicator.
  - Squared loadings represent the proportion of variance in each indicator that is explained by its corresponding latent construct.
 -	As a rule of thumb, we would like that a construct explains more than 50% of an indicators variance: loading^2 > 0.5)
-
 
 comp_1: 0.736
 comp_2: 0.638
@@ -1879,6 +1947,8 @@ comp_3: 0.669
 
 From slides:
 -	The true reliability usually lies between Cronbach’s α (lower bound) and the composite reliability (upper bound)
+
+NOW COMMENT ON RELIABILITY MEASURES!
 ```{r Reliability + cronbachAlpha + Reliability plot }
 # Inspect the Cronbachs alpha and composite reliability
 summary_corp_rep$reliability
@@ -1886,26 +1956,64 @@ summary_corp_rep$reliability
 # Plot the reliabilities of constructs
 plot(summary_corp_rep$reliability)
 ```
+o INTERNAL CONSISTENCY RELIABILITY - where we assess the consistency of results across items for the same construct
+
 Reliability:
      alpha  rhoC   AVE  rhoA
 COMP 0.776 0.865 0.681 0.832
 LIKE 0.831 0.899 0.747 0.836
 CUSA 1.000 1.000 1.000 1.000(singleitem construct: perfect reliabily)
 CUSL 0.831 0.899 0.748 0.839
-alpha
- - Cronbach’s Alpha, measures internal consistency.
-rhoC
- - Composite Reliability, measures the construct’s reliability.
-AVE
+
+Cronbach’s Alpha: measures internal consistency.
+Reliability:
+     alpha 
+COMP 0.776 
+LIKE 0.831 
+CUSA 1.000 (singleitem construct: perfect reliabily)
+CUSL 0.831 
+ - want indicators having a high correlation among each other within the different indicators summing the constructs.
+ - Tends underestimating the internal consistency reliability (conservative measure)
+ - The closer to 1 the better – typically around 0.7 - 0.8
+ - Should exceed alpha > 0.7
+
+rhoC - Composite Reliability: measures the construct’s reliability.
+Reliability:
+       rhoC 
+COMP  0.865 
+LIKE  0.899 
+CUSA  1.000 (singleitem construct: perfect reliabily)
+CUSL  0.899 
+ - Should exceed rhoC > 0.7
+ 
+rhoA - Composite Reliability
+ - Another measure of composite reliability
+
+
+o VALIDITY
+ - -	Validity refers to the extent a measurement instrument (the indicators in our setting) captures what it is intended to measure (the construct in our setting)
+ - keep content or face validity in the back of your mind when you empirically investigate your constructs: Does it make sense to use this set of indicators to measure this construct? Use our own logic to assess the validity as well.
+
+o VALIDITY: CONVERGENT VALIDITY
+ - Convergent validity is the extent to which a measure correlates positively with alternative measures of the same construct.
+ -	Average variance extracted (AVE), is the average amount of variance in the indicators that the construct can explain.
+ - AVE > 0.5, means that the construct explains more of the variance in its indicators, than the variance that is left unexplained in the error terms.
+ 
+        AVE (Average Variance Extracted)
+COMP  0.681 
+LIKE  0.747 
+CUSA  1.000 (singleitem construct: perfect reliabily)
+CUSL  0.748
  - Average Variance Extracted, measures the amount of variance captured by the construct in relation to the amount of variance due to measurement error.
-rhoA
- - Another measure of composite reliability.
 
 Alpha, rhoC, and rhoA should exceed 0.7 
 AVE should exceed 0.5
-These tresholds are met by the measures, which is also seen in the plot.
+These thresholds are met by the measures, which is also seen in the plot.
 
-Validity of constructs in a Partial Least Squares (PLS) structural equation model (SEM): 
+
+o VALIDITY: DISCRIMINANT VALIDITY
+ - Validity of constructs in a Partial Least Squares (PLS) Structural Equation Model (SEM): 
+
 Fornell-Larcker criterion
  - Discriminant validity ensures that a construct is truly distinct from other constructs in the model.
  - table shows the square root of the Average Variance Extracted (AVE) on the diagonal and the correlations between constructs on the lower triangle.
@@ -1919,19 +2027,22 @@ Fornell-Larcker criterion
  - The diagonal values (square root of AVE) are higher than the off-diagonal values (construct correlations), 
  SUMMARY: indicating good discriminant validity.
 
-Validity of constructs in a Partial Least Squares (PLS) structural equation model (SEM):
-Heterotrait-Monotrait (HTMT) ratio
+HeteroTrait-MonoTrait (HTMT) ratio
  - HTMT ratio is another method to assess discriminant validity. It is considered more reliable than the Fornell-Larcker criterion.
+ - Estimate of what the true correlation would be if the constructs were perfectly measured (i.e., perfectly reliable)
+ - should be assessed for any combination of reflectively measured/single item constructs.
 ```{r Validity HTMT }
 # HTMT criterion
 summary_corp_rep$validity$htmt
 ```
 HTMT 
  - values close to 1 indicate a lack of discriminant validity, whereas values below 0.85 (or 0.90 in some cases) indicate good discriminant validity.
- SUMMARY: All HTMT values are below 0.85, indicating good discriminant validity between the constructs.
+ 
+SUMMARY: All HTMT values are below 0.85, indicating good discriminant validity between the constructs.
  - Discriminant validity: means that each construct is distinct and measures a unique aspect of the data.
 
 Bootstrap HTMT output
+ - If 1 is inside the confidence interval → indicates lack of discriminant validity (slides)
 ```{r Bootstrap model + HTMT output }
 # Bootstrap the model
 boot_corp_rep <- bootstrap_model(seminr_model = corp_rep_pls_model,
@@ -1948,7 +2059,13 @@ Bootstrap SD:
  - if the standard deviations (Bootstrap SD) are relatively small, indicating that the estimated loadings have low variability across the bootstrap samples, suggesting reliable estimates.
 
 95% Confidence Intervals (CI):
- - confidence intervals (2.5% CI and 97.5% CI) do not include zero for any of the loadings, reinforcing the significance of these loadings.
+ - confidence intervals (2.5% CI and 97.5% CI) do not include 1 for any of the loadings, reinforcing the significance of these loadings.
+
+Ways to DECREASE HeteroTrait-MonoTrait ratio:
+ - removing indicators having low correlation with other indicators of the same construct
+ - Reassign indicators to other constructs
+ - When removing/changing indicators or merging/splitting constructs, it is very important that this make sense theoretically or conceptually so we preserve content validity
+
 
 
 ## 10.PLS_IIIa: Formative Measurement model
@@ -1995,26 +2112,40 @@ corp_rep_pls_model_ext <- estimate_pls(data = corp_rep_data,measurement_model=co
 summary_corp_rep_ext <- summary(corp_rep_pls_model_ext)
 summary(corp_rep_pls_model_ext)
 ```
-Path Coefficients:
-        COMP  LIKE  CUSA  CUSL
-R^2    0.631 0.558 0.292 0.562
-AdjR^2 0.627 0.552 0.288 0.558
- - R^2: Indicates the proportion of variance in the dependent variables explained by the independent variables.
- - High R^2 values indicate that a significant portion of the variance in the endogenous constructs (COMP, LIKE, CUSA, CUSL) is explained by the exogenous constructs and other predictors.
- - AdjR^2: Adjusted R-squared accounts for the number of predictors in the model.
+o VALIDITY: CONVERGENT VALIDITY
+Reliability:
+        AVE (Average Variance Extracted) 
+QUAL  0.518 
+PERF  0.488 
+CSOR  0.545 
+ATTR  0.540 
+COMP  0.688 
+LIKE  0.747 
+CUSA  1.000 
+CUSL  0.748 
+ - QUAL, PERF, CSOR, ATTR are MODE B = FORMATIVE MEASURES - CAUTION!!!!!
 
-        COMP  LIKE  CUSA  CUSL
-QUAL   0.430 0.380     .     .
-PERF   0.295 0.117     .     .
-CSOR   0.059 0.178     .     .
-ATTR   0.086 0.167     .     .
-COMP       .     . 0.146 0.006
-LIKE       .     . 0.436 0.344
-CUSA       .     .     . 0.505
- - These coefficients indicate the strength and direction of the relationships between constructs.
- - QUAL -> COMP: The path coefficient is 0.430, indicating that QUAL positively influences COMP.
+ - Convergent validity is the extent to which a FORMATIVELY measure correlates positively with other (reflective) measures of the same construct
+ -	Average variance extracted (AVE), is the average amount of variance in the indicators that the construct can explain.
+ - AVE > 0.5, means that the construct explains more of the variance in its indicators, than the variance that is left unexplained in the error terms.
 
-COMMENT ON RELIABILITY BELOW!
+SUMMARY: 
+QUAL has an AVE of 0.518.
+PERF has an AVE of 0.488 (slightly below the threshold).
+CSOR has an AVE of 0.545.
+ATTR has an AVE of 0.540.
+
+Alpha, rhoC, and rhoA should exceed 0.7 overall (but not strictly important in formative model)
+AVE should exceed 0.5
+These thresholds are met by the measures, which is also seen in the plot.
+
+The Path Coefs are below Redundancy Analysis Section!
+
+
+```{r}
+plot(corp_rep_pls_model_ext)
+```
+
 
 Missing in PLS-SEM
 o	Scarce knowledge on how advanced missing data procedures work for PLS-SEM
@@ -2029,39 +2160,6 @@ summary_corp_rep_ext$descriptives$statistics
 ```
 not deleting missings yet - dont know the procedure
 
-```{r Iterations }
-# Iterations to converge
-summary_corp_rep_ext$iterations
-
-## Evaluation of the reflective measurement model
-# Inspect the indicator loadings
-#summary_corp_rep_ext$loadings
-# Inspect the indicator reliability
-#summary_corp_rep_ext$loadings^2
-```
-Iterations
-- 8 means that the algorithm converged after 8 iterations.
-
-
-Bootstrap HTMT output
-```{r Bootstrap model + HTMT }
-# Bootstrap the model
-boot_corp_rep_ext <- bootstrap_model(
-  seminr_model = corp_rep_pls_model_ext, nboot = 1000,cores = NULL,seed = 123)
-
-sum_boot_corp_rep_ext <- summary(boot_corp_rep_ext, alpha = 0.10)
-# Extract the bootstrapped HTMT
-sum_boot_corp_rep_ext$bootstrapped_HTMT
-```
-Bootstrap Mean:
-- if the bootstrap mean values are very close to the original estimates, indicating that the original loadings are stable.
-
-Bootstrap SD:
- - if the standard deviations (Bootstrap SD) are relatively small, indicating that the estimated loadings have low variability across the bootstrap samples, suggesting reliable estimates.
-
-95% Confidence Intervals (CI):
- - confidence intervals (2.5% CI and 97.5% CI) do not include zero for any of the loadings, reinforcing the significance of these loadings.
-- Lecture: if 1 is included in CI, indicates lack of discriminant validity
 
 
 ## 10.PLS_IIIa: Redundancy analysis
@@ -2237,6 +2335,7 @@ Reliability:
 QUAL_F 0.878 0.894 0.516 1.000
 QUAL_G 1.000 1.000 1.000 1.000
 
+o VALIDITY: CONVERGENT VALIDITY
 
 Convergent Validity:
 Convergent validity is the extent to which a formatively measured construct correlates positively with other (reflective) measures of the same construct
@@ -2253,11 +2352,31 @@ sum_CSOR_red_model$paths
 sum_PERF_red_model$paths
 sum_QUAL_red_model$paths
 ```
+Convergent Validity Path Coef:
+       ATTR_G
+ATTR_F  0.874
+
+       CSOR_G
+CSOR_F  0.857
+
+       PERF_G
+PERF_F  0.811
+
+       QUAL_G
+QUAL_F  0.805
+ - Path coefficient between Y1 and Y2 at must exceed 0.7
+ - acceptable in this case
+
+o COLLINEARITY ISSUES
+- Variance Inflation Factor (VIF): Measures how much the variance of an estimated regression coefficient (weight) increases due to collinearity
+- Tolerance (TOL): amount of variance in one formative indicator, not explained by the other indicators from the same construct
 
 Variance Inflation Factor (VIF)
- - Collinearity analysis for several construct values. 
-  - VIF measures the extent of multicollinearity among the predictor variables in a regression model. 
+ - Collinearity analysis for several construct values.
+ - Measures how much the variance of an estimated regression coefficient (weight) increases due to collinearity
+ - VIF measures the extent of multicollinearity among the predictor variables in a regression model. 
   - High VIF values indicate high multicollinearity, which can affect the stability and interpretation of the regression coefficients.
+  - VIF > 5 indicates problems with potential collinearity problems
 ```{r Collinearity analysis }
 # Collinearity analysis
 summary_corp_rep_ext$validity$vif_items
@@ -2278,7 +2397,7 @@ CUSA (Customer Satisfaction):
  - As it is a single item, VIF is not relevant here.
  
 SUMMARY:
- - VIF values across all constructs (QUAL, PERF, CSOR, ATTR, COMP, LIKE, CUSA, CUSL) are all well below the threshold of 5, indicating that multicollinearity is not a significant issue in this dataset.
+ - VIF values across all FORMATIVE constructs (QUAL, PERF, CSOR, ATTR) are all well below the threshold of 5, indicating that multicollinearity is not a significant issue in this model.
  - implies that the indicators within each construct do not exhibit problematic levels of correlation with each other, which supports the validity and reliability of the measurement model.
 
 If high multicollinearity
@@ -2289,8 +2408,13 @@ Bootstrapping analysis of a structural equation model (SEM) with formative indic
 ```{r Bootstrap }
 # Summarize the results of the bootstrap
 # alpha sets the specified level for significance, i.e. 0.05
-#sum_boot_corp_rep_ext <- summary(boot_corp_rep_ext, alpha = 0.05)
 # Inspect the bootstrapping results for indicator weights
+
+# Bootstrap the model
+boot_corp_rep_ext <- bootstrap_model(seminr_model = corp_rep_pls_model_ext,
+                                     nboot = 1000,cores = NULL,seed = 123)
+sum_boot_corp_rep_ext <- summary(boot_corp_rep_ext, alpha = 0.05)
+
 sum_boot_corp_rep_ext$bootstrapped_weights
 # Inspect the bootstrapping results for indicator loadings
 sum_boot_corp_rep_ext$bootstrapped_loadings
@@ -2314,8 +2438,9 @@ For example, qual_2 -> QUAL has a t-statistic of 0.808 and a 95% CI of [-0.047, 
 
 SUMMARY
 Stable and Significant Indicators: qual_6, perf_1, attr_3, etc.
-Potentially Non-significant Indicators: qual_2, qual_4, csor_2, etc.
+Potentially Non-significant Indicators: qual_2, qual_4, csor_2, etc. - However, all these indicators have loadings above 0.5, so we keep them in the model
 Bootstrapping: Provides robust estimates and confidence in the model by resampling and re-estimating the parameters multiple times.
+
 
 
 ## 10.PLS_IIIb: Structural Model
@@ -2369,10 +2494,8 @@ R^2    0.631 0.558 0.292 0.562
 AdjR^2 0.627 0.552 0.288 0.558
  - R^2: Indicates the proportion of variance in the dependent variables explained by the independent variables.
  - High R^2 values indicate that a significant portion of the variance in the endogenous constructs (COMP, LIKE, CUSA, CUSL) is explained by the exogenous constructs and other predictors.
- - AdjR^2: Adjusted R-squared accounts for the number of predictors in the model.
 Slides:
 o	The model can explain more than 50% of the variance in all endogenous constructs, except CUSA
-o	Only minor difference between R^2 and R^2_adj
 
         COMP  LIKE  CUSA  CUSL
 QUAL   0.430 0.380     .     .
@@ -2394,19 +2517,6 @@ o	QUAL is the most important of the four formative driver constructs in terms of
  -	Path coefficients significance
 o	All direct effects are significant on a 5% level except the following four relations: CSOR  COMP, ATTR  COMP, PERF  LIKE and COMP  CUSL
 -	The results indicate that companies should focus on creating likeability instead of competence to increase the customer loyalty
-
-
-Reliability:
-     alpha  rhoC   AVE  rhoA
-QUAL 0.878 0.894 0.518 1.000
-PERF 0.747 0.824 0.488 1.000
-CSOR 0.816 0.854 0.545 1.000
-ATTR 0.600 0.770 0.540 1.000
-COMP 0.776 0.869 0.688 0.786
-LIKE 0.831 0.899 0.747 0.836
-CUSA 1.000 1.000 1.000 1.000
-CUSL 0.831 0.899 0.748 0.839
- - COMMENT ON RELIABILITY BELOW!
 
 ```{r}
 plot(corp_rep_pls_model_ext)
@@ -2459,12 +2569,16 @@ BOOTSTRAP TOTAL PATHS
  - dont pay attention to CUSA->CUSL as cant change the CUSA construct.  - primarily focus on the upper constructs/drivers
  - have to assess the drivers (as far as possible to the left: QUAL, PERF, CSOR, ATTR) that is actually able to regulate
 
-
 SUMMARY BOOTSTRAPPING
  - Significant Paths: Paths with t-statistics greater than 1.96 (for a 95% confidence level) are considered statistically significant. For example, the path QUAL -> COMP is significant with a t-statistic of 6.603.
  - Confidence Intervals: If the confidence interval for a path does not include zero, the path is considered significant. For example, the path QUAL -> COMP has a 95% CI of (0.303, 0.552), which does not include zero, indicating significance.
  - Weights and Loadings: These should be significant to confirm the measurement model's reliability and validity.
  - HTMT: Values below 0.90 indicate good discriminant validity between constructs.
+
+
+o	STEP 1: Collinearity Assessment
+-	Tolerance < 0:2 (VIF > 5) indicates potential collinearity problems
+-	If multicollinearity is an issue  consider eliminating constructs or merging predictors into a single construct
 
 
 Variance Inflation Factor (VIF)
@@ -2486,7 +2600,15 @@ SUMMARY:
  - Therefore, the regression estimates for the structural paths in your model are likely to be stable and reliable.
 
 If high multicollinearity
- - Possible treatment of collinearity issues:	Remove indicator
+ - Possible treatment of collinearity issues:	Remove construct or merge predictors into a single construct
+
+
+o	STEP 2: Assess Relationships
+-	Path coefficients have values approximately between -1 and +1
+-	Bootstrapping is used to obtain standard errors, t-values, p-values and confidence intervals
+-	Identify significant relations
+-	Asses if a small but significant effect is relevant
+-	Look at direct, indirect and total effects
 
 
 This is adressed with CAPS SUMMARY above
@@ -2504,6 +2626,10 @@ This is adressed with CAPS SUMMARY above
 #WE dont pay attention to CUSA->CUSL as we cant change the CUSA construct. Therefore we primarily focus on the upper constructs/drivers
 #WE have to assess the drivers (as far as possible to the left: QUAL, PERF, CSOR, ATTR) that we actually can regulate
 ```
+
+o STEP 3 Explanatory Power
+ - R^2 values (look above in the first section after model specification!)
+ - Effect size
 
 Effect size f^2
  -  a measure of the impact of a specific exogenous construct on an endogenous construct in a structural model. It provides an indication of how much an exogenous construct contributes to the R^2 value of an endogenous construct
@@ -2524,8 +2650,9 @@ Effect size f^2
 SUMMARY f^2:
  - The f^2 effect size values help in understanding the relative importance of each exogenous construct on the endogenous constructs. In this model, "CUSA" has a large effect on "CUSL", while most other effects are small or very small.
   - These insights can guide researchers in focusing on the most impactful relationships in their structural model.
-Slides:
 
+
+o STEP 4 Predictive Power
 
 Results of model predictions
  - both in-sample and out-of-sample, using Partial Least Squares (PLS) and Linear Model (LM) techniques. 
@@ -2549,6 +2676,7 @@ For out-of-sample data, the RMSE and MAE values for the LM model are slightly hi
 Metrics Interpretation:
 RMSE and MAE Values:
  - Lower RMSE and MAE values indicate better predictive performance. Comparing these values across different constructs and models helps to understand which model performs better for specific constructs.
+ 
 SUMMARY Model predictions:
 The metrics provided indicate that both PLS and LM models have their strengths, with the LM model performing better in-sample and the PLS model showing slightly better generalization out-of-sample. 
  - The choice between PLS and LM models may depend on the specific context and goals of the analysis. For more robust generalization, the PLS model might be preferred based on the given results.
@@ -2677,6 +2805,10 @@ compute_itcriteria_weights(itcriteria_vector)
 
 
 ## 11.PLS_IV: Mediation and moderation
+will help you to understand
+o	The basic concepts of mediation and moderation
+o	How to perform a mediation and moderation analysis
+o	Understand how to interpret the results of a mediation and moderation analysis
 
 ```{r dataload Corporate Reputation }
 # R script for the illustrations in chapter 4
@@ -2715,114 +2847,45 @@ corp_rep_pls_model_ext <- estimate_pls(
   missing_value = "-99")
 # Summarize the model results
 summary_corp_rep_ext <- summary(corp_rep_pls_model_ext)
-summary(corp_rep_pls_model_ext)
+#summary(corp_rep_pls_model_ext)
 ```
-Path Coefficients:
-        COMP  LIKE  CUSA  CUSL
-R^2    0.631 0.558 0.292 0.562
-AdjR^2 0.627 0.552 0.288 0.558
- - R^2: Indicates the proportion of variance in the dependent variables explained by the independent variables.
- - High R^2 values indicate that a significant portion of the variance in the endogenous constructs (COMP, LIKE, CUSA, CUSL) is explained by the exogenous constructs and other predictors.
- - AdjR^2: Adjusted R-squared accounts for the number of predictors in the model.
 
-        COMP  LIKE  CUSA  CUSL
-QUAL   0.430 0.380     .     .
-PERF   0.295 0.117     .     .
-CSOR   0.059 0.178     .     .
-ATTR   0.086 0.167     .     .
-COMP       .     . 0.146 0.006
-LIKE       .     . 0.436 0.344
-CUSA       .     .     . 0.505
- - These coefficients indicate the strength and direction of the relationships between constructs.
- - QUAL -> COMP: The path coefficient is 0.430, indicating that QUAL positively influences COMP.
-
-Reliability:
-     alpha  rhoC   AVE  rhoA
-QUAL 0.878 0.894 0.518 1.000
-PERF 0.747 0.824 0.488 1.000
-CSOR 0.816 0.854 0.545 1.000
-ATTR 0.600 0.770 0.540 1.000
-COMP 0.776 0.869 0.688 0.786
-LIKE 0.831 0.899 0.747 0.836
-CUSA 1.000 1.000 1.000 1.000
-CUSL 0.831 0.899 0.748 0.839
- - COMMENT ON RELIABILITY BELOW!
 
 ```{r}
 plot(corp_rep_pls_model_ext)
 ```
 
-Bootstrap analysis
- - Bootstrapping is a resampling technique used to estimate the precision of sample estimates (such as path coefficients) by resampling with replacement from the original data and calculating the estimates in each resample.
 ```{r Bootstrap }
 # Bootstrap the model
 boot_corp_rep_ext <- bootstrap_model(seminr_model = corp_rep_pls_model_ext,nboot = 1000,cores = NULL,seed = 123)
 
 # Summarize the results of the bootstrap
-summary_boot_corp_rep_ext <- summary(boot_corp_rep_ext, alpha = 0.10)
-summary(boot_corp_rep_ext, alpha = 0.05)
+#summary_boot_corp_rep_ext <- summary(boot_corp_rep_ext, alpha = 0.10)
+#summary(boot_corp_rep_ext, alpha = 0.05)
 ```
-BOOTSTRAP STRUCTURAL PATH
-Bootstrap Mean:
-- if the bootstrap mean values are very close to the original estimates, indicating that the original loadings are stable.
-IF ASKED FOR INDIRECT EFFECTS: Indirect Effects:
- - To calculate indirect effects, identify the paths through intermediate variables and multiply the direct effects along these paths. For example, the indirect effect of QUAL on CUSA through COMP and LIKE can be calculated by:
- - QUAL -> COMP -> CUSA
- - QUAL -> LIKE -> CUSA
- - The indirect effect of QUAL on CUSA through COMP is QUAL -> COMP * COMP -> CUSA = 0.430 * 0.146 = 0.06278
-
-Bootstrap SD:
- - if the standard deviations (Bootstrap SD) are relatively small, indicating that the estimated loadings have low variability across the bootstrap samples, suggesting reliable estimates.
-
-95% Confidence Intervals (CI):
- - confidence intervals (2.5% CI and 97.5% CI) do not include zero for any of the loadings, reinforcing the significance of these loadings.
-
-SUMMARY BOOTSTRAPPED STRUCTURAL PATHS:
- - The bootstrap results indicate which paths in the structural model are statistically significant. Paths with t-statistics greater than 1.96 and confidence intervals that do not include zero are considered significant. 
-  - From this analysis, most paths are significant, but 
-  - paths like PERF -> LIKE, CSOR -> COMP, ATTR -> COMP, and COMP -> CUSL are not significant due to their confidence intervals including zero, indicating that these relationships are not statistically supported by the data.
-
-
-BOOTSTRAP WEIGHTS
- - The table of bootstrapped weights includes the same columns as the structural paths, providing estimates for the measurement model.
- 
-BOOTSTRAP LOADINGS
- - provides the loadings for each indicator on their respective latent constructs, including the original estimate, bootstrap mean, standard deviation and confidence intervals.
-
-BOOTSTRAP HTMT
- -  a measure of discriminant validity. The bootstrapped HTMT values include the original estimate, bootstrap mean, standard deviation, and confidence intervals.
- 
-BOOTSTRAP TOTAL PATHS
- - summarizes the total effects of the constructs on each other, including the direct and indirect effects.
-
- - dont pay attention to CUSA->CUSL as cant change the CUSA construct.  - primarily focus on the upper constructs/drivers
- - have to assess the drivers (as far as possible to the left: QUAL, PERF, CSOR, ATTR) that is actually able to regulate
-
-
-SUMMARY BOOTSTRAPPING
- - Significant Paths: Paths with t-statistics greater than 1.96 (for a 95% confidence level) are considered statistically significant. For example, the path QUAL -> COMP is significant with a t-statistic of 6.603.
- - Confidence Intervals: If the confidence interval for a path does not include zero, the path is considered significant. For example, the path QUAL -> COMP has a 95% CI of (0.303, 0.552), which does not include zero, indicating significance.
- - Weights and Loadings: These should be significant to confirm the measurement model's reliability and validity.
- - HTMT: Values below 0.90 indicate good discriminant validity between constructs.
-
 
 -	SEM models in general and hence PLS-SEM allow for several advanced analysis possibilities
 -	Mediation and moderation are two of the most profound examples
 -	Mediation is not available in plain vanilla regression but only for the more complex models we study
 -	Moderation is also known in regression analysis (based on simple/naive measurement models)
-Mediation: formidling/mellemkomst(uvildig indblanden)/mægling
+
+o Mediation Analysis
+ - Mediation: formidling/mellemkomst(uvildig indblanden)/mægling
 ```{r Mediation analysis - TOTAL inderict effects }
 # Inspect total indirect effects
 summary_corp_rep_ext$total_indirect_effects
 ```
 Row and Column Variables:
- - The rows represent the independent variables.
- - The columns represent the dependent variables.
+ - The rows represent the independent (exogonous) variables.
+ - The columns represent the dependent (endogonous) variables.
+
 QUAL (Quality):
  - QUAL -> CUSA: 0.228
 This value indicates that the total indirect effect of "QUAL" on "CUSA" through all mediators is 0.228.
+
 SUMMARY:
  - table provides a comprehensive view of how the independent variables affect the dependent variables through mediators. It helps in understanding the indirect pathways and their magnitudes in the model, which is crucial for mediation analysis and for identifying the most influential variables in the structural equation model.
+ - Look in Opslag for intution on direct + total effects and calculations on this.
  
  - specific_effect_significance function is used to test the significance of these indirect effects through bootstrapping. 
 ```{r Mediation analysis - inderict effects }
@@ -2868,12 +2931,18 @@ and p1*p2*p3 is positive: 0.07569007
 The mediator effect is then=
 Complementary (partial mediation)
 
-MODERATION
-o	A moderator variable changes the strength or the direction of a relation between two constructs. Accounts for           heterogeneity in the data
-o	A priori hypothesis about the data: Is it some specific     relation that is influenced by the moderator variable (interaction effect), or is it the entire model (multigroup analysis)?
-o	Moderators can be single variables or constructs measured either formatively or reflectively
-o	Can be categorical variables, e.g. the strength of the relation between satisfaction and loyalty could depend on gender. Most often used in multigroup analysis
+From slides:
+o	CUSA fully mediates the relation from COMP to CUSL
+o	CUSA partially mediates the relation from LIKE to CUSL – we have complementary mediation because the mediating and direct effect works in the same direction
+
+
+o MODERATION
+ -	A moderator variable changes the strength or the direction of a relation between two constructs. Accounts for heterogeneity in the data
+ -	A priori hypothesis about the data: Is it some specific relation that is influenced by the moderator variable (interaction effect), or is it the entire model (multigroup analysis)?
+ -	Moderators can be single variables or constructs measured either formatively or reflectively
+ -	Can be categorical variables, e.g. the strength of the relation between satisfaction and loyalty could depend on gender. Most often used in multigroup analysis
 Can be continuous variables, e.g. the relation between satisfaction and loyalty is influenced by the level of income
+
 The moderation part
   interaction_term(iv = "CUSA", 
                    moderator = "SC", 
@@ -2908,6 +2977,10 @@ summary_corp_rep_mod <- summary(corp_rep_pls_model_mod)
 summary(corp_rep_pls_model_mod)
 ```
 
+```{r}
+plot(corp_rep_pls_model_mod)
+```
+
 
 ```{r Bootstrap Moderation }
 # Bootstrap the model
@@ -2917,7 +2990,7 @@ boot_corp_rep_mod <- bootstrap_model(seminr_model = corp_rep_pls_model_mod,nboot
 summary_boot_corp_rep_mod <- summary(boot_corp_rep_mod, alpha = 0.10)
 ```
 
-
+Evaluation of the reflective measurement model
 ```{r Reflective measurement model: loadings }
 ## Evaluation of the reflective measurement model
 # Inspect the indicator loadings
@@ -2926,7 +2999,6 @@ summary_corp_rep_mod$loadings
 # Inspect the indicator reliability
 summary_corp_rep_mod$loadings^2
 ```
-
 
 ```{r Reflective measurement model: Internal Reliability }
 # Inspect the internal consistency reliability
@@ -2948,7 +3020,7 @@ summary_corp_rep_mod$validity$htmt
 summary_boot_corp_rep_mod$bootstrapped_HTMT
 ```
 
-REDUNDANCY:
+REDUNDANCY: Formative maesurement model
 ```{r Formative measurement model: ATTR }
 #Evaluation of formative measurement model Redundancy analysis
 # ATTR: Attractiveness
@@ -3082,13 +3154,20 @@ Moderation Analysis Plot:
 Interpretation of the Plot:
  - The slopes of the lines indicate how the relationship between CUSA and CUSL changes at different levels of the moderator SC.
 A steeper slope indicates a stronger relationship between CUSA and CUSL.
+
 SUMMARY:
+ - The negative moderation effect implies that as SC (possibly a context or condition) increases, the positive impact of customer satisfaction (CUSA) on customer loyalty (CUSL) decreases
 Significant Moderation:
 The interaction term CUSA*SC -> CUSL is significant with a negative effect, indicating that the relationship between CUSA and CUSL decreases as SC increases.
 Visual Analysis:
  - The plot visually confirms this interaction effect, showing different slopes for the relationship between CUSA and CUSL at different levels of SC.
 
 This comprehensive analysis highlights the direct, indirect, and moderated effects within the model, providing valuable insights into how different variables interact to influence the dependent variable CUSL.
+
+From slides:
+o	Based on existing theory the Switching Cost (SC) construct is introduced as a moderator of the relationship between satisfaction and loyalty (reflectively measured)
+o	The respecified measurement models do fulfill the necessary requirements
+o	The interaction term (CUSA  SC) is significant with a negative sign whereas the associated simple effect of CUSA on CUSL is positive – the latter relationship is thus moderated by SC
 
 
 ##Influencer model PLS-SEM
