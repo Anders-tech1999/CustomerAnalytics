@@ -550,7 +550,9 @@ predComm = predict(
   #target variable is the 4th column in the testing dataset
   type = "distribution") 
 predComm = predComm$pred$Comm
-predComm
+#predComm #terrible output
+CommMeanValues <- colMeans(predComm)
+print(CommMeanValues)
 ```
 
 
@@ -560,11 +562,24 @@ predComm_class = predict(
   net1, 
   response = c("Comm"),
   newdata = retention_test,
-  predictors = names (retention_test)[-4], #target variable is the 4th column in the testing dataset
+  predictors = names (retention_test)[-4], 
+  #target variable is the 4th column in the testing dataset
   type = "class")
-predCommclass = predComm_class$pred$Comm
-predCommclass
+predCommClass = predComm_class$pred$Comm
+#predCommclass #terrible output
+
+counts <- table(predCommClass)
+counts
+
+# Calculate the total number of instances
+total_instances <- length(predCommClass)
+
+# Calculate the percentage of each class
+percentages <- (counts / total_instances) * 100
+percentages
 ```
+
+
 
 Alternative method substituting gRain
 ```{r Alternative method substituting gRain }
@@ -585,6 +600,12 @@ Confusion matrix
 ```{r Alternative method substituting gRain }
 table(predComm_class$pred$Comm, retention_test$Comm)
 ```
+        Predicted
+          High  Low  Med
+Actual  High  903    1  194
+        Low     2   25    1
+        Med   250    1 1123
+
 
 ROC and AUC
  - requires the predicted probabilities, not the predicted class
@@ -601,11 +622,14 @@ Example:
 
 
 
-## 4) Making queries (forward and backward)
+## Evidence 4) Making queries (forward and backward)
 How do we use the model in practice?
 Below we consider several hypothetical situations.   
  - Using BN, one can evaluate the expected changes in attitude, and respectively, commitment due to changes in functional usefulness and pleasure. 
- - setting evidence in the network for Fuse and Plea and we´ll look at the cpt for Atti and Comm before and after setting the evidence.  - Setting (hard) evidence means setting one of the states of the variable at probability 1 (100%).
+ - setting evidence in the network for Fuse and Plea and we´ll look at the CPT Conditional Probability Table for Atti and Comm before and after setting the evidence.  
+ - Setting (hard) evidence means setting one of the states of the variable at probability 1 (100%).
+ 
+Predict without Evidence
 ```{r Making queries (forward and backward) }
 # Transform the bn into a junction tree # options(digits=1)
 library (gRain)
@@ -615,24 +639,29 @@ querygrain(junction, nodes = "Atti")
 querygrain(junction, nodes = "Comm")
 ```
 Marginal Distributions:
+
  - The marginal distribution of "Atti" suggests that 
  - there is a higher probability of "Atti" being in the "High" state (0.595) compared to the "Med" (0.397) and "Low" (0.008) states.
+ 
  - The marginal distribution of "Comm" suggests that 
  - "Comm" is more likely to be in the "Med" state (0.545) compared to the "High" (0.444) and "Low" (0.011) states.
+ 
 SUMMARY:
  - The extracted marginal distributions are useful for understanding the likely states of the nodes and 
   - can inform decision-making or further analysis within the context of the Bayesian network.
 
 
 Predict with Evidence
- - Imagine a new customer joins the VC reporting a Low (Medium or High) Functional Usefulness perception. 
+ - Imagine a new customer joins the VC reporting a Low (or Medium or High) Functional Usefulness perception. 
   - This information can be fed to the network as evidence in order to predict the conditional probability of his/her attitude and commitment to VC. 
 if Fuse = Low
 ```{r Predict with Evidence }
 # if Fuse = Low
 jLow <- setEvidence (junction, nodes = "Fuse", states = "Low")
+
 A1 = querygrain(jLow, nodes = "Atti")
 A1
+
 C1= querygrain(jLow, nodes = "Comm")
 C1
 ```
@@ -640,7 +669,7 @@ Atti:
     High: 0.15753333
     Low: 0.01905778
     Med: 0.82340889
- - These values represent the probabilities of the node "Atti" being in the states "High", "Low", "Med" 
+ - These values represent probabilities of the node "Atti" being in the states "High", "Low", "Med" 
   - given that "Fuse" is "Low".
 
 Comm:
@@ -680,11 +709,11 @@ AttiHigh <- c(A1$Atti[[1]], A2$Atti[[1]], A3$Atti[[1]])
 AttiLow <- c(A1$Atti[[2]], A2$Atti[[2]], A3$Atti[[2]])
 AttiMed <-c(A1$Atti[[3]], A2$Atti[[3]], A3$Atti[[3]])
 df1 <- data.frame(
-  Fuse = c("Low", "Med", "High"), 
-  AttiLow, AttiMed, AttiHigh)
+  Fuse = c("Low", "Med", "High"), AttiLow, AttiMed, AttiHigh)
 df1
+
 matplot(rownames(df1), 
-        df1, type='l', xlab='Fuse', ylab='', ylim=c(0,1))
+        df1, type='l', xlab='Fuse', ylab='Atti', ylim=c(0,1))
 legend('topright', inset=.01, legend=colnames(df1[,2:4]), 
            pch=1, horiz=T, col=2:4)
 ```
@@ -702,13 +731,14 @@ Diagnostic (backward inference)
  - This information is fed to the network by setting the probability of 
  - ATTI attitude being high and 
  - observing the changes in the parent variables (Fuse and Plea)
-Without Evidence Cpt
+
+Without Evidence Cpt Conditional Probability Table
 ```{r Diagnostic (backward inference) }
 # Prior ctp (conditional tables) p?
 querygrain(junction, nodes = "Fuse")
 querygrain(junction, nodes = "Plea")
 ```
-With Evidence Cpt
+With Evidence Cpt Conditional Probability Table
 ```{r Diagnostic (backward inference) }
 # New ctp
 jHigh <- setEvidence (
@@ -795,7 +825,7 @@ The idea is
 If historical data is available, we start learning the relationships between the variables train and select the best model as a preliminary step. 
 First we use the model structure from the text (given),and we only have to 
 - learn the parameters (probabilities).
-- Next, we focus exclusively on how model is used as a decision support for marketing managers.
+- Next, we focus exclusively on how the model is used as a decision support for marketing managers.
 ```{r dataload + library}
 library(bnlearn)
 library(Rgraphviz) 
@@ -871,30 +901,22 @@ a. Compute the ELP for the population consisting of individuals with medium inco
 ```{r ELP - Medium Income + Male }
 # set evidence and get the ctp 
 library (gRain)
-junctionTA <- compile(as.grain(bnTA.mle))
-Med_male_yes <- setEvidence (
-  junctionTA, 
-  nodes = c("Income", "Sex", "Mailed"),
-  states = c("high", "female", "yes"))
+junctionTA <- compile (as.grain(bnTA.mle))
+Med_male_yes <- setEvidence (junctionTA, 
+                             nodes = c("Income", "Sex", "Mailed"), 
+                             states = c("medium", "male", "yes"))
+querygrain(Med_male_yes, nodes = "Buy")# p(buy) = 0.4
 
-querygrain(
-  Med_male_yes, 
-  nodes = "Buy")# p(buy) = 0.4
-
-Med_male_no <- setEvidence (
-  junctionTA, 
-  nodes = c("Income", "Sex", "Mailed"),
-  states = c("high", "female", "no"))
-
-querygrain(
-  Med_male_no, 
-  nodes = "Buy")# p(buy) = 0.2
+Med_male_no <- setEvidence (junctionTA, 
+                            nodes = c("Income", "Sex", "Mailed"), 
+                            states = c("medium", "male", "no"))
+querygrain(Med_male_no, nodes = "Buy")# p(buy) = 0.2
 
 options(digits=2)
-ELP = querygrain(
-  Med_male_yes, nodes = "Buy")$Buy[[2]] * r_s -
-  querygrain(Med_male_no, nodes = "Buy")$Buy[[2]] * r_u - c
 
+ELP = querygrain(Med_male_yes, 
+                 nodes = "Buy")$Buy[[2]] * r_s -
+  querygrain(Med_male_no, nodes = "Buy")$Buy[[2]] * r_u - c
 ELP
 ```
 Since ELP is positive, we may decide to mail to this population
@@ -915,18 +937,17 @@ Med_fem_yes <- setEvidence(
   junctionTA, 
   nodes = c("Income", "Sex", "Mailed"),
   states = c("medium", "female", "yes"))
-
 querygrain(Med_fem_yes, nodes = "Buy")# p(buy) = 0.7
 
 Med_fem_no <- setEvidence(
   junctionTA, 
   nodes = c("Income", "Sex", "Mailed"),
   states = c("medium", "female", "no"))
-
 querygrain(Med_fem_no, nodes = "Buy")# p(buy) = 0.4
 
 options(digits=2)
-ELP = querygrain(Med_fem_yes, nodes = "Buy")$Buy[[2]] * r_s -
+ELP = querygrain(Med_fem_yes, 
+                 nodes = "Buy")$Buy[[2]] * r_s -
   querygrain(Med_fem_no, nodes = "Buy")$Buy[[2]] * r_u - c
 ELP
 ```
@@ -960,8 +981,11 @@ Discussion:
 Using BN, this application allows to identify persuadable segments of individuals who would buy only if they are sent an ad. It avoids sending ads to those who will never buy, those who always buy (thus avoid wasting the ad), and those who are turned off by the advertisement when they receive it.
 The network can be extended with more nodes according to the characteristics of the population in the dataset.
 
+
 # Application 2_beta (extension)
 
+Age Marital.Status Occupation Education.Level Geographic.Location    
+Online.Behavior Device.Usage Social.Media.Activity etc.
 ```{r Application 2_beta (extension) }
 #targeted.adv.beta <- read.csv("~/Cloud/Documents/Alina Tudoran/TEACHING/Postgraduate/Customer Analytics_2024/2. BN /Lecture_Applications/Data/simulated_targeted_adv_data.csv", header = T, colClasses = "factor")
 library(readr)
@@ -1154,48 +1178,36 @@ Conclusion
 The code effectively demonstrates how to use latent class analysis combined with Bayesian networks for making product recommendations. It highlights the importance of selecting the appropriate number of latent classes and constructing a probabilistic model that can infer user preferences based on both user and item similarities. This method offers a comprehensive approach to recommendation systems by considering latent user classes and their interactions with different products.
 
 
+
+##Application 3: Product recommendations with probabilistic models
+Bayesian Nets, Course Customer Analytics
+
+ - From option 2 in lecture 18. march
+ - In this analysis, we implement a latent class analysis with BN. 
+ - This classification is not directly observable; it is inferred from the data. 
+ - The key premise is that membership in a particular latent class can accurately predict a user's ratings across a range of items. 
+ - This method offers a comprehensive to product recommendation by considering several factors:
+
+ o User Similarities: 
+ - By analyzing patterns across users, the model identifies underlying groups of users who exhibit similar behavior in their ratings. 
+ - This helps in understanding user preferences and can be 
+ - used to predict how a user might rate items that they have not yet encountered, based on the behavior of similar users within the same latent class
+
+ o Item Similarities: 
+ - the model accounts for the relationships between items. 
+ - recognizes that certain items are consistently rated similarly by users, suggesting that these items share appealing characteristics or cater to specific interests
+
+ o User-Item Interactions: 
+ - Beyond examining users and items in isolation, 
+ - this approach delves into the interactions between users and items. 
+ - explores how particular types of users tend to rate certain kinds of items, capturing the dynamic interplay between user preferences and item characteristics
+
+
 ```{r}
-#______________________________________________________________________________
-# Application 3: Product recommendations with probabilistic models
-# Bayesian Nets, Course Customer Analytics
-# March 2024
-# AAT 
-#______________________________________________________________________________
-
-#From option 2 in lecture 18. march
-# In this analysis, we implement a latent class analysis with BN. 
-# This classification is not directly observable; it is inferred from the data. 
-# The key premise is that membership in a particular latent class can accurately
-# predict a user's ratings across a range of items. 
-# This method offers a comprehensive to product recommendation 
-# by considering several factors:
-
-    # User Similarities: By analyzing patterns across users, the model 
-    # identifies underlying groups of users who exhibit similar behavior 
-    # in their ratings. This helps in understanding user preferences and 
-    # can be used to predict how a user might rate items that they have not 
-    # yet encountered, based on the behavior of similar users within the 
-    # same latent class
-
-    # Item Similarities: Similarly, the model accounts for the relationships 
-    # between items. It recognizes that certain items are consistently rated 
-    # similarly by users, suggesting that these items share appealing 
-    # characteristics or cater to specific interests
-
-    
-    # User-Item Interactions: Beyond examining users and items in isolation, 
-    # this approach delves into the interactions between users and items. 
-    # It explores how particular types of users tend to rate certain kinds of
-    # items, capturing the dynamic interplay between user preferences and item 
-    # characteristics
-
-
-
 library(poLCA)      # for latent classification 
 library(bnlearn)    # for building BN
 library (gRain)     # for querying BN
 library(Rgraphviz)  # for visualizing BN
-
 
 # Data on user preferences
 #data = read.csv("~/Cloud/Documents/Alina Tudoran/TEACHING/Postgraduate/Customer Analytics_2024/2. BN /Lecture_Applications/Data/Coll Filtering/CollFilforR.csv", 
@@ -1204,15 +1216,16 @@ library(Rgraphviz)  # for visualizing BN
                 #sep = ";")
 library(readr)
 CollFilforR <- read.csv("C:/Users/Bruger/OneDrive - Aarhus universitet/8. semester - BI/CA - Customer Analytics/Causal Discovery - Production Recommendation og Targeting/CollFilforR.csv",header = T,colClasses = "factor",sep = ";")
-
+data <- CollFilforR
 ```
 
 
+First step
+## Test several models with number of classes ranging from 2 to 6
+ - Display BIC. 
+ - Choose the model with the lowest BIC (AIC, G^2, X^2)
+ - At this stage we only decide the number of latent classes in the data
 ```{r}
-# First step, test several models with number of classes ranging from 2 to 6
-# Display BIC. Choose the model with the lowest BIC (AIC, G^2, X^2)
-# At this stage we only decide the number of latent classes in the data
-
 set.seed(234)
 # Defining the variables used in the model 
 f <- cbind(V1, V2, V3, V4)~1 #(~1 means without covariates)
@@ -1232,10 +1245,81 @@ for(i in 2:6){
     min_bic <- lc$bic
     LCA_best_model<-lc
   } 
-}    	
+}
+```
+Conditional item response (column) probabilities,
+ by outcome variable, for each class (row) 
+ 
+$V1
+             1     2     3    4    5
+class 1:  0.95 0.052 0.000 0.00 0.00
+class 2:  0.24 0.080 0.075 0.18 0.43
 
+ o Comment:
+ - a person in Class 1 is 95% chance of rating Product V1 with 1 (worst of 1->5)
+ - a person in Class 2 is 43% chance of rating Product V1 with 5 (best of 1->5)
+ - Class 1 is primarily not satisfied with Product V1
+ - Class 2 is either really satisfied or NOT satisfied with Product V1
+ 
+$V2
+             1    2     3     4    5
+class 1:  0.62 0.00 0.000 0.051 0.33
+class 2:  0.37 0.54 0.095 0.000 0.00
+
+$V3
+             1    2     3     4     5
+class 1:  0.00 0.00 0.000 0.078 0.921
+class 2:  0.44 0.44 0.028 0.000 0.085
+
+$V4
+             1    2    4    5
+class 1:  0.00 0.00 0.12 0.88
+class 2:  0.31 0.46 0.00 0.23
+
+Estimated class population shares 
+ 0.6 0.4 
+ 
+ o Comment:
+ - the proportion of the sample belonging to each latent class.
+ - 60% of the sample belongs to Class 1
+ - 40% of the sample belongs to Class 2
+ 
+Predicted class memberships (by modal posterior prob.) 
+ 0.61 0.39 
+ 
+ o Comment:
+ - the predicted proportion of the sample assigned to each latent class based on the highest posterior probability.
+ - 61% of the predicted sample belongs to Class 1
+ - 39% of the predicted sample belongs to Class 2
+ 
+========================================================= 
+Fit for 2 latent classes: 
+========================================================= 
+number of observations: 100 
+number of fully observed cases: 68 
+number of estimated parameters: 31 
+residual degrees of freedom: 69 
+maximum log-likelihood: -312 
+ 
+AIC(2): 686
+BIC(2): 767
+G^2(2): 160 (Likelihood ratio/deviance statistic) 
+X^2(2): 381 (Chi-square goodness of fit)
+
+SUMMARY:
+ - a person in Class 1 is 95% chance of rating Product V1 with 1 (worst of 1->5)
+ - a person in Class 2 is 43% chance of rating Product V1 with 5 (best of 1->5)
+ - Class 1 is primarily not satisfied with Product V1
+ - Class 2 is either really satisfied or NOT satisfied with Product V1
+ - 60% of the sample belongs to Class 1
+ - 40% of the sample belongs to Class 2
+ 
+
+
+```{r}
 # bic
 print(bic_values)
+
 # plot bic
 classes <- 2:6
 plot(classes,
@@ -1243,38 +1327,59 @@ plot(classes,
      type = "b", 
      pch = 19, xlab = "Number of Classes", ylab = "BIC",
      main = "BIC Values by Number of Classes")
+```
+2 Latent Classes: 767     2 having the lowest BIC score
+3 Latent Classes: 814 
+4 Latent Classes: 861 
+5 Latent Classes: 916 
+6 Latent Classes: 954
 
+
+```{r}
 # best selected model - full output
 LCA_best_model 
 # specific output
-LCA_best_model$posterior # matrix of posterior class membership probabilities
-LCA_best_model$predclass # class membership
-LCA_best_model$probs # estimated class-conditional response probabilities
+#LCA_best_model$posterior # matrix of posterior class membership probabilities
+#LCA_best_model$predclass # class membership
+#LCA_best_model$probs # estimated class-conditional response probabilities
 
 # save the class
 data_copy <- data
 data_copy$class <- factor(LCA_best_model$predclass)
-View (data_copy)
+#View (data_copy)
+```
+The same output as above with 2,3,4,5,6 Latent Classes
 
 
 
-
-
-# Second step, for making product recommendations, 
-# set up a BN classifier considering the learned class as the 'root' node 
-# and preferences as ´children' nodes
+Second step:
+## Make product recommendations
+- set up a BN classifier considering the learned class as the 'root' node and preferences as ´children' nodes
+```{r}
 data_wNA = na.omit(data_copy) # remove missing data from the dataset
 # learn the structure (e.g., TAN structure)
 dag = tree.bayes(data_wNA, "class") 
 graphviz.plot(dag)
+```
+
+
+```{r}
 # learn the parameters
 bn.mle <- bn.fit (dag, data = data_wNA, method = "mle")
 bn.fit.barchart(bn.mle$V1)
+```
+ - a person in Class 1 is 95% chance of rating Product V1 with 1 (worst of 1->5)
+ - a person in Class 2 is 43% chance of rating Product V1 with 5 (best of 1->5)
+ - Class 1 is primarily not satisfied with Product V1
+ - Class 2 is either really satisfied or NOT satisfied with Product V1
 
 
-# Now we can use BN to make product recommendations 
-# e.g., given a new customer has reported the following preferences 
-# for V1=5, V2=1, V3=1, what is the estimated preference for V4?
+Now we can use BN to make product recommendations 
+ - e.g., given a new customer has reported the following preferences for
+ - V1=5, V2=1, V3=1,
+ 
+ o What is the estimated preference for V4?
+```{r NOT WORKING }
 library (gRain)
 junction <- compile (as.grain(bn.mle))
 
@@ -1299,16 +1404,59 @@ prediction$V4
 preference = prediction$V4[[1]]*1 + prediction$V4[[2]]*2 + prediction$V4[[3]]*4 + prediction$V4[[4]]*5  
 preference
 
-querygrain(V1V2V3, nodes = "class") # to get the expected class 
+querygrain(V1V2V3, nodes = "class") # to get the expected class
+```
+
+```{r IS WORKING}
+library (gRain)
+junction <- compile (as.grain(bn.mle))
+# now we can use the net for inference
+V1V2V3 <- setEvidence (junction, nodes = c("V1", "V2", "V3"), 
+                       states = c("5", "1", "1")) 
+                      #can be changed into the example having 1,5,5
+prediction = querygrain(V1V2V3, nodes = "V4")
+#str(prediction)
+prediction$V4
+
+# FROM NOT WORKING CODE BELOW
+# $V4
+# V4
+#.   1          2          4          5 
+#0.32669680 0.52234158 0.06583710 0.08512452 
+# this user most likely he will score 1 or 2 => do not recommend the product V4
+# his expected preference for V4 is
+```
+V4
+   1    2    4    5 
+0.36 0.64 0.00 0.00 
+
+SUMMARY:
+ - this user is most likely to rate Product V1 64% 2 out of 5
+ - this user is most likely to rate Product V1 36% 1 out of 5
+ - do NOT recommend Product V1 to this user
+
+```{r IS WORKING}
+preference = prediction$V4[[1]]*1 + prediction$V4[[2]]*2 + prediction$V4[[3]]*4 + prediction$V4[[4]]*5  
+preference
+```
+The calculated preference is 1.6
+ - This score is quite bad on a scale from 1 -> 5
+ - should not recommend this Product to the customer
+
+```{r IS WORKING}
+querygrain(V1V2V3, nodes = "class") # to get the expected class
+```
+NONSENSE^
 
 
-
-
-# To make recommendation in a dataset and save them
+Make recommendation in a dataset and save them
+```{r}
 # Loop through each row in dataset (in this example we use our data)
 data=data_copy
 # Initialize predictions_df outside the loop
-predictions_df <- data.frame(RowIndex = integer(), Node = character(), stringsAsFactors = FALSE)
+predictions_df <- data.frame(RowIndex = integer(), 
+                             Node = character(), 
+                             stringsAsFactors = FALSE)
 
 # Loop through each row in your dataset to predict and save the most probable product to recommend
 for (i in 1:nrow(data)) {
@@ -1335,9 +1483,12 @@ for (i in 1:nrow(data)) {
   }
 
 View(predictions_df)
-write.csv(predictions_df, "predictions_product.csv", row.names = FALSE)
+#write.csv(predictions_df, "predictions_product.csv", row.names = FALSE)
+```
 
 
+Save the probabilities instead of the most probable state
+```{r}
 # To save the probabilities instead of the most probable state
 predictions_df <- data.frame(RowIndex = integer(),
                              Node = character(),
@@ -1380,7 +1531,7 @@ for (i in 1:nrow(data)) {
   }
 
 View(predictions_df)
-write.csv(predictions_df, "prediction_probabilities.csv", row.names = FALSE)
+#write.csv(predictions_df, "prediction_probabilities.csv", row.names = FALSE)
 #testtest
 ```
 
