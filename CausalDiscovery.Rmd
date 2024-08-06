@@ -133,7 +133,9 @@ Plea.lv <- c ("Low", "Med", "High")
 Atti.lv <- c ("Low", "Med", "High")
 Comm.lv <- c ("Low", "Med", "High")
 
-Fuse.prob <- array (c(0.02, 0.26, 0.72), dim = 3, dimnames = list (Fuse = Fuse.lv))
+Fuse.prob <- array (c(0.02, 0.26, 0.72), 
+                    dim = 3, 
+                    dimnames = list (Fuse = Fuse.lv))
 Fuse.prob
 ```
 
@@ -141,7 +143,8 @@ THE MANUAL SETUP IS NOT NECESSARY FOR EXAM!
 
 Plea: Pleasure
 ```{r Manual parameters Pleasure }
-Plea.prob <- array (c(0.01, 0.55, 0.44), dim = 3, dimnames= list (Plea = Plea.lv))
+Plea.prob <- array (c(0.01, 0.55, 0.44), 
+                    dim = 3, dimnames= list (Plea = Plea.lv))
 Plea.prob
 ```
 
@@ -156,7 +159,9 @@ Atti.prob <- array (c(0.99, 0.01, 0.00,
                           0.00, 0.40, 0.60,
                           0.99, 0.01, 0.00,
                           0.00, 0.47, 0.53,
-                          0.00, 0.09, 0.91), dim = c (3, 3, 3), dimnames= list (Atti = Atti.lv, Plea = Plea.lv, Fuse = Fuse.lv))
+                          0.00, 0.09, 0.91), 
+                    dim = c (3, 3, 3), 
+                    dimnames= list (Atti = Atti.lv, Plea = Plea.lv, Fuse = Fuse.lv))
 Atti.prob
 ```
 
@@ -190,12 +195,13 @@ Comm.prob <- array (c(0.00, 1.00, 0.00,
                         0.34, 0.33, 0.33,
                         0.00, 0.40, 0.60,
                         0.00, 0.10, 0.90), 
-                 dim = c (3, 3, 3, 3), dimnames= list (Comm = Comm.lv,  Atti = Atti.lv, Plea = Plea.lv, Fuse = Fuse.lv))
+                 dim = c (3, 3, 3, 3), 
+                 dimnames= list (Comm = Comm.lv,  Atti = Atti.lv, Plea = Plea.lv, Fuse = Fuse.lv))
 Comm.prob
 ```
 
 
-CPT Conditional Table
+CPT Conditional Prob Table
 ```{r CPT-table: Conditional Prob Table }
 # Relate the CPT to the labels
 cpt <- list(Fuse = Fuse.prob, 
@@ -225,8 +231,6 @@ retention_test <- read.csv("C:/Users/Bruger/OneDrive - Aarhus universitet/8. sem
 ```
 
 
-
-
 ```{r 2. Test data }
 #retention <- retention %>%
 #  mutate(across(where(is.character), factor))
@@ -236,7 +240,8 @@ sum(is.na(retention))
 str(retention$Fuse)
 ```
  - Reminder: bn are particularly designed for categorical variables continuous variable require to be discretized.
- - However, if all variables are continuous, a Gaussian Bayes net can be built. A Gaussian Bayes net is equivalent to a path analysis model or a sem model  with observable variables instead of latent constructs.
+ - However, if all variables are continuous, a Gaussian Bayes net can be built. A Gaussian Bayes net is equivalent to a path analysis model or a sem model with observable variables instead of latent constructs.
+
 
 ##Constrained-based algorithm
 2.1 Learning a structure using a constrained-based algorithm 
@@ -280,48 +285,147 @@ bn.gs1 <- set.arc (bn.gs, from = "Atti", to = "Comm")
 graphviz.plot(bn.gs1, main = "Grow Shrink") 
 ```
 We have now established a direction for the edge that indicates comm is influenced by atti
+ - This is done with the arrow pointing from Atti towards Comm.
+ 
+```{r}
+undirected.arcs(bn.gs1)
+```
+     from to
+ - This means that there is no undirected paths present in the model.
 
 
 ##Score-based algorithm
-2.2. Learning the structure using a score-based algorithm 
+2.2. Learning the structure using a score-based algorithm
 
 ```{r Hill-Climbing greedy search - Score-based algorithm}
 # Hill-Climbing (hc) greedy search
 #par(mfrow = c(1, 2))
 bn.hc <- hc (retention, score = "bic")
 plot (bn.hc, main = "Hill Climbing_BIC") 
-#graphviz.plot (bn.hc, main = "Hill Climbing_BIC")
+graphviz.plot (bn.hc, main = "Hill Climbing_BIC")
 ```
-The hill-climbing algorithm is a search-based method for learning the structure of a Bayesian Network. It starts with an initial network (often empty) and iteratively makes small changes (adding, deleting, or reversing edges) to the network structure to improve a given scoring criterion (in this case, BIC). The algorithm continues until no further improvements can be made. It is a greedy algorithm that seeks to find a local optimum in the search space of network structures.
+The hill-climbing algorithm is a search-based method for learning the structure of a Bayesian Network. 
+ - It starts with an initial network (often empty) and iteratively makes small changes (adding, deleting, or reversing edges) to the network structure to improve a given scoring criterion (in this case, BIC). 
+ - The algorithm continues until no further improvements can be made. 
+ - It is a greedy algorithm seeking to find a local optimum in the search space of network structures.
 
-the fact that there is no arc between comm and atti means that this additional relationship isn´t worth adding based on the penalization of complexity for BIC
+The fact that there is no arc between comm and atti means that this additional relationship isn´t worth adding based on the penalization of complexity for BIC
+
 
 Learning the parameters 
  - learn the parameters for bn.gs1 structure (the theoretical structure) 
+ ATTENTION: bn.gs1 model is being evaluated here!
 ```{r Score-based algorithm}
-bn.mle <- bn.fit (bn.gs1, data = retention, method = "mle")
-bn.mle
-# print them
+bn.mle <- bn.fit (bn.gs1, data = retention, method = "mle") #mle" stands for Maximum Likelihood Estimation, which is a statistical method for estimating the parameters of a model by maximizing the likelihood function
+#bn.mle
+```
+
+
+Functional Usefulness
+```{r Score-based algorithm}
 bn.mle$Fuse
+```
+Conditional Probability Table (CPT) for Fuse:
+ - The Conditional Probability Table CPT for Fuse lists the probabilities of Fuse being in each of its possible states. 
+ - Since Fuse does not have any parents in the network, these probabilities are unconditional or marginal probabilities.
+
+High Probability (0.7206):
+ - There is a 72.06% probability that Fuse will be in the High state.
+Medium Probability (0.2582):
+ - There is a 25.82% probability that Fuse will be in the Med state.
+Low Probability (0.0212):
+ - There is a 2.12% probability that Fuse will be in the Low state.
+
+
+Pleasure
+```{r Score-based algorithm}
 bn.mle$Plea
+```
+Conditional Probability Table (CPT) for Plea:
+ - The Conditional Probability Table CPT for Plea lists the probabilities of Plea being in each of its possible states. 
+ - Since Plea does not have any parents in the network, these probabilities are unconditional or marginal probabilities.
+
+High Probability (0.4346):
+ - There is a 43.46% probability that Plea will be in the High state.
+Medium Probability (0.5560):
+ - There is a 55.60% probability that Plea will be in the Med state.
+Low Probability (0.0094):
+ - There is a 0.94% probability that Plea will be in the Low state.
+
+
+```{r Score-based algorithm}
 bn.mle$Atti
+```
+Conditional Probability Table (CPT) for Atti
+ - given different states of its parent nodes Plea and Fuse
+ 
+WHEN Plea = High:
+
+Fuse = High:
+ - Atti = High: 0.9133
+ - Atti = Med: 0.0867
+ - Atti = Low: 0.0000
+
+Fuse = Med:
+ - Atti = High: 0.5868
+ - Atti = Med: 0.4132
+ - Atti = Low: 0.0000
+
+Fuse = Low:
+ - Atti = High: 0.0000
+ - Atti = Med: 0.9778
+ - Atti = Low: 0.0222
+ 
+ And so on...
+
+
+```{r Score-based algorithm}
 bn.mle$Comm
 ```
-Other useful functions:
+Conditional Probability Table (CPT) for Atti
+ - given different states of its parent nodes Plea, Atti and Fuse
+
+WHEN Plea = High + Atti = High
+
+Fuse = High:
+ - Comm = High: 0.8960
+ - Comm = Med: 0.1040
+ - Comm = Low: 0.0000
+
+Fuse = Med:
+ - Comm = High: 0.5640
+ - Comm = Med: 0.4360
+ - Comm = Low: 0.0000
+
+Fuse = Low:
+ - Comm = High: 0.0000?
+ - Comm = Med: 0.0000?
+ - Comm = Low: 0.0000?
+ 
+ And so on...
+
+
+```{r Other useful functions: }
 drop.arc(net, from="A", to=""T)
 e.g. newnet = drop.arc(net, from = "T", to = "A")
-Test for the conditional independence between variables 
-ci.test("T", "E", c("O", "R"), test = "x2", data = data) EXPLORES UNCODITIONAL RELAIONSHIPS BETWEEN VARIABLES 
+
+#Test for the conditional independence between variables 
+ci.test("T", "E", c("O", "R"), test = "x2", data = data) #EXPLORES UNCONDITIONAL RELAIONSHIPS BETWEEN VARIABLES 
 mb(bn.gs1, "Atti") 
+```
+
 
 
 ## 3). Model evaluation
+
 I.Metrics of model complexity 
-```{r Metrics of model complexity   }
+
+```{r Metrics of model complexity }
 nodes(bn.mle)
 arcs(bn.mle)
-bn.mle
+#bn.mle ALReady printed above
 ```
+
 
 II. Metrics of model sensitivity
  - Test if any two nodes are d-separated 
@@ -344,7 +448,9 @@ library(dplyr)
 options(scipen = 0)
 arc.strength (bn.gs1, retention, criterion = "x2") %>%.[order(.$strength),]
 ```
+strength: p-value
 All the Arcs are significant in the network
+
 
 b) with criterion ="bic" reports the change in the BIC score of the net caused by an arc removal. 
  - The more negative the change, means the BIC score will go worse if we delete that arc (i.e. the arc is important for the model).
@@ -354,25 +460,26 @@ options(scipen = 0)
 arc.strength (bn.gs1, retention, criterion = "bic") %>%.[order(.$strength),]
 ```
 Output: 
- - if removing Plea -> Comm, BIC will decrease with -668.211 
- - which in bnlearn means the model will get worse.
- - if removing Atti -> Comm, BIC will increase with 40.48, 
- - which in bnlearn package means the model may improve based on this index.
- bnlearn reverses the meaning of BIC...?
+Plea -> Comm    -668.21187
+ - The more negative the change, the more the arc is important for the model
+ - if removing Plea -> Comm, BIC will decrease with -668.211: the model gets worse
+      o The Plea -> Comm arc is the most important arc in the model
 
-Plea → Comm:
- - Strength: -668.21187
-Interpretation: 
- - This arc shows a strong negative association, which might suggest that 
- - including this relationship in the model could be more harmful than beneficial. It could be a candidate for removal.
+Atti → Comm:    40.48931
+ - The more positive the change, the more the model will gain in removing this exact arc
+ - if removing Atti -> Comm, BIC will increase with 40.49 
+      o The Atti -> Comm arc presence is worsening the model performance
+ - Atti -> Comm is a candidate for removal
 
 
-Repeating the analysis for the hill-climbing structure
+Arc-strength
+ - Repeating Arc-strength analysis for the hill-climbing structure
 ```{r hill-climbing - arc.strength }
 arc.strength (bn.hc, retention, criterion = "bic") %>%.[order(.$strength),]
 ```
 As expected, all strengths are negative
  - this is expected as BIC was optimized when the hc algorithm has searched for this model
+
 
 
 III. Metrics of evaluation and selection among several dags:
@@ -390,18 +497,19 @@ bnlearn::score (bn.gs1, retention, type = "bde")
 bnlearn::score (bn.hc, retention, type = "bde")
 ```
 AIC:
-bn.gs1: -11842.95       Is closest to zero
+bn.gs1: -11842.95       GrowShrink structure closest to zero
 bn.hc:  -11919.77
 
 BIC
 bn.gs1: -12090.61
-bn.hc:  -12050.12       Is closest to zero
+bn.hc:  -12050.12       Hill-Climbing structure closest to zero
 
 BDE
-bn.gs1: -11904.39       Is closest to zero
+bn.gs1: -11904.39       GrowShrink structure closest to zero
 bn.hc:  -11983.02       
 
 
+IV.
 IV. Metrics of predictive accuracy (error rate, confusion matrix, AUC)
 k-fold cross validation 
  - This function requires as one of its parameters only structure, not the full model
@@ -416,11 +524,12 @@ netcv = bn.cv(retention,
               k = 5, 
               loss.args = list(target = "Comm"), 
               debug = TRUE)
-netcv 
+netcv
 ```
 Prediction accuracy of Comm based on 5-fold cross validation:
 1-0.18 = 0.82 
  - in a similar way one can assess each individual variable as Atti eg.
+
 
 Evaluate model performance
 using a testing sample to evaluate the model performance
@@ -437,11 +546,13 @@ predComm = predict(
   net1, 
   response = c("Comm"), 
   newdata = retention_test,
-  predictors = names (retention_test)[-4],#target variable is the 4th column in the testing dataset
+  predictors = names (retention_test)[-4],
+  #target variable is the 4th column in the testing dataset
   type = "distribution") 
 predComm = predComm$pred$Comm
-#predComm : Ugly output
+predComm
 ```
+
 
 Instead of probabilities of 0 or 1, one can save the actual CLASS (0/1). 
 ```{r Class predictions }
