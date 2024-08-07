@@ -12,7 +12,10 @@ date: "2024-03-21"
 ## INTRODUCTION
 For modeling sequences of clicks:
 
-Virtually any model can be used to analyse clickstream data given the data is pre-processed in the correct way. However, Neural Networks (NN) and Markov Chains (MC) are two of the most common type of models used for modeling clickstreams 
+Virtually any model can be used to analyse clickstream data given the data is pre-processed in the correct way. However, 
+ - Neural Networks (NN) and 
+ - Markov Chains (MC) 
+ are two of the most common type of models used for modeling clickstreams 
 
 - NN are black-box models best for prediction. 
 For example, predicting the conversion rate is a standard application. 
@@ -22,11 +25,12 @@ For example, Self-Organizing Maps clustering (SOM clustering) is a type of neura
 *Tudoran, A.A. 2022 A Machine Learning Approach to Identifying Decision-Making Styles for Managing Customer Relationships on Brightspace
 
 Markov chains models are transparent models that are used for predicting, segmenting and understanding customer behavior. 
-In this application, I focus on the "clickstream" library to model the clickstream data with MC models. 
+In this application, I focus on the "clickstream" library to model the clickstream data with MC Markov Chains models. 
 
 ## BACKGROUND
 What is a (discrete state) Markov Chain? 
-[Note: one can have Markov chains with discrete and continous states in discrete and in continuous time. Here we focus on discrete state in discrete time] 
+[Note: one can have Markov chains with discrete and continuous states in discrete and in continuous time. 
+ - Here we focus on discrete state in discrete time] 
 
 A Markov chain is a stochastic process X that takes state "m" from a ﬁnite set of states "M" at each time "n". If the state at time "n" only depends on the recent k states, we call X a Markov chain "of order k". For example:
   
@@ -52,7 +56,7 @@ The function fitMarkovChain() estimates the parameters of a Markov chain model o
 How does R interpret the clickstreams? 
 Clickstreams = collection of data sequences - with different sizes!
 
-### (1) A motivating example
+(1) A motivating example
 Session 1: P1 P2 P1 P3 P4 Defer (visited Page 1 then Page 2, defer: did not buy)
 Session 2: P3 P4 P1 P3 Defer
 Session 3: P5 P1 P6 P7 P6 P7 P8 P7 Buy
@@ -73,109 +77,217 @@ we read the list of cliskstreams from a file using "readClickstreams()" function
 it is a comma-separated file and each line is exactly one clicktream
 
 ```{r}
-install.packages("clickstream")
+#install.packages("clickstream")
 library("clickstream")
-
-cls <- readClickstreams(file = "C:/8. semester - BI/CA - Customer Analytics/Web Analytics/sample.csv", sep = ",", header = TRUE) 
+cls <- readClickstreams(file = "C:/Users/Bruger/OneDrive - Aarhus universitet/8. semester - BI/CA - Customer Analytics/Web Analytics/sample.csv", sep = ",", header = TRUE) 
 cls
-summary(cls)
 # writeClickstreams(cls, "sample.csv", header = TRUE, sep = ",")
 ```
 Defer: Udskyde
 
+
 Here the Markow Order is determined
 - 2nd-order Markov chain = two-periods memory
 ```{r Markov Chain - 2nd order}
-mc <- fitMarkovChain(clickstreamList = cls, order = 2,control = list(optimizer = "quadratic")) 
+mc <- fitMarkovChain(clickstreamList = cls, 
+                     order = 2, #quantity of lags (amount of sheets produced in output)
+                     # second-order Markov chain is being fitted, meaning the next state depends on the current state and the previous state.
+                     control = list(optimizer = "quadratic")) 
 mc
 # notice:
 # - the two transition probabilities matrices for the two lags
 # - start probabilities for the states the corresponding clickstreams started 
 # - end probabilities for the states the corresponding clickstreams ended
+
+# fitMarkovChain() computes the log-likelihood of the model
 ```
+ o Transition Probabilities:
+Lag:  1 
+lambda:  0.22´
+
+Lag:  2 
+lambda:  0.78 
+ - lambda values show how much weight each lag contributes to the prediction of the next state.
+ 
+ o Start Probabilities:
+  P1  P10   P3   P4   P5   P9 
+0.11 0.11 0.22 0.11 0.22 0.22
+ - There is 22% chance for a customer starting on Page 3, Page 5, Page 9
+ - and so on...
+
+ o End Probabilities:
+  Buy Defer 
+ 0.33  0.67 
+ - There is 33% chance for a customer to BUY
+ - There is 67% chance for a customer to DEFER
+
+ o First output sheet:
+probs in the first order Markov chain
+ o Second output sheet:
+probs in the second order Markov chain
 
 
 ```{r PlotMarkowChain + AIC BIC }
-# fitMarkovChain() computes the log-likelihood of the model
 # based on this, one can get AIC and BIC to compare two fitted Markov models
 summary(mc) 
 # model plot
-plot(mc, order = 2)
+plot(mc, order = 2) #has to be consistent with the upper script
 ```
+ o LogLikelihood: -66
+ - The log-likelihood value is a measure of the model’s fit to the data. 
+ - Higher (less negative) values indicate a better fit.
+ - A log-likelihood of -66 indicates how well the model explains the observed sequences of states.
+ 
+ o BIC: 268
+ - Bayesian Information Criterion (BIC) is similar to AIC but includes a stronger penalty for models with more parameters.
+ - Lower BIC values indicate a better model, favoring simpler models that fit the data well.
 
-i)  Predict either the next click or the ﬁnal click (state) of a customer. If a customer starts with the clickstream P9 P2, what will do next?
+SUMMARY: if running different markov chain orders (lags), the BIC and LogLikelihood can decide the better model.
+
+## Predict next Click
+i)  Predict either the next click or the ﬁnal click (state) of a customer. 
+ - If a customer starts with the clickstream P9 P2, what will do next?
 ```{r Predict next Click - Page 9 --> Page2 --> PageX }
 pattern <- new("Pattern", sequence = c("P9", "P2"))
 
 resultPattern <- predict(mc, startPattern = pattern, dist = 1)
 resultPattern
 ```
-the user will most likely click on P1 next with a 0.66 prob.
+SUMMARY:
+ - The user will most likely click on P1 next with a 0.67 prob.
 
-If a customer has recently viewed products P9 and P2, what is the prediction for the next two clicks?
-We add: absorbingProbabilities = data.frame(Buy = 0.333, Defer = 0.667)) which comes from:
-End Probabilities:
-  Buy     Defer 
-0.3333333 0.6666667
+
+
+If a customer has recently viewed products P9 and P2, 
+ - what is the prediction for the next two clicks?
+ 
+We add: absorbingProbabilities = data.frame(Buy = 0.333, Defer = 0.667)) 
+ - which comes from:
+      End Probabilities:
+        Buy     Defer 
+        0.3333333 0.6666667
 ```{r Predict Purchase }
-pattern <- new("Pattern", sequence = c("P9", "P2"), absorbingProbabilities = data.frame(Buy = 0.333, Defer = 0.667))
+pattern <- new("Pattern", 
+               sequence = c("P9", "P2"), 
+               absorbingProbabilities = data.frame(Buy = 0.333, Defer = 0.667))
 
 resultPattern <- predict(mc, startPattern = pattern, dist = 2)
 resultPattern
 ```
-He or she visit products P1 and P3, but the probability that she really continues visiting products P1 P3 is only 26.17%.
-Purchasing probability is 5.83% after 2 further clicks, and she most likely defers the purchase
+Sequence: P1 P3
+Probability: 0.26
+ - Customer visits products P1 and P3 but 
+ - the probability that she really continues visiting products P1 P3 is only 26.17%.
+ 
+Buy     0.058
+Defer   0.94
+ - Purchasing probability is 5.83% after 2 further clicks,
+ - Defer probability is 94% after 2 further clicks,
+ - she most likely defers the purchase
 
-Online stores often have evidence on how many of the visitors convert to a buyer (this info is typically used to formulate initial absorbing probabilities for all users). But, particularly for customers who log on to their account, the online stores can also know how many times a particular user has been only visiting the online store  and how often she has bought a product, 
-This information can be used to formulate initial absorbing probabilities for a user. If for example a user has been logged in and ﬁnally bought a product in 50% of her log-ins, we can compute absorbing probabilities (posterior) for a stream of clicks:
+##Initial absorbing probabilities
+Online stores often have evidence on how many of the visitors convert to a buyer (this info is typically used to formulate initial absorbing probabilities for all users). But, particularly for customers who log on to their account, the online stores can also know how many times a particular user has been only visiting the online store and how often she has bought a product, 
+This information can be used to formulate initial absorbing probabilities for a user. 
+ - If for example a user has been logged in and ﬁnally bought a product in 50% of her log-ins, we can compute absorbing probabilities (posterior) for a stream of clicks:
 ```{r Predict Specific Customer Purchase }
 absorbingProbabilities <- c(0.5, 0.5) #initial specific customer prior probs for buy or defer
+                #"user has been logged in and ﬁnally bought a product in 50% of her log-ins"
 sequence <- c("P9", "P2")
 for (s in sequence) {
   absorbingProbabilities <- absorbingProbabilities * data.matrix(subset(mc@absorbingProbabilities, state == s, select = c("Buy", "Defer")))
        }
 absorbingProbabilities <- absorbingProbabilities /sum(absorbingProbabilities)
 absorbingProbabilities
-# 22.62% to ﬁnally buy a product after she has visited products P9 and P2.
 ```
-This is a more "informed" approach having the specific customer prior buy/defer end probs.
+    Buy Defer
+15 0.23  0.77
+ - 23% to ﬁnally BUY a product after she has visited products P9 and P2.
+ - 77% to ﬁnally DEFER a product after she has visited products P9 and P2.
+ - This is a more "informed" approach having the specific customer prior buy/defer end probs.
 
+
+## Clustering before Markov Chain
 ii) An alternative before running the model is to identify segments of customers by clustering clickstreams and afterwards building a model within each cluster
 (Reference: Huang, Ng, Ching, Ng, and Cheung, 2001, k-means alg. and Euclidean distance) 
 ```{r Identify Segments of customers buy/defer }
 set.seed(12345)
-clusters <- clusterClickstreams(clickstreamList = cls,order = 1,centers = 3)
-
+clusters <- clusterClickstreams(clickstreamList = cls,
+                                order = 1, #order of the Markov chain (1st order in this case, meaning the next state depends only on the current state).
+                                centers = 3) #number of clusters to be created.
 clusters
 #clusters$clusters[[1]] This prints the specific cluster
 #clusters$clusters[[2]]
 #clusters$clusters[[3]]
 ```
-Clickstream 1 seems to be more likely to buy
-Clickstream 3 seems to be more likely to defer
+Shows the clustered clickstream data divided into three clusters. 
+Each cluster contains the sequences (sessions) of clickstreams that were grouped together based on their similarity
+
+ o Cluster 1:
+[[1]]Clickstreams
+Session3: P5 P1 P6 P7 P6 P7 P8 P7 Buy
+Session7: P10 P5 P10 P8 P8 P5 P1 P7 Buy
+Session9: P5 P8 P5 P7 P4 P1 P6 P4 Defer
+ - Cluster 1 tends to have a "Buy" action at the end 
+ - or multiple "P" actions before reaching "Defer."
+
+ o Cluster 3:
+[[3]] Clickstreams
+Session2: P3 P4 P1 P3 Defer
+Session5: P4 P6 P11 P6 P1 P3 Defer
+Session6: P3 P13 P12 P4 P12 P1 P4 P1 P3 Defer
+- Cluster 3 ends in "Defer" with repeated actions around "P1," "P3," and "P4."
+- Cluster 3 starts on Page 3 or 4 and ends in Defer
+
+
 
 ```{r MarkovChain - Specific Customer Purchase }
 # Fit a ‘MarkovChain’ object for each ‘Clickstreams’ object 
 mc_clu1 <- fitMarkovChain(clickstreamList = clusters$clusters[[1]], order = 2,control = list(optimizer = "quadratic"))
 mc_clu1
   
-mc_clu2 <- fitMarkovChain(clickstreamList = clusters$clusters[[2]], order = 2,control = list(optimizer = "quadratic"))
-mc_clu2
+#mc_clu2 <- fitMarkovChain(clickstreamList = clusters$clusters[[2]], order = 2,control = list(optimizer = "quadratic"))
+#mc_clu2
   
-mc_clu3 <- fitMarkovChain(clickstreamList = clusters$clusters[[3]], order = 2,control = list(optimizer = "quadratic"))
-mc_clu3
+#mc_clu3 <- fitMarkovChain(clickstreamList = clusters$clusters[[3]], order = 2,control = list(optimizer = "quadratic"))
+#mc_clu3
 # or write these objects to ﬁle with writeClickstreams().
 ```
+ o Transition Probabilities:
+Lag:  1 
+lambda:  1´
 
+Lag:  2 
+lambda:  3.3e-08 (approx 0%) 
+ - lambda values show how much weight each lag contributes to the prediction of the next state.
+ 
+ o Start Probabilities:
+P10   P5 
+0.33  0.67
+ - There is 67% chance for a customer starting on Page 5
+
+ o End Probabilities:
+  Buy Defer 
+ 0.67  0.33 
+ - There is 67% chance for a customer to BUY
+ - There is 33% chance for a customer to DEFER
+
+ o First output sheet:
+probs in the first order Markov chain
+ o Second output sheet:
+probs in the second order Markov chain
+
+
+#Simulated Clickstream data
 (2) Full example with simulated data
 - clickstreams for 100,000 user sessions 
 - clicks are either one of 7 products or on one of the two ﬁnal states "Buy" and "Defer".
 ```{r Clickstream 10.000 users }
 # Prepare the data
 set.seed(123)
-cls <- randomClickstreams(states = c("P1", "P2", "P3", "P4", "P5", "P6", "P7", "Defer", "Buy"),
-                            startProbabilities = c(0.2, 0.25, 0.1, 0.15, 0.1, 0.1, 0.1, 0, 0),
-                            transitionMatrix = matrix(c(0.01, 0.09, 0.05, 0.21, 0.12, 0.17, 0.11, 0.2, 0.04,
+cls_sim <- randomClickstreams(
+  states = c("P1", "P2", "P3", "P4", "P5", "P6", "P7", "Defer", "Buy"),
+  startProbabilities = c(0.2, 0.25, 0.1, 0.15, 0.1, 0.1, 0.1, 0, 0),
+  transitionMatrix = matrix(c(0.01, 0.09, 0.05, 0.21, 0.12, 0.17, 0.11, 0.2, 0.04,
                                                         0.1, 0, 0.29, 0.06, 0.11, 0.13, 0.21, 0.1, 0,
                                                         0.07, 0.16, 0.03, 0.25, 0.23, 0.08, 0.03, 0.12, 0.03,
                                                         0.16, 0.14, 0.07, 0, 0.05, 0.22, 0.19, 0.1, 0.07,
@@ -183,10 +295,10 @@ cls <- randomClickstreams(states = c("P1", "P2", "P3", "P4", "P5", "P6", "P7", "
                                                         0.11, 0.18, 0.04, 0.15, 0.26, 0, 0.1, 0.11, 0.05,
                                                         0.21, 0.07, 0.08, 0.2, 0.14, 0.18, 0.02, 0.08, 0.02,
                                                         0, 0, 0, 0, 0, 0, 0, 0, 0,
-                                                        0, 0, 0, 0, 0, 0, 0, 0, 0), nrow = 9),
+                                                        0, 0, 0, 0, 0, 0, 0, 0, 0),
+                            nrow = 9),
 meanLength = 50, n = 10000) #Alina is using 100000
-
-summary(cls)
+summary(cls_sim)
 ```
 
 
@@ -195,64 +307,184 @@ summary(cls)
 maxOrder <- 5 
 result <- data.frame()
   for (k in 1:maxOrder) {
-    mc <- fitMarkovChain(clickstreamList = cls, order = k)
+    mc <- fitMarkovChain(clickstreamList = cls_sim, order = k)
     result <- rbind(result, c(k, summary(mc)$aic, summary(mc)$bic))
   }
 names(result) <- c("Order", "AIC", "BIC")
 result
 ```
 We aim for the BIC with the value closest to zero
+ - Choose BIC 267932
+ - 3rd order Markov Chain
 In this case, we choose Order 3, but Alina choose 2 with 100.000 users
+
 
 Fit the selected model
 ```{r Fit Chosen X-Order MarkovChain }
-mc <- fitMarkovChain(clickstreamList = cls, order = 2,control = list(optimizer = "quadratic")) 
+mc <- fitMarkovChain(clickstreamList = cls, 
+                     order = 3,
+                     control = list(optimizer = "quadratic")) 
 mc
 ```
+ o Transition Probabilities:
+Lag:  1 
+lambda:  3.3e-08 (approx 0%) 
 
-Predict the next click
+Lag:  2 
+lambda:  0.95 
+ 
+Lag:  3 
+lambda:  0.05
+ - lambda values show how much weight each lag contributes to the prediction of the next state.
+ 
+ o Start Probabilities:
+P1  P10   P3   P4   P5   P9 
+0.11 0.11 0.22 0.11 0.22 0.22
+ - There is 22% chance for a customer starting on Page 3, Page 5, Page 9
+
+ o End Probabilities:
+Buy Defer 
+ 0.33  0.67 
+ - There is 33% chance for a customer to BUY
+ - There is 67% chance for a customer to DEFER
+
+ o First output sheet:
+probs in the first order Markov chain
+ o Second output sheet:
+probs in the second order Markov chain
+and so on...
+
+
+
+Predict the next click (absorbtion probs)
+If a customer has recently viewed products P3 and P4, 
+ - what is the prediction for the next two clicks?
+We add: absorbingProbabilities = data.frame(Buy = 0.33, Defer = 0.67)) 
+ - which comes from:
+      End Probabilities:
+        Buy     Defer 
+        0.33 0.67
 ```{r Predict next Click }
-pattern <- new("Pattern", sequence = c("P3", "P4"), absorbingProbabilities = data.frame(Buy = 0.22, Defer = 0.78))
+pattern <- new("Pattern", 
+               sequence = c("P3", "P4"), 
+               absorbingProbabilities = data.frame(Buy = 0.33, Defer = 0.67))
+
 resultPattern <- predict(mc, startPattern = pattern, dist = 1)
 resultPattern
 ```
+Sequence: Defer
+Probability: 0.56
+ - Customer visits products P1 and P3 but 
+ - the probability that the customer defers is 0.56%
+ 
+Buy     0
+Defer   1
+ - Purchasing probability is 0% after 2 further clicks,
+ - Defer probability is 1% after 2 further clicks,
+ - she definately defers the purchase
+ 
 
-BOOKMARK 21. march
 
-```{r Predict Specific Customer Purchase }
-# or, cluster, fit a mc per cluster and predict; clustering clickstreams is useful 
-  # in case of high clickstream heterogeneity
-  clusters_sim <- clusterClickstreams(clickstreamList = cls, order = 1, centers = 3)  # takes 5-10 min. to converge
-  summary(clusters_sim$clusters[[1]]) 
-  summary(clusters_sim$clusters[[2]]) 
-  summary(clusters_sim$clusters[[3]]) 
-  
-  # mc for clu 1 
-  maxOrder <- 5 
-  result <- data.frame()
+Clustering before Markov Chain
+ - An alternative before running the model is to identify segments of customers by clustering clickstreams 
+ - and afterwards building a model within each cluster
+ - fit a markovchain per cluster and predict; clustering clickstreams is useful in case of high clickstream heterogeneity
+```{r Cluster - Predict Specific Customer Purchase }
+clusters_sim <- clusterClickstreams(clickstreamList = cls, 
+                                    order = 1, 
+                                    centers = 3)  # takes 5-10 min. to converge
+clusters_sim
+#summary(clusters_sim$clusters[[1]]) 
+#summary(clusters_sim$clusters[[2]]) 
+#summary(clusters_sim$clusters[[3]])
+```
+Shows the clustered clickstream data divided into three clusters. 
+Each cluster contains the sequences (sessions) of clickstreams that were grouped together based on their similarity
+
+ o Cluster 2:
+[[1]]Clickstreams
+Session3: P5 P1 P6 P7 P6 P7 P8 P7 Buy
+Session7: P10 P5 P10 P8 P8 P5 P1 P7 Buy
+Session9: P5 P8 P5 P7 P4 P1 P6 P4 Defer
+ - Cluster 1 tends to have a "Buy" action at the end 
+ - Cluster 1 has Page 7 before purchase
+
+ o Cluster 3:
+[[3]] Clickstreams
+Session2: P3 P4 P1 P3 Defer
+Session5: P4 P6 P11 P6 P1 P3 Defer
+Session6: P3 P13 P12 P4 P12 P1 P4 P1 P3 Defer
+- Cluster 3 ends in "Defer" with repeated actions around "P1" and "P3"
+- Cluster 3 starts on Page 3 or 4 and ends in Defer (as in the absorption findings)
+
+
+Markov Chain for Cluster 1
+```{r Cluster - Predict Specific Customer Purchase }
+# markov chain for clu 1 
+maxOrder <- 5 
+result <- data.frame()
   for (k in 1:maxOrder) {
     mc <- fitMarkovChain(clickstreamList = clusters_sim$clusters[[1]], order = k)
     result <- rbind(result, c(k, summary(mc)$aic, summary(mc)$bic))
   }
-  names(result) <- c("Order", "AIC", "BIC")
-  result
-  
-  mc_clu1 <- fitMarkovChain(clickstreamList = clusters_sim$clusters[[1]], order = 1) 
-  summary(mc_clu1)
-  
-  pattern <- new("Pattern", sequence = c("P1", "P4", "P6"), absorbingProbabilities = data.frame(Buy = 0.22, Defer = 0.78))
-  resultPattern <- predict(mc_clu1, startPattern = pattern, dist = 1)
-  resultPattern
-  # interpret
-  
-  
-  
-  
-# (3) Example with real data (A Danish company provided us with a file of clickstream data on their e-commerce customers).
-  mydata  <- readClickstreams(file = "~/Documents/Alina Tudoran/TEACHING/Postgraduate/Customer Analytics/6. CLICKSTREAMS/Lecture 2 Application R/StepsDesktop.csv", sep=",",header = T)
-  summary(mydata)
-  
-  maxOrder <- 5 
+names(result) <- c("Order", "AIC", "BIC")
+result
+```
+Aim for the BIC with the value closest to zero
+ - Choose BIC 62
+ - 1st order Markov Chain
+
+Choosing 1st order Markov Chain for Cluster 1
+```{r Cluster - Predict Specific Customer Purchase }
+mc_clu1 <- fitMarkovChain(clickstreamList = clusters_sim$clusters[[1]], 
+                          order = 1) 
+mc_clu1
+```
+        1st order Markov Chain for Clsuter 1
+ o Transition Probabilities:
+Lag:  1 
+lambda:  1
+ - lambda values show how much weight each lag contributes to the prediction of the next state.
+ 
+ o Start Probabilities:
+  P1   P9 
+0.33 0.67
+ - There is 67% chance for a customer starting on Page 9
+
+ o End Probabilities:
+Buy Defer 
+ 0.33  0.67 
+ - There is 33% chance for a customer to BUY
+ - There is 67% chance for a customer to DEFER
+
+ o First output sheet:
+probs in the first order Markov chain
+
+
+NOT WORKING
+```{r Cluster - Predict Specific Customer Purchase }
+pattern <- new("Pattern", 
+               sequence = c("P1", "P4", "P6"), 
+               absorbingProbabilities = data.frame(Buy = 0.33, Defer = 0.67))
+
+resultPattern <- predict(mc_clu1, startPattern = pattern, dist = 1)
+resultPattern
+```
+
+
+
+#Real data Clickstream
+(3) Example with real data 
+ - (A Danish company provided us with a file of clickstream data on their e-commerce customers).
+```{r  }
+#mydata  <- readClickstreams(file = "~/Documents/Alina Tudoran/TEACHING/Postgraduate/Customer Analytics/6. CLICKSTREAMS/Lecture 2 Application R/StepsDesktop.csv", sep=",",header = T)
+mydata <- readClickstreams(file = "C:/Users/Bruger/OneDrive - Aarhus universitet/8. semester - BI/CA - Customer Analytics/Web Analytics/StepsDektop.csv", sep = ",", header = TRUE) 
+mydata
+```
+
+
+```{r  }
+maxOrder <- 5 
   result <- data.frame()
   for (k in 1:maxOrder) {
     mc <- fitMarkovChain(clickstreamList = mydata, order = k)
