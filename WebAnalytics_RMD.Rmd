@@ -239,6 +239,30 @@ Session6: P3 P13 P12 P4 P12 P1 P4 P1 P3 Defer
 - Cluster 3 starts on Page 3 or 4 and ends in Defer
 
 
+```{r}
+clusters$clusters[[1]]
+```
+FROM "Real data Clickstream" - ADJUST IT
+o Observations: 4324
+ - The total number of observations (clicks) in the first cluster.
+
+ o Click Frequencies:
+ - shows the frequency of clicks for different pages within the FIRST cluster
+            AddCartPage               CartPage           CategoryPage 
+                  2254                   3014                  23663 
+             ChannelAd    ChannelDirectAccess           ChannelOther 
+                  4131                   4648                    138 
+ChannelPriceComparison    ChannelSearchEngine  ChannelSocialNetworks 
+                   437                   2896                     42 
+        ChannelWebmail             Conversion           DeliveryPage 
+                   161                    681                    622 
+          DiscountPage              FrontPage            LandingPage 
+                  2874                   7625                   1216 
+             OtherPage         ProductDetails            ProductPage 
+                  1018                  15366                  19903 
+        Recommendation         SearchFunction 
+                   249                   1830
+
 
 ```{r MarkovChain - Specific Customer Purchase }
 # Fit a ‘MarkovChain’ object for each ‘Clickstreams’ object 
@@ -477,92 +501,251 @@ resultPattern
 (3) Example with real data 
  - (A Danish company provided us with a file of clickstream data on their e-commerce customers).
 ```{r  }
+library("clickstream")
 #mydata  <- readClickstreams(file = "~/Documents/Alina Tudoran/TEACHING/Postgraduate/Customer Analytics/6. CLICKSTREAMS/Lecture 2 Application R/StepsDesktop.csv", sep=",",header = T)
-mydata <- readClickstreams(file = "C:/Users/Bruger/OneDrive - Aarhus universitet/8. semester - BI/CA - Customer Analytics/Web Analytics/StepsDektop.csv", sep = ",", header = TRUE) 
-mydata
+```
+
+```{r}
+library("clickstream")
+mydata <- readClickstreams(file = "C:/Users/Bruger/OneDrive - Aarhus universitet/8. semester - BI/CA - Customer Analytics/Web Analytics/StepsDesktop.csv", sep=",",header = T)
 ```
 
 
 ```{r  }
-maxOrder <- 5 
-  result <- data.frame()
+maxOrder <- 3 
+result <- data.frame()
   for (k in 1:maxOrder) {
     mc <- fitMarkovChain(clickstreamList = mydata, order = k)
     result <- rbind(result, c(k, summary(mc)$aic, summary(mc)$bic))
   }
   names(result) <- c("Order", "AIC", "BIC")
   result
-  
-  # mc order k = 1
-  mc <- fitMarkovChain(clickstreamList = mydata, order = 1,control = list(optimizer = "quadratic")) 
-  mc
-  
-  # Predict
-  pattern <- new("Pattern", sequence = c("DeliveryPage"))
-  resultPattern <- predict(mc, startPattern = pattern, dist = 1)
-  resultPattern
-  pattern <- new("Pattern", sequence = c("AddCartPage"))
-  resultPattern <- predict(mc, startPattern = pattern, dist = 1)
-  resultPattern
-  pattern <- new("Pattern", sequence = c("AddCartPage", "CartPage"))
-  resultPattern <- predict(mc, startPattern = pattern, dist = 1)
-  resultPattern
-  pattern <- new("Pattern", sequence = c("DeliveryPage"))
-  resultPattern <- predict(mc, startPattern = pattern, dist = 1)
-  resultPattern
-  
-  
-  # Clustering first 
-  clusters_ex <- clusterClickstreams(clickstreamList = mydata, order = 1, centers = 3)  # takes 5-10 min. to converge
-  summary(clusters_ex$clusters[[1]]) # clu 1
-  # mc for clu 1 
-  maxOrder <- 5 
-  result <- data.frame()
+```
+We aim for the BIC with the value closest to zero
+ - Choose BIC 970591.8
+ - 1st order Markov Chain
+
+
+Fit the selected model
+```{r  }
+# mc order k = 1
+mc <- fitMarkovChain(clickstreamList = mydata, 
+                     order = 1,
+                     control = list(optimizer = "quadratic")) 
+mc
+```
+ o Transition Probabilities:
+Lag:  1 
+lambda:  1
+ - lambda values show how much weight each lag contributes to the prediction of the next state.
+
+ o Start Probabilities:
+ChannelAd    ChannelDirectAccess    ChannelOther 
+0.445329933   0.128705770            0.004011263 
+ChannelPriceComparison    ChannelSearchEngine  ChannelSocialNetworks 
+0.068882159               0.284720009            0.009430454 
+ChannelWebmail 
+0.058920412 
+ - There is 44,5% chance for a customer starting on ChannelAd
+ - and so on...
+
+ o End Probabilities:
+          AddCartPage               CartPage           CategoryPage 
+          2.364255e-03           1.522155e-02           2.464403e-01 
+             ChannelAd    ChannelDirectAccess ChannelPriceComparison 
+          6.109871e-04           5.844225e-04           5.312932e-05 
+   ChannelSearchEngine         ChannelWebmail             Conversion 
+          1.859526e-04           2.656466e-05           5.565296e-02 
+          DeliveryPage           DiscountPage              FrontPage 
+          1.636383e-02           5.815004e-02           4.709914e-02 
+           LandingPage              OtherPage         ProductDetails 
+          7.172458e-03           5.443099e-02           1.487355e-01 
+           ProductPage         Recommendation         SearchFunction 
+          3.317129e-01           1.992349e-03           1.320264e-02
+ - There is no chance for end at all???
+
+
+
+Predict
+Predict either the next click or the ﬁnal click (state) of a customer. 
+ - If a customer starts with the clickstream DeliveryPage, what will do next?
+```{r Predict }
+# Predict
+pattern <- new("Pattern", 
+               sequence = c("DeliveryPage"))
+resultPattern <- predict(mc, startPattern = pattern, dist = 1)
+resultPattern
+
+#pattern <- new("Pattern", 
+#               sequence = c("AddCartPage"))
+#resultPattern <- predict(mc, startPattern = pattern, dist = 1)
+#resultPattern
+
+#pattern <- new("Pattern", 
+#               sequence = c("AddCartPage", "CartPage"))
+#resultPattern <- predict(mc, startPattern = pattern, dist = 1)
+#resultPattern
+
+#pattern <- new("Pattern", 
+#               sequence = c("DeliveryPage"))
+#resultPattern <- predict(mc, startPattern = pattern, dist = 1)
+#resultPattern
+```
+SUMMARY:
+ - The user will most likely click on ChannelDirectAccess next with a 0.20 prob.
+
+
+
+Clustering
+An alternative before running the model is to identify segments of customers by clustering clickstreams and afterwards building a model within each cluster
+```{r  }
+# Clustering first 
+clusters_ex <- clusterClickstreams(clickstreamList = mydata, 
+                                   order = 1, 
+                                   centers = 3)  # takes 5-10 min. to converge
+summary(clusters_ex$clusters[[1]]) # cluster 1
+
+#clusters_ex
+#Will print output for the sequences for all 3 clusters
+```
+ o Observations: 4324
+ - The total number of observations (clicks) in the first cluster.
+
+ o Click Frequencies:
+ - shows the frequency of clicks for different pages within the FIRST cluster
+            AddCartPage               CartPage           CategoryPage 
+                  2254                   3014                  23663 
+             ChannelAd    ChannelDirectAccess           ChannelOther 
+                  4131                   4648                    138 
+ChannelPriceComparison    ChannelSearchEngine  ChannelSocialNetworks 
+                   437                   2896                     42 
+        ChannelWebmail             Conversion           DeliveryPage 
+                   161                    681                    622 
+          DiscountPage              FrontPage            LandingPage 
+                  2874                   7625                   1216 
+             OtherPage         ProductDetails            ProductPage 
+                  1018                  15366                  19903 
+        Recommendation         SearchFunction 
+                   249                   1830
+
+
+
+CLUSTER 1
+```{r  }
+# mc for clu 1 
+maxOrder <- 3 
+result <- data.frame()
   for (k in 1:maxOrder) {
     mc <- fitMarkovChain(clickstreamList = clusters_ex$clusters[[1]], order = k)
     result <- rbind(result, c(k, summary(mc)$aic, summary(mc)$bic))
   }
-  names(result) <- c("Order", "AIC", "BIC")
-  result
-  
-  
-  summary(clusters_ex$clusters[[2]]) # clu 2
+names(result) <- c("Order", "AIC", "BIC")
+result
+```
+Aim for the BIC with the value closest to zero
+ - Choose BIC 254074.7
+ - 1st order Markov Chain
+
+
+CLUSTER 2
+```{r  }
+summary(clusters_ex$clusters[[2]]) # clu 2
   # mc for clu 2 
-  maxOrder <- 5 
-  result <- data.frame()
+maxOrder <- 2
+result <- data.frame()
   for (k in 1:maxOrder) {
     mc <- fitMarkovChain(clickstreamList = clusters_ex$clusters[[2]], order = k)
     result <- rbind(result, c(k, summary(mc)$aic, summary(mc)$bic))
   }
-  names(result) <- c("Order", "AIC", "BIC")
-  result
-  
-  
-  summary(clusters_ex$clusters[[3]]) # clu 3
+names(result) <- c("Order", "AIC", "BIC")
+result
+```
+Aim for the BIC with the value closest to zero
+ - Choose BIC 287330.6
+ - 1st order Markov Chain
+ 
+CLUSTER 3
+```{r  }
+summary(clusters_ex$clusters[[3]]) # clu 3
   # mc for clu 3
-  maxOrder <- 5 
-  result <- data.frame()
+maxOrder <- 3
+result <- data.frame()
   for (k in 1:maxOrder) {
     mc <- fitMarkovChain(clickstreamList = clusters_ex$clusters[[3]], order = k)
     result <- rbind(result, c(k, summary(mc)$aic, summary(mc)$bic))
   }
-  names(result) <- c("Order", "AIC", "BIC")
-  result
-  
-  
-  mc_clu1 <- fitMarkovChain(clickstreamList = clusters_ex$clusters[[1]], order = 1) 
-  summary(mc_clu1)
-  mc_clu2 <- fitMarkovChain(clickstreamList = clusters_ex$clusters[[2]], order = 1) 
-  summary(mc_clu2)
-  mc_clu3 <- fitMarkovChain(clickstreamList = clusters_ex$clusters[[3]], order = 1) 
-  summary(mc_clu3)
-  
-  # model graphical representation (i)
+names(result) <- c("Order", "AIC", "BIC")
+result
+```
+Aim for the BIC with the value closest to zero
+ - Choose BIC 400087.3
+ - 1st order Markov Chain
+
+
+Fit selected model among Cluster 1 2 3
+ - Choosing Cluster 1 with the lowest BIC value
+```{r  }
+mc_clu1 <- fitMarkovChain(clickstreamList = clusters_ex$clusters[[1]], 
+                          order = 1) 
+mc_clu1
+
+#mc_clu2 <- fitMarkovChain(clickstreamList = clusters_ex$clusters[[2]], order = 1) 
+#mc_clu2
+
+#mc_clu3 <- fitMarkovChain(clickstreamList = clusters_ex$clusters[[3]], order = 1) 
+#mc_clu3
+```
+ o Transition Probabilities:
+Lag:  1 
+lambda:  0.96
+ - lambda values show how much weight each lag contributes to the prediction of the next state.
+ 
+ o Start Probabilities:
+          ChannelAd           ChannelDirectAccess       ChannelOther 
+          0.2469935245           0.3855226642           0.0009250694 
+ChannelPriceComparison    ChannelSearchEngine  ChannelSocialNetworks 
+          0.0173450509           0.3330249769           0.0013876041 
+        ChannelWebmail 
+          0.0148011101
+ - There is 38% chance for a customer starting on ChannelDirectAccess
+ - There is 24% chance for a customer starting on ChannelAd
+
+ o End Probabilities:
+      AddCartPage            CartPage          CategoryPage 
+       0.0030064755        0.0444033302        0.3267807586 
+ChannelDirectAccess          Conversion        DeliveryPage 
+       0.0009250694        0.1574930620        0.0111008326 
+       DiscountPage           FrontPage         LandingPage 
+       0.0284458834        0.0450971323        0.0039315449 
+          OtherPage      ProductDetails         ProductPage 
+       0.0136447734        0.1348288622        0.2185476411 
+     Recommendation      SearchFunction 
+       0.0006938020        0.0111008326
+ - There is 13,5% chance for a customer to end on ProductDetails
+ - There is 32,68% chance for a customer to ProductDetails
+
+ o First output sheet:
+probs in the first order Markov chain
+
+ o Slides Comments
+ - clust.2 and clust.3 search a lot through Category page; 
+ - clust.1 search more through Product page;
+ - cl.1 and cl.3 search more varied (use more channels than cl.2)
+ - cl.3 are more likely to enter through DirectAccess -> Front page pattern than the other two clusters.
+ - In this application the product page was generalized. 
+ - However, if a more fine-grained clicktream data were available by product brand it will allow the manager to take informed decisions about the preferences of each cluster.
+
+
+```{r  }
+# model graphical representation (i)
   plot(mc_clu1, order = 1)
   plot(mc_clu2, order = 1)
   plot(mc_clu3, order = 1)
-  
-  # model graphical representation (ii)
+```
+
+
+```{r  }
+# model graphical representation (ii)
   par(mfrow=c(1,3))
   par(mar=c(1, 1, 4, 0))
   set.seed(11)
@@ -584,9 +767,11 @@ maxOrder <- 5
        edge.label.font=4,
        margin=c(0,0,0,0.15),
        main ="Cluster 1")
- 
-  
-  set.seed(11)
+```
+
+
+```{r  }
+set.seed(11)
   plot(mc_clu2, order = 1, digits = 1, minProbability = 0.40,
        vertex.color=0,
        vertex.frame.color=0,
@@ -605,9 +790,11 @@ maxOrder <- 5
        edge.label.font=4,
        margin=c(0,0,0,0.15),
        main ="Cluster 2")
-  
-  
-  set.seed(11)
+```
+
+
+```{r  }
+set.seed(11)
   plot(mc_clu3, order = 1, digits = 1, minProbability = 0.40,
        vertex.color=0,
        vertex.frame.color=0,
@@ -636,55 +823,84 @@ maxOrder <- 5
   # than the other two clusters.
   # In this application the product page was generalized. 
   # However, if a more fine-grained clicktream data were available by product brand
-  # it will allow the manager to take informed decisions about the preferences of each cluster. 
+  # it will allow the manager to take informed decisions about the preferences of each cluster.
+```
+
+
+
+
+Predict either the next click or the ﬁnal click (state) of a customer. 
+ - If a customer starts with the clickstream "AddCartPage", "CartPage", what will do next?
+ - CLUSTER 1 and 2 and 3
+ - CLUSTER 1 output:
+```{r  }
+# predicting the next steps
+pattern <- new("Pattern", 
+               sequence = c("AddCartPage", "CartPage"))
+
+resultPattern <- predict(mc_clu1, startPattern = pattern, dist = 1)
+resultPattern
   
-  # predicting the next steps
-  pattern <- new("Pattern", sequence = c("AddCartPage", "CartPage"))
-  resultPattern <- predict(mc_clu1, startPattern = pattern, dist = 1)
-  resultPattern
+#pattern <- new("Pattern", 
+#               sequence = c("AddCartPage", "CartPage"))
+
+#resultPattern <- predict(mc_clu2, startPattern = pattern, dist = 1)
+#resultPattern
   
-  pattern <- new("Pattern", sequence = c("AddCartPage", "CartPage"))
-  resultPattern <- predict(mc_clu2, startPattern = pattern, dist = 1)
-  resultPattern
-  
-  pattern <- new("Pattern", sequence = c("AddCartPage", "CartPage"))
-  resultPattern <- predict(mc_clu3, startPattern = pattern, dist = 1)
-  resultPattern
-  # interpret
-  # Possible covariates: product category, device. In that case, the analysis 
-  # should be done by category and device. 
-  
-  
-  
-# (4) A second alternative to modeling clickstreams with higher-order 
-  # Markov chains is representing them as sequential patterns. Such an approach answers to
-  # the following question: Which are the patterns sequences most supported in each group? 
-  # using "arulesSequences" and "arulesViz" for vizualization
-  # Extracting all click patterns with a particular minimum support (Apriori algorithm)
-  library("arules")
+#pattern <- new("Pattern", 
+#               sequence = c("AddCartPage", "CartPage"))
+
+#resultPattern <- predict(mc_clu3, startPattern = pattern, dist = 1)
+#resultPattern
+
+# Possible covariates: product category, device. In that case, the analysis 
+# should be done by category and device.
+```
+CLUSTER 1
+SUMMARY:
+ - The user from CLUSTER 1 will most likely click on ProductPage next with a 0.21 prob.
+
+
+# Sequential patterns
+(4) A second alternative to modeling clickstreams with higher-order Markov chains is representing them as 
+ - sequential patterns. 
+ - Such an approach answers to the following question: Which are the patterns sequences most supported in each group? 
+using "arulesSequences" and "arulesViz" for vizualization
+Extracting all click patterns with a particular minimum support (Apriori algorithm)
+```{r  }
+library("arules")
   library("arulesSequences")
+
+# looking by clustered data
+trans_clu1<- as.transactions(clusters$clusters[[1]]) 
+sequences_clu1 <- as(
+  apriori(trans_clu1, parameter = list(support = 0.50)),
+  "data.frame") 
+sequences_clu1
+# subrules <- subset(sequences_clu1, support>0.05)
   
-  # looking by clustered data
-  trans_clu1<- as.transactions(clusters$clusters[[1]]) 
-  sequences_clu1 <- as(apriori(trans_clu1, parameter = list(support = 0.50)), "data.frame") 
-  sequences_clu1
-  # subrules <- subset(sequences_clu1, support>0.05)
+#trans_clu2<- as.transactions(clusters$clusters[[2]]) 
+#sequences_clu2 <- as(
+#  apriori(trans_clu2, parameter = list(support = 0.50)), 
+#  "data.frame")
+#sequences_clu2
   
-  trans_clu2<- as.transactions(clusters$clusters[[2]]) 
-  sequences_clu2 <- as(apriori(trans_clu2, parameter = list(support = 0.50)), "data.frame")
-  sequences_clu2
-  
-  trans_clu3<- as.transactions(clusters$clusters[[3]]) 
-  sequences_clu3 <- as(apriori(trans_clu3, parameter = list(support = 0.50)), "data.frame")
-  sequences_clu3
-  
-  # The corresponding output shows that pattern sequences are supported by at least 50% of 
-  # the clickstreams in each cluster. cluster 1 of clickstream is the most heterogeneeous. 
-  # The most common pattern {ChannelAd} => {ProductPage} has support in 41% of the clicks
-  # in clu1. This pattern reflects that these customers are most likely acquired through 
-  # re-targeting. 
-  
-  # vizualization
+#trans_clu3<- as.transactions(clusters$clusters[[3]]) 
+#sequences_clu3 <- as(
+#  apriori(trans_clu3, parameter = list(support = 0.50)), 
+#  "data.frame")
+#sequences_clu3
+```
+
+ o Slides Comments:
+ - The corresponding output shows that pattern sequences are supported by at least 50% of the clickstreams in each cluster. 
+ - cluster 1 of clickstream is the most heterogeneeous. 
+ - The most common pattern {ChannelAd} => {ProductPage} has support in 41% of the clicks in clust1. This pattern reflects that these customers are most likely acquired through re-targeting.
+
+
+FUCK THE KING
+```{r  }
+# vizualization
   library("arulesViz")
   sequences_clu1 <- apriori(trans_clu1, parameter = list(support = 0.40))
   ruleExplorer(sequences_clu1)
@@ -865,7 +1081,6 @@ maxOrder <- 5
 #CHOICE MODELING
 
 ## Choice-based conjoint analysis
-
 ```{r}
 # data
 cbc.df <- read.csv("http://goo.gl/5xQObB",colClasses=c(seat="factor", 
@@ -876,6 +1091,30 @@ cbc.df$eng<-factor(cbc.df$eng,levels=c("gas","hyb","elec"))
 cbc.df$carpool<-factor(cbc.df$carpool,levels=c("yes","no"))
 summary(cbc.df)
 ```
+ - ques: This represents the question number. Each respondent answered up to 15 questions.
+
+ - alt: indicates the alternative (option) number presented to the respondent. Each respondent was given up to 3 alternatives to choose from.
+ 
+carpool: This categorical variable indicates whether the car supports carpooling ("yes" or "no"). 
+ - There are 2655 instances of "yes" and 6345 instances of "no".
+
+seat: This represents the seating capacity of the car, 
+ - which is either 6 or 8 seats.
+
+cargo: This indicates the cargo capacity, 
+ - which is either 2ft or 3ft.
+
+eng: This categorical variable represents the type of engine: "gas", "hyb" (hybrid), or "elec" (electric). 
+ - Each type has roughly 3000 instances.
+
+price: This categorical variable represents the price of the car, 
+ - with 3 distinct pricelevels
+
+choice: This integer variable indicates the choice made by the respondent, 
+ - with "1" indicating the chosen alternative and 
+ - "0" or "-1" indicating the non-chosen alternatives
+
+
 
 ```{r Inspect data }
 #summary(cbc.df)
@@ -885,6 +1124,12 @@ xtabs(choice~carpool,data=cbc.df)
 xtabs(choice~seat,data=cbc.df)
 xtabs(choice~eng,data=cbc.df)
 ```
+ o price
+  30   35   40 
+1486  956  558 
+ - consumers mostly prefer price: 30
+ 
+ o and so on...
 
 
 ```{r convert into mlogit.data }
@@ -892,8 +1137,434 @@ xtabs(choice~eng,data=cbc.df)
 #install.packages("dfidx")
 library(dfidx)
 # add a column with unique question numbers, as needed in mlogit 1.1+
-cbc.df$chid <- rep(1:(nrow(cbc.df)/3 ), each=3) #creates a new column in the data frame cbc.df called chid, which stands for "case ID" or "choice situation ID". The rep function repeats the sequence from 1 to the number of rows divided by 3, each three times. This is under the assumption that each respondent has three choice tasks (or alternatives) in the dataset. It's essential for the mlogit model to identify which rows belong to the same choice set.
+cbc.df$chid <- rep(1:(nrow(cbc.df)/3 ), each=3) #creates a new column in the data frame cbc.df called chid, which stands for "case ID" or "choice situation ID". The rep function repeats the sequence from 1 to the number of rows divided by 3, each three times. 
+#This is under the assumption that each respondent has three choice tasks (or alternatives) in the dataset. It's essential for the mlogit model to identify which rows belong to the same choice set.
 
 # shape the data for mlogit
 cbc.mlogit <- dfidx(cbc.df, choice="choice", idx=list(c("chid", "resp.id"), "alt" )) #reshaping the cbc.df data frame into an indexed data frame that is suitable for mlogit analysis.
 ```
+
+
+Mlogit model - without intercept
+```{r}
+# fitting a nmlogit model
+#install.packages("mlogit") 
+library(mlogit) 
+# without intercept
+m1 <- mlogit(choice ~ 0 + #choice is the dependent variable, and the predictors (independent variables) are seat, cargo, eng, and price. The 0 + part indicates that no intercept is included in the model.
+               seat + 
+               cargo + 
+               eng + 
+               price,
+             data = cbc.mlogit)
+summary(m1)
+```
+ o Frequencies of alternatives:choice
+      1       2       3 
+0.32700 0.33467 0.33833 
+ - the relative frequency of each alternative (choice) in the dataset
+
+ o Loglikelihood : -2581.6
+ - Higher values indicate a better fit to the data, with this value typically being negative for likelihoods.
+ - Dont use LogLikelihood to decide between models
+
+ o Coefficients :
+          Estimate Std. Error  z-value  Pr(>|z|)    
+seat7    -0.535280   0.062360  -8.5837 < 2.2e-16 ***
+seat8    -0.305840   0.061129  -5.0032 5.638e-07 ***
+cargo3ft  0.477449   0.050888   9.3824 < 2.2e-16 ***
+enghyb   -0.811282   0.060130 -13.4921 < 2.2e-16 ***
+engelec  -1.530762   0.067456 -22.6926 < 2.2e-16 ***
+price35  -0.913656   0.060601 -15.0765 < 2.2e-16 ***
+price40  -1.725851   0.069631 -24.7856 < 2.2e-16 ***
+ - seat7: coefficient is -0.535280, indicating a negative preference for the 7-seat option relative to the base level (implicitly 6 seats since the 6-seater is not explicitly shown).
+ - seat8: coefficient is -0.305840, indicating a negative preference for the 8-seat option relative to the base level.
+ - cargo3ft: The coefficient is 0.470570, indicating a positive preference for the 3ft cargo capacity relative to the base level (implicitly 2ft).
+ - enghyb: The coefficient is -0.819320, indicating a negative preference for hybrid engines relative to the base level (implicitly gas engines).
+ - engelec: The coefficient is -1.530762, indicating a strong negative preference for electric engines relative to the base level.
+ - price35: The coefficient is -0.931566, indicating a negative preference for a $35K price relative to the base level (implicitly $30K).
+ - price40: The coefficient is -1.725851, indicating a strong negative preference for a $40K price relative to the base level.
+
+ o Slides comments:
+ - Estimate lists the estimated parameter (part worth coefficient) for each level;
+ - these must be interpreted relative to the base levels of each attribute (if factor)
+ - Estimates that are larger in magnitude indicate stronger preferences 
+ - customers strongly disliked electric engines (relative to the base level, which is gas) and 
+ - disliked the $40K price (relative to the base level price of $30)
+ - all parameter estimates are on the logit scale and typical range between −2 and 2
+
+
+
+Mlogit model - With intercept
+```{r}
+# with intercept
+m2 <- mlogit(choice ~ seat + cargo + eng + price,data = cbc.mlogit)
+#choice is the dependent variable, and the predictors (independent variables) are seat, cargo, eng, and price. Unlike the previous model, 
+#this one includes an intercept
+summary(m2)
+```
+Only diff from without intercept:
+ - (Intercept):2 and (Intercept):3: These are the intercepts for alternatives 2 and 3 relative to the base alternative 1. 
+ - They are not statistically significant (p-values > 0.05).
+
+ o Loglikelihood : -2581.3
+ - Higher values indicate a better fit to the data, with this value typically being negative for likelihoods.
+ - Dont use LogLikelihood to decide between models
+
+m1: No intercept model (simple model)
+m2: Includes intercept model
+```{r}
+# comparing the two models
+lrtest(m1,m2)
+```
+  #Df  LogLik Df  Chisq Pr(>Chisq)
+1   7 -2581.6                     
+2   9 -2581.3  2 0.6789     0.7122
+
+ o Pr(>Chisq): 0.7122 > 0.05
+ - Model 2 is insignificant having a higher p-value than level of significance
+ - rejecting the Alternative hypothesis
+ - Model 2 does not significantly distinguish from Model 1 (simple model)
+ - Choose the simple model 1, as the bigger and more complex model 2 does not contribute with a significantly better fit
+
+
+Treat price as Numeric - mlogit model without intercept
+```{r}
+# treating price as continuous (instead of a factor with levels)
+m3 <- mlogit(choice ~ 0 + 
+               seat + 
+               cargo + 
+               eng + 
+               as.numeric(as.character(price)),
+             data=cbc.mlogit)
+summary(m3)
+```
+ o Frequencies of alternatives:choice
+      1       2       3 
+0.32700 0.33467 0.33833
+ - the relative frequency of each alternative (choice) in the dataset
+
+ o Loglikelihood : -2582.1
+ - Higher values indicate a better fit to the data, with this value typically being negative for likelihoods.
+ - Dont use LogLikelihood to decide between models
+
+Coefficients :
+                  Estimate     Std. Error  z-value  Pr(>|z|)    
+seat7              -0.5345392  0.0623518  -8.5730 < 2.2e-16 ***
+seat8              -0.3061074  0.0611184  -5.0084 5.488e-07 ***
+cargo3f             0.4766936  0.0508632   9.3721 < 2.2e-16 ***
+enghyb             -0.8107339  0.0601149 -13.4864 < 2.2e-16 ***
+engelec            -1.5291247  0.0673982 -22.6879 < 2.2e-16 ***
+numeric price      -0.1733053  0.0069398 -24.9726 < 2.2e-16 ***
+
+Interpret rest of estimates as above!
+
+numeric price:
+ - coefficient for price (-0.173505) is negative, which indicates that as the price increases, the likelihood of a customer choosing that option decreases. This is consistent with the economic theory that consumers prefer lower prices.
+
+ o Slides comments:
+ - output now shows a single parameter for price. The estimate is negative
+ - indicating that people prefer lower prices to higher prices
+
+
+m1: No intercept model (simple model)
+m3: Numeric price model, no intercept
+```{r}
+# comparing the two models
+lrtest(m1,m3)
+```
+  #Df  LogLik Df  Chisq Pr(>Chisq)
+1   7 -2581.6                     
+2   6 -2582.1 -1 0.9054     0.3413
+
+ o Pr(>Chisq): 0.3413 > 0.05
+ - Model 3 is insignificant having a higher p-value than level of significance
+ - rejecting the Alternative hypothesis
+ - Model 3 does not significantly distinguish from Model 1 (simple model)
+ - Choose the simple model 1, as the bigger and more complex model 2 does not contribute with a significantly better fit
+
+
+Findings with more interpretable measures like WTP
+ - using Model 3
+ - Finding indifference level of 
+ - Cargo Capacity
+```{r}
+# reporting findings with more interpretable measures like WTP
+coef(m3)["cargo3ft"]/(-coef(m3)["as.numeric(as.character(price))"]/1000)
+```
+ - $2,750.60 is the price at which customers become indifferent between the two cargo capacity options
+ - This same willingness to pay value can be computed for every attribute in the study and reported to decision makers to help them understand
+
+ - Finding indifference level of 
+ - Seat quantity
+```{r}
+# how much customers value various features. e.g. : 
+coef(m3)["seat7"]/(coef(m3)["as.numeric(as.character(price))"]/1000) # 3084.38
+```
+ - $3,084.38 is the price at which customers become indifferent between the quantity of seats
+
+
+ - Finding indifference level of 
+ - Seat quantity
+```{r}
+coef(m3)["engelec"]/(coef(m3)["as.numeric(as.character(price))"]/1000) # 8823.302
+```
+ - $8,823.302 is the price at which customers become indifferent between the thre engine options
+
+
+
+Predict how customers would choose among new alternatives (combinations) 
+ - which are not included in the original data
+ - New data observations are created below
+```{r}
+# Finally, predict how customers would choose among those new alternatives (combinations) not included in the original data
+predict.mnl<-function(model,data){
+  data.model<-model.matrix(update(model$formula,0~.),data=data)[,-1]
+  utility<-data.model%*%model$coef
+  share<-exp(utility)/sum(exp(utility))
+  cbind(share,data)
+  }
+
+# create some new data
+attrib<-list(seat=c("6","7","8"),
+cargo=c("2ft","3ft"),
+eng=c("gas","hyb","elec"),
+price=c("30","35","40"))
+new.data <- expand.grid(attrib)[c(8,1,3,41,49,26),] # extract only a few combinations
+new.data
+```
+
+
+```{r}
+# pass these designs to predict.mnl() to determine what customers would choose if they had to pick among these 6 minivan alternatives
+predict.mnl(m3,new.data)
+```
+Column share: 
+ - respondents choose the 7 seat hybrid engine minivan with 2 ft of cargo space at $30K 
+ - a little more than 11% of the time
+
+
+
+
+##Choice Analysis 1 + 2
+
+Choice-based conjoint analysis
+For the exercises in this chapter, we use a simulated conjoint data set where we observe respondents choices from among sets of sportscars. 
+The attributes of sportscars in this data are 
+        number of seats
+        convertible top
+        transmission type 
+        price
+The data also includes a segment variable that indicates which sportscar segment each respondent belongs to.
+```{r}
+# data
+sportscar <- read.csv("https://goo.gl/8g7vtT")
+str(sportscar)
+sportscar$segment  = as.factor(sportscar$segment)
+sportscar$seat  = as.factor(sportscar$seat)
+sportscar$trans  = as.factor(sportscar$trans)
+sportscar$convert  = as.factor(sportscar$convert)
+sportscar$price  = as.factor(sportscar$price)
+# ex. 1
+summary(sportscar)
+```
+ - ques: This represents the question number. Each respondent answered up to 10 questions.
+
+ - alt: indicates the alternative (option) number presented to the respondent. Each respondent was given up to 3 alternatives to choose from.
+ 
+segment: Segment of the sports car
+ - Values: "basic", "fun", "racer"
+ - After conversion to factor: 3 levels.
+
+seat: This represents the seating capacity of the car, 
+ - which is either 2, 4 or 5 seats.
+
+trans: Transmission type
+ - Values: "manual", "auto"
+ - After conversion to factor: 2 levels.
+
+convert: Convertible type
+ - Values: "yes", "no"
+ - After conversion to factor: 2 levels
+
+eng: This categorical variable represents the type of engine: "gas", "hyb" (hybrid), or "elec" (electric). 
+ - Each type has roughly 3000 instances.
+
+price: This categorical variable represents the price of the car, 
+ - with 3 distinct pricelevels: 
+ - 30: 2008 instances
+ - 35: 2011 instances
+ - 40: 1981 instances
+
+Choice made by the respondent
+ - Integer values indicating if the alternative was chosen (1) or not (0).
+ - Range: 0 to 1.
+
+
+```{r}
+# I simply re-order the data and for last resp_id 200, the is price = 40
+xtabs(choice~trans,data=sportscar) #Creates a cross-tabulation of counts between the choice and trans variables in the sportscar data frame.
+```
+ o trans
+auto manual 
+1328    672
+ - consumers mostly prefer auto transmission
+
+
+Convert data to an mlogit.data
+```{r}
+# ex. 2
+# convert the data to an mlogit.data
+library(dfidx)
+# add a column with unique question numbers, as needed in mlogit 1.1+
+sportscar$chid <- rep(1:(nrow(sportscar)/3), each=3)
+# shape the data for mlogit
+sportscar.mlogit <- dfidx(sportscar, 
+                          choice="choice", 
+                    idx=list(c("chid", "resp_id"), "alt" ))
+# fitting a nmlogit model
+library(mlogit)
+m1 <- mlogit(choice ~ 0 + #choice is the dependent variable, and the predictors (independent variables) are seat + convert + trans + price. The 0 + part indicates that no intercept is included in the model.
+               seat + 
+               convert + 
+               trans + 
+               price, 
+             data = sportscar.mlogit)
+summary(m1)
+```
+ o Frequencies of alternatives:choice
+    1     2     3 
+0.328 0.327 0.345 
+ - the relative frequency of each alternative (choice) in the dataset
+
+ o Loglikelihood : -1707.3
+ - Higher values indicate a better fit to the data, with this value typically being negative for likelihoods.
+ - Dont use LogLikelihood to decide between models
+
+ o Coefficients :
+             Estimate Std. Error  z-value  Pr(>|z|)    
+seat4       -0.020210   0.075931  -0.2662 0.7901166    
+seat5        0.425636   0.075327   5.6505   1.6e-08 ***
+convertyes   0.205065   0.062134   3.3004 0.0009655 ***
+transmanual -1.222004   0.066598 -18.3489 < 2.2e-16 ***
+price35     -0.816068   0.071871 -11.3546 < 2.2e-16 ***
+price40     -1.938337   0.088608 -21.8755 < 2.2e-16 ***
+
+ - seat4: the effect of seat4 is not statistically significant at conventional levels. Therefore, there is no evidence to suggest that having 4 seats significantly affects the choice probability.
+ 
+ - seat5: coefficient is 0.425636, indicating a positive preference for the 5-seat option relative to the base level seat2.
+  there is strong evidence to suggest that having 5 seats significantly increases the choice probability compared to the baseline level.
+  
+ - convertyes: coefficient 0.425636 indicates that alternatives with no convertible option are more likely to be chosen compared to the baseline.
+ 
+ - transmanual: negative and significant coefficient -1.154602 indicates that manual transmission significantly decreases the likelihood of an alternative being chosen
+
+price35 and price40: Both coefficients are negative and highly significant, indicating that higher prices reduce the likelihood of an alternative being chosen. The higher the price, the less likely it is to be chosen.
+
+ o Slides comments:
+ - the ideal sportscar for the respondents based on this model
+ideal car: seat5, convert_yes, trans_auto, price_30
+ - Estimate lists the estimated parameter (part worth coefficient) for each level;
+ - these must be interpreted relative to the base levels of each attribute (if factor)
+ - Estimates that are larger in magnitude indicate stronger preferences 
+ - all parameter estimates are on the logit scale and typical range between −2 and 2
+
+
+
+Treat price as Numeric - mlogit model without intercept
+```{r}
+# treating price as continuous (instead of a factor with levels)
+m3 <- mlogit(choice ~ 0 + 
+               seat + 
+               convert + 
+               trans +
+               as.numeric(as.character(price)), 
+             data = sportscar.mlogit)
+summary(m3)
+```
+ o Frequencies of alternatives:choice
+    1     2     3 
+0.328 0.327 0.345 
+ - the relative frequency of each alternative (choice) in the dataset
+
+ o Loglikelihood : -1710.1
+ - Higher values indicate a better fit to the data, with this value typically being negative for likelihoods.
+ - Dont use LogLikelihood to decide between models
+
+ o Coefficients :
+                  Estimate    Std. Error  z-value  Pr(>|z|)    
+seat4             -0.0193861  0.0759029  -0.2554  0.798409    
+seat5              0.4245449  0.0752808   5.6395 1.706e-08 ***
+convertyes         0.2008115  0.0620854   3.2344  0.001219 ** 
+transmanual       -1.2178833  0.0665276 -18.3064 < 2.2e-16 ***
+numeric price     -0.1907023  0.0086739 -21.9859 < 2.2e-16 ***
+
+ - seat4: the effect of seat4 is not statistically significant at conventional levels. Therefore, there is no evidence to suggest that having 4 seats significantly affects the choice probability.
+ 
+ - seat5: coefficient is 0.4245449, indicating a positive preference for the 5-seat option relative to the base level seat2.
+  there is strong evidence to suggest that having 5 seats significantly increases the choice probability compared to the baseline level.
+  
+ - convertyes: coefficient 0.2008115 indicates that alternatives with no convertible option are more likely to be chosen compared to the baseline.
+ 
+ - transmanual: negative and significant coefficient -1.2178833 indicates that manual transmission significantly decreases the likelihood of an alternative being chosen
+
+numeric price:
+ - coefficient for price (-0.1907023) is negative, which indicates that as the price increases, the likelihood of a customer choosing that option decreases. This is consistent with the economic theory that consumers prefer lower prices.
+
+ o Slides comments:
+ - the ideal sportscar for the respondents based on this model
+ideal car: seat5, convert_yes, trans_auto, low price
+ - Estimate lists the estimated parameter (part worth coefficient) for each level;
+ - these must be interpreted relative to the base levels of each attribute (if factor)
+ - Estimates that are larger in magnitude indicate stronger preferences 
+ - all parameter estimates are on the logit scale and typical range between −2 and 2
+
+
+Findings with more interpretable measures like WTP
+ - using Model 3
+ - Finding indifference level of 
+ - Convertible top (cabriolet)
+```{r}
+coef(m3)["convertyes"]/(-coef(m3)["as.numeric(as.character(price))"]/1000)
+# 1053.01 is the WTP or the price the customer become indifferent between 
+# convert being yes versus no; so it is not reasonable to charge 5000.
+```
+ - $1,053.01 is the price at which customers become indifferent between the two convertible top (cabriolet) options
+ - This same willingness to pay value can be computed for every attribute in the study and reported to decision makers to help them understand
+
+
+
+Predict how customers would choose among new alternatives (combinations) 
+ - which are not included in the original data
+ - New data observations are created below
+```{r}
+# set up a function to predict for new data
+predict.mnl<-function(model,data){
+  data.model<-model.matrix(update(model$formula,0~.),data=data)[,-1]
+  utility<-data.model%*%model$coef
+  share<-exp(utility)/sum(exp(utility))
+  cbind(share,data)
+}
+# create some new data
+newcars <- data.frame(seat=factor(c("2","4", "5")),
+                      trans=factor(c("manual", "automatic", "automatic")),
+                      convert=factor(c("no", "yes", "no")),
+                      price=c(40, 37, 35))
+newcars
+```
+
+
+
+```{r}
+predict.mnl(m3,newcars)
+```
+Column share: 
+respondents choose the 
+ - 2 seat 
+ - transmission manual gear
+ - with n convertible top (cabriolet)
+ - at price $40K 
+ - a little more than 4% of the time
+
+
+
