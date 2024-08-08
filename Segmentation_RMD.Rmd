@@ -1778,5 +1778,3 @@ o	Describing segments
 o	Selecting (the) target segment(s)
 o	Customising the marketing mix
 o	Evaluation and monitoring
-
-
