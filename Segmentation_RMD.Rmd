@@ -1213,6 +1213,8 @@ EXACT SAME AS III SEGMENTATION
 # R script for the analysis of the McDonald's example in LCA I lecture
 library("flexclust")
 library("flexmix")
+library(readr)
+
 rm(list=ls())
 # Read in data
 mcdonalds <- read_csv("Datasets/mcdonalds.csv")
@@ -1440,7 +1442,8 @@ MORTEN SUMMARY
 MORTEN:
 -	A cross table of the 4 segment solutions from the k-means and the mixture of distributions models can be used to assess the stability
 
-Compares the cluster assignments from two different clustering methods:  - k-means and  
+Compares the cluster assignments from two different clustering methods:  
+ - k-means and  
  - mixture model
  - followed by a contingency table showing the cross-tabulation from the k-means and mixturemodel
 Choosing 4 clusters for mixture models in spite of BIC and AIC suggests 8...?
@@ -1643,7 +1646,7 @@ This lecture will help you to understand
 -	Applications of mixture models
 
    Morten on Finite Mixture models:
-o	The “classical” segmentation approach (hierarchical and nonhierarchical) resembles in many ways the latent class analysis/finite mixtures of distributions and result often in comparable solutions
+o	The “classical” segmentation approach (hierarchical and nonhierarchical) resembles (ligner) in many ways the latent class analysis/finite mixtures of distributions and result often in comparable solutions
 o	The same kind of input data can be used and the overall segmentation process is very similar
 o	A related set of methods, finite mixtures of regression models, takes a rather different approach
 As the name suggests, we have a dependent variable and a set of independent variables, but the functional relationship between them depends on which of a finite set of segments the object belongs to
@@ -1704,6 +1707,7 @@ Dependent Variable (like.n):
 Independent Variables: 
  - The predictors in the model are the first 11 columns from the mcdonalds dataset:
  
+ 
 Finite mixture linear regression model
  - performs a finite mixture of linear regression models using the stepFlexmix function
 ```{r Fit Finite mixture linear regression model}
@@ -1719,6 +1723,7 @@ Cluster 1: 630 observations.
 Cluster 2: 823 observations.
 SUMMARY:
  - clusters represent groups of observations that have similar relationships between the predictor variables and the response variable (like.n).
+
 
 Refitting the finite mixture of linear regression models and summarizing the results for each component
 ```{r Refit finite mixture of linear regression model }
