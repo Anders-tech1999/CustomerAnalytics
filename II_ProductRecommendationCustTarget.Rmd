@@ -14,10 +14,15 @@ o	Algorithms (frequent itemset generation and rule generation) and interpretatio
 ## a - Grocery data
 
 -	We have information from 9,835 transactions comprising 169 unique items
--	Approximately half of the transactions involve one, two, or three items, the largest transaction involves 32 items
--	‘The most frequently bought item is “whole milk” followed by “other vegetables”
+-	Approximately half of the transactions involve one, two, or three items, 
+ - the largest transaction involves 32 items
+-	The most frequently bought item is “whole milk” followed by “other vegetables”
+
 -	The data is provided as a “transactions” class
--	We extract association rules with support above 0.01 and with a confidence above 0.3 – this will result in a modest number of rules and involve a suitable number of items
+-	We extract association rules with 
+ - support above 0.01 and with a 
+ - confidence above 0.3 – this will result in a modest number of rules and involve a suitable number of items
+ 
 ANSWERS:
 -	We see that the rules found involve 88 items (out of the 169)
 -	A total of 125 rules were found
@@ -27,6 +32,7 @@ o	The combination appears in 1.7 % of the transactions – support = 0.017
 o	The combination is more than 3 times more likely to occur together than would be expected from the individual rates of incidence
 o	The unconditional probability for {root vegetables} equals 0.109 whereas the conditional probability equals 0.331
 -	A store might exploit this by creating a display for root vegetables near the beef counter or put a coupon for beef in the root vegetable area
+
 
 ```{r dataload + summary}
 #install.packages("arules")
@@ -39,19 +45,21 @@ summary(Groceries) # Have a look at the data set/container
 ```
 Groceries:
  - consists of 9835 rows (transactions) and 169 columns (items).
-Most Frequent Items:
+ o Most Frequent Items:
  - whole milk:                  2513 occurrences
  - other vegetables:            1903 occurrences
  - rolls/buns:                  1809 occurrences
  - soda:                        1715 occurrences
  - yogurt:                      1372 occurrences
  - other (less frequent items): 34055 occurrences
-Length Distribution of Transactions:
+
+ o Length Distribution of Transactions:
  - shows how many items are in each transaction.
  - 2159 transactions with 1 item
  - 1643 transactions with 2 items
  - 1299 transactions with 3 items...
-Descriptive Stats of Transaction Lengths:
+
+ o Descriptive Stats of Transaction Lengths:
  - min number of items in a transaction: 1
  - 1st Quartile (25th percentile): 2 items
  - Median (50th percentile): 3 items
@@ -65,6 +73,8 @@ Descriptive Stats of Transaction Lengths:
 groceriesdf <- as(Groceries, "data.frame")
 inspect(head(Groceries,5))
 ```
+
+
 Frequent items
  - sorts the item frequencies in the Groceries dataset and displays the 30 most frequently occurring items
 ```{r 30 Frequent items }
@@ -75,6 +85,7 @@ tail(sort(itemFrequency(Groceries)),30)
  - rolls/buns:         18.39% 
  - soda:               17.44% 
  - yogurt:             13.95%
+
 SUMMARY:
  - whole milk is the most frequently purchased item, 
  - followed by other vegetables, rolls/buns, and soda.
@@ -92,7 +103,8 @@ Plot Item Frequency
  - Other frequently purchased items include other vegetables, rolls/buns, soda, yogurt, bottled water, and tropical fruit.
 
 
-Extract association rules
+
+#Extract association rules
 -	Extracting association rules with support above 0.01 and with a confidence above 0.3 – this will result in a modest number of rules and involve a suitable number of items
 ```{r Association rules }
 groc.rules <- apriori(Groceries, 
@@ -102,7 +114,10 @@ groc.rules <- apriori(Groceries,
 ```
 This output is redundant???^^^^
 
+
 Associatin Rules incl. lift > 3
+ - ratio is larger than 1 we have an upward lift – knowing that X happening increases the probability that Y occurs
+
  - filters and inspects association rules from a set of rules groc.rules  - rules being inspected have a lift greater than 3.
 ```{r Rules: lift > 3 }
 # Filter the rules such that they have a lift above 3
@@ -137,7 +152,7 @@ Confidence:
 Coverage: 
  - proportion of transactions that contain the antecedent.
  
-Lift: 
+ o Lift: 
  - ratio of the observed support to that expected if the items were independent.
  - Definition: Lift is a measure of how much more likely the consequent (rhs) is given the antecedent (lhs) compared to its baseline likelihood.
  - Choosing Lift > 3: A lift greater than 3 indicates a strong association between the items in the rule. It means the presence of the antecedent makes the consequent three times more likely compared to if they were independent. This threshold ensures that only the most significant and interesting rules are selected.
@@ -648,6 +663,7 @@ Count:
 By using a lift threshold of 3, the analysis focuses on the most impactful associations, filtering out weaker and potentially less interesting rules.
 
 
+
 Shortening Association Rules
 ```{r Shortening Association Rules }
 # Limiting the number and size of rules
@@ -714,6 +730,7 @@ Count:
 By using a lift threshold of 3, the analysis focuses on the most impactful associations, filtering out weaker and potentially less interesting rules.
 
 
+
 ###More specific search of RULES
 
  - For example, to find what customers buy before buying 'METAL' run the following line of code
@@ -727,6 +744,7 @@ metal.association.rules <- apriori(
 #get five association rules telling us what customers buy, that might lead to buying metal as well.
 ```
 This output is redundant???^^^^
+
 
 Obtaining the "Antecedent" to buying METAL.
 ```{r Association Rules }
@@ -767,6 +785,7 @@ Count:
 By using a lift threshold of 3, the analysis focuses on the most impactful associations, filtering out weaker and potentially less interesting rules.
 
 
+
 Similarly, to find the answer to the question Customers who bought METAL also bought.... you will keep METAL on lhs:
 RHS = consequence (decendent)
 ```{r Association Rules }
@@ -777,6 +796,7 @@ metal.association.rules <- apriori(
   appearance = list(lhs="METAL", default="rhs"))
 ```
 This output is redundant???^^^^
+
 
 Obtaining the "Decedent"/Consequent to buying METAL.
 ```{r}
@@ -821,6 +841,7 @@ Count: (support count in Lecture)
 
 By using a lift threshold of 3, the analysis focuses on the most impactful associations, filtering out weaker and potentially less interesting rules.
 
+
 Filter Association Rules
  - Filter rules with confidence greater than 0.4 or 40%.
  - The plot shows that rules with high lift have low support. You can use the following options for the plot.
@@ -838,6 +859,7 @@ Filtering by Confidence:
 # Interactive plots. The order is the number of items in the rule
 plot(subRules,method="two-key plot")
 ```
+
 
 
 ```{r Filter Top 10 Association Rules }
@@ -1256,6 +1278,7 @@ Precision: FP/(TP + FP)
 Recall: TP/(TP + FN) = True Positive Rate
  - Percentage of purchased items that have been recommended.
 
+
 Precision-Recall curve to evaluate the performance of the Item-Based Collaborative Filtering (IBCF) recommendation model.
 ```{r Accuracy - IBCF top-N ratings }
 plot(results, "prec/rec", annotate = TRUE, main = "Precision-Recall")
@@ -1306,6 +1329,7 @@ title("Precision-recall")
 ```
 The plot shows the comparison among the different Collaborative Filtering models.
  - Item-Based Collaborative Filtering outperforms the other models
+
 
 
 #26 (Collaborating filtering) Recommendation models 
@@ -1385,6 +1409,7 @@ results <- evaluate(x = eval_sets, method = models, n= n_rec)
 (avg_matrices <- lapply(results, avg))
 ```
 LONG COMPUTATION TIME
+
 
 IBCF + UBCF + SVD + SVDF recommender models
  - IBCF Item-based Collaborative Filtering 
