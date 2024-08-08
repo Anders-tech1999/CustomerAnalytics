@@ -5,12 +5,17 @@ date: "2024-04-11"
 ---
 
 # HBAT dataset
-HBAT is a manufacturer of paper products who sells products to two market segments: the newsprint industry and the magazine industry. The data used in this example is based on a survey of HBAT customers who completed a questionnaire on a website. 100 customers (purchasing managers from firms) buying from HBAT completed the questionnaire.
+HBAT is a manufacturer of paper products who sells products to two market segments:  - the newsprint industry and 
+- the magazine industry. 
+The data used in this example is based on a survey of HBAT customers who completed a questionnaire on a website. 
+ - 100 customers (purchasing managers from firms) buying from HBAT completed the questionnaire.
 
-   HBAT’s data warehouse
+   HBAT’s data warehouse (customer size, lenght)
 -	The first type of information is available from HBAT’s data warehouse and includes information, such as, size of the customer and length of purchase relationship
+
    Consumers Perceptions
 -	The second type of information was consumers perceptions of HBAT’s performance on 13 attributes using a 0-10 scale with 10 being “Excellent” and 0 being “Poor”
+
    Purchase Outcomes
 -	The third type of information relates to purchase outcomes and business relationships (e.g. satisfaction with HBAT, and whether the firm would consider a strategic alliance/partnership with HBAT)
 
@@ -27,6 +32,7 @@ HBAT <- read.dta13("Datasets/hbat.dta")
 #HBAT <- read.dta13("C:/Users/Bruger/OneDrive - Aarhus universitet/8. semester - BI/CA - Customer Analytics/Segmentation/hbat.dta") #This also works
 ```
 
+nobs: Number of Observations
 ```{r Variable selection}
 # first we make our own id variable based on the original order
 nobs <- nrow(HBAT) #calculates the number of observations (rows) in the dataset HBAT and assigns it to the variable nobs.
@@ -37,12 +43,20 @@ HBAT$id <- seq(1,nobs) #a new column id is added to the HBAT data frame. It is f
 hbat <- c("x6","x8","x12","x15","x18") # a vector
 summary(HBAT[,hbat])
 ```
-X6: Product Quality
-X8: Technical Support
-X12: Salesforce Image
-X15: New Products
-X18: Delivery Speed
-In "dataload" the summary stats for selection variables are shown.
+ o X6: Product Quality
+Mean   : 7.810 - Customers rates 7.8 on the Product Quality
+Min.   : 5.000 - The lowest score given is 5, which states a relative high "worst performance"
+ 
+ o X8: Technical Support
+Mean   : 5.365 - Customers rates 5.3 on the Product Quality
+Min.   : 1.300 - The lowest score given is 1.3, which states a quite bad performance experienced by a customer
+Max.   : 8.500 - The highest score given is 8.5, which states a relative mediocre "best performance" experienced by a customer
+
+ o X12: Salesforce Image
+
+ o X15: New Products
+
+ o X18: Delivery Speed
 
 
 ```{r SD and Multicollinearity}
@@ -52,11 +66,13 @@ apply(HBAT[,hbat],2,sd)
 cor(HBAT[,hbat])
 # which is confirmed
 ```
+ o Standard Deviation
 x6        x8       x12       x15       x18 
 1.3962793 1.5304568 1.0723198 1.4930478 0.7344372
- - What is the feasible value for ST in this example???
+ - standard deviations provide insights into the variability of each column.
+ - x8 Technical Support: 1.5304568 The highest variance in customer experience, which states that the technical capabilities is the most varied compentence within these Business areas
 
- - Multicollinearity
+ o Multicollinearity
              x6          x8         x12         x15
 x6   1.00000000  0.09560045 -0.15181285  0.02698816
 x8   0.09560045  1.00000000  0.01699055 -0.07357899
@@ -69,9 +85,9 @@ x8  0.02544069
 x12 0.27155127
 x15 0.10574950
 x18 1.0000000
-What is the threshold value before having problems with multicollinearity?
 - Values above 0.7 or 0.8 (or below -0.7 or -0.8) are often considered high, indicating potential multicollinearity problems.
 Values between 0.5 and 0.7 (or -0.5 and -0.7) suggest moderate correlation, but they might still be acceptable depending on the analysis.
+
 
 Outlier detection
 o	An object which doesn’t fit into a given pattern may represent: 
@@ -86,7 +102,26 @@ sort(sqrt(sumdev2))
 # observations 6 and 87 are candidates for deletion
 ```
 The outliers are assessed in the relationship of the outliers being next to or before in the sequence.
-the distance between obs 90 and 6 is 0.7, which is a value giving the analyst the possibility to extract obs 6 from the dataset.
+The distance between obs 90 and 6 is 0.68, which is a value giving the analyst the possibility to extract obs 6 from the dataset.
+
+ o Acceptable distance: 0.42
+Observation 44 : 4.051562   
+Observation 53  : 4.475840   
+Obs 44, 53 distance: 4.475840 - 4.051562 = 0.42
+
+ o Deletion distance: 0.68
+Observation 90 : 4.620276 
+Observation 6  : 5.304446 
+Obs 90, 6 distance: 5.304446 - 4.620276 = 0.68
+
+ o Deletion distance: 0.96
+Observation 90 : 4.620276 
+Observation 87  : 5.575872  
+Obs 90, 6 distance: 5.575872  - 4.620276 = 0.96
+
+SUMMARY: Observation 6 and 87 are deleted on the basis of the calculations^
+
+
 
 Extracting variable 6 and 87
 ```{r}
@@ -110,7 +145,7 @@ o	Use the nonhierarchical methods to determine the cluster affiliation (tilknytn
 
 Ward’s method calculates the within-cluster sums of squares for all possible five-cluster solutions:
 (I think we get 5 possible cluster solutions having 6 variables, remember for different exercises)
-```{r Ward's method - Dendrogram}
+```{r Ward's method - Dendrogram Hierarchical clustering}
 ## Hierarchical clustering
 # first create distance matrix
 dist <- dist(HBAT[,hbat],method="euclidean") #dist function calculates the Euclidean distance between observations using the selected variables (hbat). 
@@ -123,7 +158,8 @@ H.fit <- hclust(dist2,method="ward.D") #Ward's method minimizes the total within
 # draw a dendogram
 plot(H.fit) #Assess the number of clusters from this plot
 ```
-I need an assessment-method on determining the number of cluster detected by the plot??
+ -  cut around the height of 100, it looks like there would be around 4-5 clusters
+
 
 ```{r Wards - pct increase}
 # assess pct. increase
@@ -138,13 +174,22 @@ pct <- H.fit[[2]]/denominator #calculates the percentage increase in the height 
 tail(pct,n=10) #displays the last 10 values of the pct vector. These values are the percentage increases for the final 10 steps in the hierarchical clustering process.
 ```
 
+```{r}
+0.07366355 - 0.07841626
+0.07841626 - 0.08764102
+0.08764102 - 0.09618998
+0.09618998 - 0.11978783
+0.11978783 - 0.11439048
+```
 from 1 -> 2: 0.07366355 - 0.07841626 = 0.0048 diff
 from 2 -> 3: 0.07841626 - 0.08764102 = 0.0092 diff
 from 3 -> 4: 0.08764102 - 0.09618998 = 0.0086 diff
 from 4 -> 5: 0.09618998 - 0.11978783 = 0.0236 diff ***
 from 5 -> 6: 0.11978783 - 0.11439048 = 0.0054 diff
 
-from 4 -> 5 is somewhat significant larger than the other increases... We stop at 4???
+from 4 -> 5 is somewhat significant larger than the other increases... 
+ - We stop at 4???!!!
+
 
 Using Wards method to cut into 4 clusters
 ```{r wards - create cluster groups}
@@ -154,8 +199,10 @@ table(grp) #majority is in first cluster having 49 obs
 ```
 Distribution among the culsters:
 grp
- 1  2  3  4 
-49 18 14 17 
+Cluster 1: 49
+Cluster 2: 18  
+Cluster 3: 14  
+Cluster 4: 17
 
 
 ```{r Wards - Dendrogram red borders}
@@ -163,24 +210,26 @@ grp
 plot(H.fit)
 rect.hclust(H.fit,k=4,border="red") #smart plot
 ```
-It Seems hard to make this cluster cut-off by assessing the plot itself???
+Count the amount of lines interfering the horizontal upper red line.
+ = 4 Clusters!
 
 
-
+Assess cluster groups
 ```{r Wards - Assess cluster groups}
 # assess outcome
 aggregate(HBAT[,hbat],list(grp),mean)
 ```
-Here it is seen that x6 Product quality is
-- scoring highest in Cluster 2
-- scoring lowest in Cluster 3 (etc.)
-Here it is seen that x8 Technical Support is
-- scoring highest in Cluster 2
-- scoring lowest in Cluster 4 (etc.)
+ o x6 Product quality
+- scoring highest in Cluster 1: 8.208163
+- scoring lowest in Cluster 3: 5.971429
 
-Group 1 has observations yielding high impact from x6 Product Quality and low impact from x8 Technical Support
-Group 2 has observations yielding high impact from x6 Product Quality and high impact from x8 Technical Support (etc.)
+ o x8 Technical Support is
+- scoring highest in Cluster 4: 6.464706
+- scoring lowest in Cluster 2: 4.044444
 
+
+
+ANOVA on variables
 ```{r Wards - ANOVA on variables}
 summary(aov(x6~grp,data=HBAT))
 summary(aov(x8~grp,data=HBAT))
@@ -189,14 +238,20 @@ summary(aov(x15~grp,data=HBAT))
 summary(aov(x18~grp,data=HBAT))
 ```
 The ANOVA shows, that all variables except x18 Delivery speed have HIGHLY significant difference within the mean of the groups.
+
+X6: Product Quality
  - eg. x6 has means which differs in the group, as this group may be more volatile due to the scores given in each observation in the group
+ - Mean Sq: 19.382
+
  - eg. x18 has means which is quite close to each other, yeilding a score where the observations are quite similar.
+ - Mean Sq: 2.6068
+
 
 
 ## Complete-linkage method - Hierarchical clustering
 -	Complete-linkage and Wards methods are generally preferred
 
-- IT IS RECOOMENDED THAT A COMBINATION OF THE HIERARCHICAL AND NONHIERARCHICAL METHODS IS USED
+- IT IS RECOMMENDED THAT A COMBINATION OF THE HIERARCHICAL AND NONHIERARCHICAL METHODS IS USED
 o	Use the hierarchical methods to get a qualified estimate on the number of clusters
 o	Use the nonhierarchical methods to determine the cluster affiliation (tilknytning) for each object
 
@@ -208,6 +263,8 @@ H.fit <- hclust(dist,method="complete")
 # draw a dendogram
 plot(H.fit)
 ```
+ -  cut around the height of 6-7, it looks like there would be around 4-5 clusters
+
 
 
 ```{r Complete - pct increase }
@@ -223,6 +280,25 @@ pct <- H.fit[[2]]/denominator #calculates the percentage increase in the height 
 tail(pct,n=10) ##displays the last 10 values of the pct vector. These values are the percentage increases for the final 10 steps in the hierarchical clustering process.
 ```
 
+```{r}
+0.02677534 - 0.02682930
+0.02682930 - 0.0268346
+0.02683468 - 0.02898199
+0.02898199 - 0.02950276
+0.02950276 - 0.03010020
+0.03010020 - 0.02968177
+0.02968177 - 0.03498446
+0.03498446 - 0.03620317
+0.03620317 - 0.03714618
+```
+from 1 -> 2: 0.02677534 - 0.02682930 = -5.396e-05
+from 2 -> 3: 0.02682930 - 0.0268346  = -5.3e-06
+from 3 -> 4: 0.02683468 - 0.02898199 = -0.00214731
+from 4 -> 5: 0.02898199 - 0.02950276 = -0.00052077
+from 5 -> 6: 0.02950276 - 0.03010020 = -0.00059744
+from 6 -> 7: 0.03010020 - 0.02968177 = 0.00041843
+
+
 ```{r Plot Percentage increase}
 # Example values from the provided output
 pct <- c(0.02677534, 0.02682930, 0.02683468, 0.02898199, 0.02950276, 
@@ -232,43 +308,47 @@ pct <- c(0.02677534, 0.02682930, 0.02683468, 0.02898199, 0.02950276,
 plot(pct, type="b", xlab="Step", ylab="Percentage Increase", main="Percentage Increase at Each Step")
 ```
 Use this plot or calculate the increases manually?
-Manual approach:
-from 1 -> 2: 0.07366355 - 0.07841626 = 0.0048 diff
-from 2 -> 3: 0.07841626 - 0.08764102 = 0.0092 diff
-from 3 -> 4: 0.08764102 - 0.09618998 = 0.0086 diff
-from 4 -> 5: 0.09618998 - 0.11978783 = 0.0236 diff ***
-from 5 -> 6: 0.11978783 - 0.11439048 = 0.0054 diff
+from 3 -> 4 is somewhat significant larger than the other increases... 
+ - We stop at 3 (This is different from Wards method)
 
-from 4 -> 5 is somewhat significant larger than the other increases... We stop at 4??? (This is from Wards method)
 
-```{r Complete - create cluster groups }
+Complete Linkage to cut into 4 clusters
+```{r Complete Linkage - create cluster groups }
 # results from Ward's method are supported -
-grp <- as.factor(cutree(H.fit,k=4))
+grp <- as.factor(cutree(H.fit,k=3))
 table(grp) #majority is in second cluster having 33 obs
 ```
+Distribution among the culsters:
+grp
+Cluster 1: 48
+Cluster 2: 41  
+Cluster 3: 9  
+
+
 
 ```{r Complete - Dendrogram red borders }
 # but size of the clusters differ
 plot(H.fit)
-rect.hclust(H.fit,k=4,border="red")
+rect.hclust(H.fit,k=3,border="red")
 ```
 This tends to a 3 cluster solution???
+
 
 ```{r Complete - Assess cluster groups }
 # assess outcome
 aggregate(HBAT[,hbat],list(grp),mean)
 ```
-Here it is seen that x6 Product quality is
-- scoring highest in Cluster 2
-- scoring lowest in Cluster 4 (etc.)
-Here it is seen that x8 Technical Support is
-- scoring highest in Cluster 2
-- scoring lowest in Cluster 1 (etc.)
+ o x6 Product quality
+- scoring highest in Cluster 3
+- scoring lowest in Cluster 1
 
-Group 1 has observations yielding high impact from x6 Product Quality and low impact from x8 Technical Support
-Group 2 has observations yielding high impact from x6 Product Quality and medium impact from x8 Technical Support (etc.)
+ o x8 Technical Support
+- scoring highest in Cluster 2
+- scoring lowest in Cluster 3
 
-```{r Complete - Dendrogram red borders }
+
+Complete Linkage - ANOVA on variables
+```{r Complete Linkage - Dendrogram red borders }
 summary(aov(x6~grp,data=HBAT))
 summary(aov(x8~grp,data=HBAT))
 summary(aov(x12~grp,data=HBAT))
@@ -279,17 +359,37 @@ The ANOVA shows, that all variables except x18 Delivery speed have significant d
 eg. x6 has means which differs in the group, as this group may be more volatile due to the scores given in each observation in the group
 eg. x18 has means which is quite close to each other, yeilding a score where the observations are quite similar
 
+The ANOVA shows, that all variables
+ - except x18 DeliverySpeed  
+ - expect X12: SalesforceImage 
+ - have HIGHLY significant difference within the mean of the groups.
+
+ o X6: Product Quality
+ - eg. x6 has means which differs in the group, as this group may be more volatile due to the scores given in each observation in the group
+ - Mean Sq: 6.104
+
+ o x18 DeliverySpeed 
+ - eg. x18 has means which is quite close to each other, yeilding a score where the observations are quite similar.
+ - Mean Sq: 0.8802
+
+
+
 - IT IS RECOOMENDED THAT A COMBINATION OF THE HIERARCHICAL AND NONHIERARCHICAL METHODS IS USED
 o	Use the hierarchical methods to get a qualified estimate on the number of clusters
 o	Use the nonhierarchical methods to determine the cluster affiliation (tilknytning) for each object
-
-```{r Complete - Dendrogram red borders }
+```{r NbClust }
 # use NbClust
-res<-NbClust(HBAT[,hbat], distance = "euclidean", min.nc=2, max.nc=8,method = "ward.D", index = "all") #go with the printed number of clusters
-res$All.index
-res$Best.nc
+res<-NbClust(HBAT[,hbat], 
+             distance = "euclidean", 
+             min.nc=2, #minimum clusters to consider is 2
+             max.nc=8, #maximum clusters to consider is 8
+             method = "ward.D", #Ward minimizes the total within-cluster variance.
+             index = "all") #go with the printed number of clusters
+res
+#res$All.index NOT NECESSARY
+#res$Best.nc NOT NECESSARY
 ```
-This code actually recommends a mjaority answer:
+This code actually recommends a majority answer: Go primarily with THIS
 * Among all indices:                                                
 * 7 proposed 2 as the best number of clusters 
 * 3 proposed 3 as the best number of clusters 
@@ -297,10 +397,14 @@ This code actually recommends a mjaority answer:
 * 2 proposed 6 as the best number of clusters 
 * 6 proposed 8 as the best number of clusters 
                    ***** Conclusion *****                       
-* the majority rule, the best number of clusters is  2 
+* the majority rule, the best number of clusters is  2
+
+
 
 
 #Non-hierarchical clusters
+
+FROM HERE 4 CLUSTERS IS USED AGAIN - FROM WARDS RECOMMENDATION
 
 -	The general purpose of nonhierarchical clustering is to classify objects into k clusters such that
 o The objects within the same cluster are as similar as possible – high intra-class similarity
@@ -325,7 +429,8 @@ Cluster means:
 2 8.872727 6.959091 4.804545 5.686364 3.854545
 3 6.171429 5.957143 5.560714 4.946429 3.957143
 4 8.464516 4.693548 4.806452 3.854839 3.796774
-X6: Product Quality:
+
+ o X6: Product Quality:
  - scores high in cluster 1 and 2 (relatively low in cluster 3)
  - Has highest average scores across all clusters in comparison with other variables
 X8: Technical Support
@@ -339,16 +444,24 @@ Clustering vector:
  - 1st Observation is assigned to Cluster 4 ...
  - 4th Observation is assigned to Cluster 3
 
+
+
 Cluster quantity distribution
 ```{r Complete - Dendrogram red borders }
 grp <- as.factor(NH.fit[[1]])
 table(grp)
 ```
+Distribution among the culsters:
 grp
- 1  2  3  4 
-17 22 28 31
+Cluster 1: 17
+Cluster 2: 22  
+Cluster 3: 28  
+Cluster 4: 31
 
-ANOVA (Analysis of Variance) tests conducted on the variables x6, x8, x12, x15, and x18 to determine if there are significant differences in their means across the clusters formed by the k-means clustering.
+
+
+ANOVA (Analysis of Variance) tests conducted on the variables x6, x8, x12, x15, and x18 to 
+ - determine if there are significant differences in their means across the clusters formed by the k-means clustering.
 ```{r Complete - Dendrogram red borders }
 # assess outcome
 #aggregate(HBAT[,hbat],list(grp),mean) THIS IS ALREADY LISTED ABOVE
@@ -358,19 +471,30 @@ summary(aov(x12~grp,data=HBAT))
 summary(aov(x15~grp,data=HBAT))
 summary(aov(x18~grp,data=HBAT))
 ```
- - x18 does not show a significant difference, indicating it does not contribute to distinguishing the clusters.
- - X12: Salesforce Image does not show a HIGHLY significant difference, indicating x12 does not contribute AS MUCH to distinguishing the clusters in comparison to X6: Product Quality, X8: Technical Support, X15: New Products
+The ANOVA shows, that all variables except x18 Delivery speed have HIGHLY significant difference within the mean of the groups.
+
+ o X6: Product Quality
+ - eg. x6 has means which differs in the group, as this group may be more volatile due to the scores given in each observation in the group
+ - Mean Sq: 38.50   
+
+ o x18 Delivery speed
+ - eg. x18 has means which is quite close to each other, yeilding a score where the observations are quite similar.
+ - Mean Sq: 0.2883   
 
 
 
+Snake plot
 ```{r Complete - Dendrogram red borders }
 # snake plot
 matplot(t(NH.fit[[2]]),type="l")
 ```
-X-axis: Represents the variables (x6, x8, x12, x15, x18). The indices 1 to 5 correspond to these variables.
-Y-axis: Represents the mean values of the variables for each cluster.
+ o X-axis: Represents the variables (x6, x8, x12, x15, x18). The indices 1 to 5 correspond to these variables.
+
+ o Y-axis: Represents the mean values of the variables for each cluster.
 - on x-axis: 1 = x6 is overall scoring highest in the plot
 - on x-axis: 5 = x18 is overall scoring lowest in the plot
+
+
 
 I DONT KNOW WHY WE ASSESS THESE ANOVA values for x19","x20","x21","x22???
 ```{r Complete - Dendrogram red borders }
@@ -383,7 +507,8 @@ summary(aov(x22~grp,data=HBAT))
 ```
 
 
-Profiling
+
+ o Profiling
 -	The profiling is carried out by looking at the centroids of the cluster
 -	The idea is to look for characteristics on one or several of the clustering variables that identify a cluster
 -	In this way one can name each of the clusters based on the information just identified
@@ -420,8 +545,6 @@ x1: less than 1 year, 1 to 5 years, over 5 years
   1 to 5 years     35 18 54 32
   over 5 years     35 64  0 42
 
-	Pearson's Chi-squared test
-data:  tbl
 X-squared = 24.074, df = 6, p-value = 0.0005061
 
 - x1 (length of time): There is a significant association between the clusters and the length of time categories (less than 1 year, 1 to 5 years, over 5 years). The distribution of these categories varies significantly across the clusters.
@@ -432,12 +555,11 @@ x3:(company size)
   small (0 to 499) 41 64 39 48
   large (500+)     59 36 61 52
 
-	Pearson's Chi-squared test
-
-data:  tbl
 X-squared = 3.326, df = 3, p-value = 0.344
 
 - x3 (company size): There is NOT a significant association between the clusters and the company size categories (small, large). The distribution of these categories has statistically similar behavior across the clusters.
+
+
 
 ### Toy Example which is STUPID
 
@@ -521,7 +643,6 @@ Correlation Matrix:
 
 EXACT IDENTICAL TO SEGMENTATION 1 INTRO!!!
 
-
 ```{r 20.segmentation}
 # R script for the analysis of the HBAT example in the model-based clustering
 # lecture
@@ -545,7 +666,6 @@ X8: Technical Support
 X12: Salesforce Image
 X15: New Products
 X18: Delivery Speed
-In "dataload" the summary stats for selection variables are shown.
 
 EXACT IDENTICAL TO SEGMENTATION 1 INTRO!!!
 
@@ -556,11 +676,13 @@ apply(HBAT[,hbat],2,sd)
 cor(HBAT[,hbat])
 # which is confirmed
 ```
+ o Standard Deviation
 x6        x8       x12       x15       x18 
 1.3962793 1.5304568 1.0723198 1.4930478 0.7344372
- - What is the feasible value for ST in this example???
+ - standard deviations provide insights into the variability of each column.
+ - x8 Technical Support: 1.5304568 The highest variance in customer experience, which states that the technical capabilities is the most varied compentence within these Business areas
 
- - Multicollinearity
+ o Multicollinearity
              x6          x8         x12         x15
 x6   1.00000000  0.09560045 -0.15181285  0.02698816
 x8   0.09560045  1.00000000  0.01699055 -0.07357899
@@ -573,9 +695,9 @@ x8  0.02544069
 x12 0.27155127
 x15 0.10574950
 x18 1.0000000
-What is the threshold value before having problems with multicollinearity?
 - Values above 0.7 or 0.8 (or below -0.7 or -0.8) are often considered high, indicating potential multicollinearity problems.
 Values between 0.5 and 0.7 (or -0.5 and -0.7) suggest moderate correlation, but they might still be acceptable depending on the analysis.
+
 
 EXACT IDENTICAL TO SEGMENTATION 1 INTRO!!!
 
@@ -592,7 +714,24 @@ sort(sqrt(sumdev2))
 # observations 6 and 87 are candidates for deletion
 ```
 The outliers are assessed in the relationship of the outliers being next to or before in the sequence.
-the distance between obs 90 and 6 is 0.7, which is a value giving the analyst the possibility to extract obs 6 from the dataset.
+The distance between obs 90 and 6 is 0.68, which is a value giving the analyst the possibility to extract obs 6 from the dataset.
+
+ o Acceptable distance: 0.42
+Observation 44 : 4.051562   
+Observation 53  : 4.475840   
+Obs 44, 53 distance: 4.475840 - 4.051562 = 0.42
+
+ o Deletion distance: 0.68
+Observation 90 : 4.620276 
+Observation 6  : 5.304446 
+Obs 90, 6 distance: 5.304446 - 4.620276 = 0.68
+
+ o Deletion distance: 0.96
+Observation 90 : 4.620276 
+Observation 87  : 5.575872  
+Obs 90, 6 distance: 5.575872  - 4.620276 = 0.96
+
+SUMMARY: Observation 6 and 87 are deleted on the basis of the calculations^
 
 EXACT IDENTICAL TO SEGMENTATION 1 INTRO!!!
 
@@ -611,9 +750,10 @@ HBAT$id <- seq(1,nobs) #number of observations (nobs) is recalculated, and the i
 ```
 EXACT IDENTICAL TO SEGMENTATION 1 INTRO!!!
 
+
 -	Model-based clustering assumes that the population is made up of several distinct subsets/clusters, each governed by a different multivariate probability density function
 -	The parameters associated with the model can be used to assign each observation a posterior probability of belonging to a cluster
--	The problems of identifying the number of clusters and selecting the clustering method boil down to a model selection problem – for which we have a number of procedures
+-	The problems of identifying the number of clusters and selecting the clustering method boils down to a model selection problem – for which we have a number of procedures
 
 -	Furthermore, being based on a genuine statistical model, model-based clustering readily accommodates missing data in a way similar to the state-of-the-art ML methods
 -	Are also known as latent-class cluster analysis or finite mixture modeling
@@ -629,22 +769,33 @@ Model-based clustering fits a mixture model to the data and selects the optimal 
 
 (EEI,3) 
  - indicates that the best model is of type "EEI" with 3 clusters.
- - EEI: Equal volume, equal shape, and variable orientation. This means that the clusters are assumed to have equal volume and shape, but their orientation may vary.
+ - EEI: Equal volume, equal shape, and variable orientation. 
+ - means that the clusters are assumed to have equal volume and shape, but their orientation may vary.
 
-BIC (Bayesian Information Criterion) plot generated by the mclust package in R. It shows the BIC values for different models and numbers of components (clusters). 
+
+BIC (Bayesian Information Criterion) plot generated by the mclust package in R.
+ - shows BIC values for different models and numbers of components (clusters).
+ - Choose cluster solution on the basis of above EEI
 ```{r BIC Plot}
 # Assess different solutions
 plot(mc, HBAT[,hbat], what = "BIC", col = "black")
 ```
-X-axis: number of components (clusters) ranging from 1 to 9.
-Y-axis: BIC, Lower BIC values indicate a better model fit.
+ o X-axis: number of components (clusters) ranging from 1 to 9.
+
+ o Y-axis: BIC, Lower BIC values indicate a better model fit.
+
  - BIC plot is a critical tool in model-based clustering as it provides a visual representation of how different models perform across various numbers of clusters. 
  - The model with the lowest BIC value for a given number of clusters is typically selected as the best fit. 
  - This approach helps in objectively determining the optimal number of clusters and the most appropriate model for the data, balancing model complexity and goodness of fit. 
+ 
  SUMMARY:
 In this case, the EEI model with 3 clusters was selected based on its BIC value.
+THIS CASE decides on the basis on BIC closest to zero!
+= EEI Cluster: 3
 
 
+
+mc: Model Clustering
 ```{r 20.segmentation}
 # Summarize
 summary(mc)
@@ -656,21 +807,51 @@ Clustering table:
 
 Output 2:
 Log-Likelihood
- - log-likelihood of the fitted model. The log-likelihood is a measure of how well the model explains the data; higher values indicate a better fit. In this case, the log-likelihood is -744.0524.
+ - log-likelihood of the fitted model. The log-likelihood is a measure of how well the model explains the data; higher values indicate a better fit. 
+ Log-likelihood: -744.0524.
 
 BIC
-- Bayesian Information Criterion (BIC) is used for model selection. It balances model fit with model complexity, penalizing models with more parameters to prevent overfitting. Lower BIC values indicate better models. In this case, the BIC is -1588.974.
+- Bayesian Information Criterion (BIC) is used for model selection. It balances model fit with model complexity, penalizing models with more parameters to prevent overfitting. Lower BIC values indicate better models. 
+ - BIC: -1588.974
 
 ICL
- - Integrated Complete Likelihood (ICL) criterion is another measure used for model selection, often in clustering. It incorporates both the BIC and an entropy term to account for the uncertainty in cluster assignments. Lower ICL values indicate better models. Here, the ICL is -1605.689.
+ - Integrated Complete Likelihood (ICL) criterion is another measure used for model selection, often in clustering. It incorporates both the BIC and an entropy term to account for the uncertainty in cluster assignments. Lower ICL values indicate better models. 
+ - ICL: -1605.689
 
 
+4 Cluster solution (rejects the EEIClust3 recommendation)
 ```{r 20.segmentation }
 # Look at a 4-cluster solution
 mc4 <- Mclust(HBAT[,hbat],G=4)
 summary(mc4)
 ```
-Compare these with the above metrics^^^^
+Output 1:
+Clustering table:
+ 1  2  3  4 
+22 34 16 26 
+
+Output 2:
+Log-Likelihood
+ - log-likelihood of the fitted model. The log-likelihood is a measure of how well the model explains the data; higher values indicate a better fit. 
+ - mc: Log-likelihood: -744.0524.
+ - mc4: Log-likelihood: -740.7139
+ - mc4 is the highest value
+
+BIC
+- Bayesian Information Criterion (BIC) is used for model selection. It balances model fit with model complexity, penalizing models with more parameters to prevent overfitting. Lower BIC values indicate better models. 
+ - mc: BIC: -1588.974
+ - mc4: BIC: -1609.807
+ - mc4 is the lowest value
+
+ICL
+ - Integrated Complete Likelihood (ICL) criterion is another measure used for model selection, often in clustering. It incorporates both the BIC and an entropy term to account for the uncertainty in cluster assignments. Lower ICL values indicate better models. 
+ - ICL: -1605.689
+ - ICL: -1633.783
+ - mc4 is the lowest value
+
+SUMMARY: mc4 is performing best according to BIC, Log-Likelihood, ICL
+ - Cluster 4 solution is the prefered!
+
 
 
 #III Segmentation - Finding, assessing, predicting customer segments
@@ -695,7 +876,7 @@ mcdonalds <- read_csv("Datasets/mcdonalds.csv")
 
 ```{r data insights}
 # Look into content
-glimpse(mcdonalds)
+#glimpse(mcdonalds)
 str(mcdonalds)
 head(mcdonalds, 3) #showing first 3 rows in dataset mcdonalds
 ```
@@ -727,13 +908,16 @@ fast      cheap      tasty  expensive    healthy  disgusting
 MD.pca <- prcomp(MD.x)
 summary(MD.pca)
 ```
-PCA Principal Component analysis:
+ o PCA Principal Component analysis:
 - The idea behind PCA is to reduce the dimensionality of the dataset by transforming the original variables into a new set of variables (the principal components) which are uncorrelated, and which are ordered so that the first few retain most of the variation present in all of the original variables.
 - The greatest variance by any projection of the data comes to lie on the first coordinate (called the first principal component), the second greatest variance on the second coordinate, and so on.
-Standard Deviation:
+
+ o Standard Deviation:
 - This indicates how much variance is captured by each principal component. A higher standard deviation means that component accounts for a larger variance within the dataset.
-Proportion of Variance:
+
+ o Proportion of Variance:
 - squared standard deviation for each component divided by the sum of squared standard deviations of all components. It tells us the proportion of the dataset’s total variance that is captured by each principal component.
+
 
 
 ```{r Rotation/Loadings PCA}
@@ -741,8 +925,10 @@ print(MD.pca, digits = 2)
 ```
 Rotation matrix:
 - Each row corresponds to one of the original variables (attributes like "yummy", "convenient", "spicy", etc.), and each column corresponds to a principal component (PC1 to PC11). The values in the matrix show how each attribute contributes to each principal component.
+
 Example (original variable yummy on PC1):
 - The attribute "yummy" has a strong positive loading on PC1 (0.4769) and a strong negative loading on PC9 (-0.5724), which means "yummy" is an important attribute that defines the direction of PC1 and PC9.
+
 
 ```{r PCA loading-plot}
 plot(predict(MD.pca), col = "grey")
@@ -754,6 +940,7 @@ projAxes(MD.pca)
 - Attributes that are close to the origin (center of the plot) have smaller effects on the variation explained by the first two principal components, while those further out are more influential.
 
 It is seen that "tasty" and "yummy" point in a similar direction, suggesting they contribute similarly to the dataset's variance and are likely correlated. Conversely, "expensive" points in a roughly opposite direction to "cheap", indicating they are negatively correlated. The plot also suggests that attributes like "disgusting" and "fattening" may not be strongly related to the primary variance within the data, as their vectors are shorter and closer to the center of the plot.
+
 
 Extracting segments
 ```{r k-means Within-cluster distances Plot }
@@ -768,6 +955,8 @@ plot(MD.km28, xlab = "number of segments")
 Plot: 
 - bar chart that displays the sum of within-cluster distances for each number of clusters tested (from 2 to 8). Ideally, one looks for a "elbow" in the plot where the rate of decrease sharply changes, suggesting a natural grouping in the data. This "elbow" is often considered as an indicator of the optimal number of clusters to use.
 
+
+
 Rand Index
  - Rand  index evaluates the similarity between the clustering results across multiple bootstrap samples. 
  - The higher the adjusted Rand index, the more stable the clustering solution is.
@@ -776,17 +965,18 @@ Rand Index
 # Segment stability within the same number of segments
 #long computation time!
 set.seed(1234)
-MD.b28 <- bootFlexclust(MD.x, 2:8, nrep = 10,nboot = 100) #a bootstrapping method for k-means clustering on the dataset MD.x
-#nrep = 10 parameter indicates that the clustering should be repeated 10 times for stability, '
-#nboot = 100 indicates that 100 bootstrap resamples should be used to assess the stability of the clustering solution.
+MD.b28 <- bootFlexclust(MD.x, 2:8,
+                        nrep = 10, #nrep = 10 parameter indicates that the clustering should be repeated 10 times for stability, 
+                        nboot = 100) #a bootstrapping method for k-means clustering on the dataset MD.x. nboot = 100 indicates that 100 bootstrap resamples should be used to assess the stability of the clustering solution.
 
 plot(MD.b28, xlab = "number of segments",ylab = "adjusted Rand index")
 ```
-Boxplot 
+ o Boxplot 
 - visualizes the distribution of the adjusted Rand index for each number of segments (2 through 8). 
 - This plot can help determine the number of clusters that yield the most stable and consistent partitioning of the data by looking for the number of segments that consistently show high adjusted Rand index values
 SUMMARY: 
  - from this boxplot, a 4-cluster solution is evaluated as the most optimal amount of clusters
+
 
 
 Gorge plots -	For well-separated segments there should mainly be many low and many high similarity measures – hence the name (gorge/kløft)
@@ -799,23 +989,27 @@ histogram(MD.km28[["4"]], data = MD.x, xlim = 0:1) #using 4 clusters in this spe
 ```
 Morten: - the gorge plot indicates that none of the segments in the four-segment solution are very well separated.
 
-Gorge plots (histograms):
+ o Gorge plots (histograms):
 - These histograms can help in interpreting the structure of the clusters. 
  - For example, a cluster with many high similarity scores (bars towards the right of the histogram) contains data points that are very similar to each other, indicating a tight and well-defined cluster.
  - Conversely, a cluster with scores spread across the range might be less well-defined or could contain subgroups.
 - the y-axis is labeled "Percent of Total", indicating that the histograms show the distribution of the similarity scores as a percentage of the total number of scores within each cluster. 
 - the x-axis is labeled "similarity", denoting the range of similarity scores from 0 to 1.
 
+
+
 SLS_A plot - Segment Level Stability Across solutions - plot
 ```{r SLS_A plot - Segment Level Stability Across solutions}
 # Segment level stability across solutions
 slsaplot(MD.km28)
 ```
-Goes from 2 cluster -> 3 cluster -> 4 cluster
+Goes from 2 cluster -> 3 cluster -> 4 cluster -> and so on...
 SLS_A plot:
 - The links (or bands) between the nodes show how many data points from each cluster in one solution correspond to clusters in another solution. In this case, it likely shows how segments in a lower number of clusters (on the left) are combined or split as the number of clusters increases (moving to the right).
 - thickness of the bands is proportional to the number of data points that follow that path, illustrating the size of the clusters and the movement of data points between them. A stable clustering will have stronger, more direct paths, while a less stable one will show a more complex network of paths, indicating that the data points are being reassigned to different clusters across solutions.
 - This visualization is valuable for assessing the robustness of clustering. If many data points maintain their cluster membership across different solutions, it indicates that the clustering is stable and likely meaningful. If there is a lot of reassignment across solutions, it suggests that the cluster structure is not as clear-cut.
+
+
 
 Specific X-cluster(4)
 ```{r Specific X-cluster(4) - }
@@ -831,6 +1025,8 @@ Specific X(4)-cluster boxplot:
 e.g.:
 - Segment 1 and 2 seems to have lower median stability and higher variability than the other segments, as shown by the narrow box and the presence of outliers.
 - Segment 4 and 3 shows a higher median stability and less variability in stability, as indicated by the wider box.
+
+
 
 Segment Profile Plot - Profiling segments
  - The segment profile plot makes it easy to see key characteristics of each segment and highlights differences between segments
@@ -891,7 +1087,7 @@ o	The color indicates the differences between observed and expected (under the i
 	red = fewer observed respondents than expected 
 	blue = more observed respondents than expected
 SUMMARY MORTEN:
-o	Members of segment 1 rarely loves McDonald’s
+o	Members of segment 1 dislike (rarely loves) McDonald’s
 o	However, members of segment 4 are much more prone to loving and less likely to hate McDonald’s
 o	Members of segment 2 are those with the strongest negative feelings toward McDonald’s
 o	Segments 1 and 3 have the same gender distribution as the overall sample
@@ -911,10 +1107,10 @@ Gender mosaic plot:
 - Distribution of gender in each of the segments/clusters
 
 Gender Box-plot
-- y-axis represents the ages of the respondents. 
+- y-axis represents the ages of the respondents.
 - the variation in box widths suggests that the number of respondents varies across the clusters. 
 - the presence of notches around the medians indicates where the medians lie and whether they might be significantly different from one another.
-SUMMARU MORTEN
+SUMMARY MORTEN
 o	Members of segment 3 (those seeing McDonald’s as tasty and yummy) are younger than the other segments
 
 
@@ -930,11 +1126,13 @@ tree <- ctree(factor(k4==3) ~ #change this due the specific segment
               data=mcdonalds)
 plot(tree) #interpret
 ```
-Node 1: 
+ o Node 1: 
  - The first split is based on the like variable (with p < 0.001). This variable measures the degree of liking for McDonald's on a scale from -5 (I hate it) to +5 (I love it).
-Node 2: 
+
+ o Node 2: 
  - For customers with a positive liking (like > 0), the next split is based on Age (p < 0.001).
-Node 3: 
+
+ o Node 3: 
  - For customers aged 47 or less, the next split is based on Gender (p = 0.007).
  Terminal node (4, 5, 6, 9, 10, 11) 
  - has a bar plot showing the proportion of TRUE (segment 3 members) and FALSE (non-segment 3 members) cases. 
@@ -944,7 +1142,6 @@ Node 3:
 MORTEN: -	Based on the knock-out criteria and the segment attractiveness criteria we can develop a segment evaluation plot
  - "knock-out criteria" refers to specific conditions or standards used to eliminate certain segments from consideration during the process of selecting target segments. These criteria act as a filter to ensure that only segments meeting minimum requirements are considered for further analysis and targeting. 
  - The x-axis holds frequency of visiting McDonald’s
-
 ```{r Visit - Selecting target segment(s)}
 visit <- tapply(as.numeric(mcdonalds$visitfrequency),mcdonalds$k4,mean) #calculates the mean visit frequency for each segment in the McDonald's dataset.
 visit
